@@ -86,7 +86,7 @@ jobs:
         shell: bash
         run: |
           CGO_ENABLED=1 wails build -clean -platform ${{ matrix.platform }} \
-          -ldflags "-X main.version=v${{ steps.normalise_version.outputs.version }}" \
+          -ldflags "-X main.version=${{ steps.normalise_version.outputs.version }}" \
           -o wdreader
           ls build/bin/
       - name: Setup control template

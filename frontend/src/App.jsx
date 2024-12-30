@@ -482,7 +482,7 @@ function App() {
                                         }}>
                                             <img src={CsSVg} alt=""/>
                                             <span>上班偷看小说神器</span>
-                                            <span>{getState().version || '1.0'}</span>
+                                            <span>{getState().version || ''}</span>
                                         </div>
 
                                         <div style={{display: "flex", flexFlow: 'row nowrap', gap: 3, fontSize: 20}}
@@ -1015,7 +1015,7 @@ function App() {
                 getState().errorInfo && (
                     <div className={'fixed-txt-center color-red zIndex108'}>
                         <div className={"flex flex-column gap5 w-full align-item-center"}>
-                            <span>{getState().errorInfo}</span>
+                            <p style={{textAlign: 'center'}}>{getState().errorInfo}</p>
                             <Button size={"small"} className={'w-50'} onClick={() => {
                                 setState({
                                     errorInfo: ""
