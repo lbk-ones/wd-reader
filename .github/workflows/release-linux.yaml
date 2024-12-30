@@ -87,37 +87,37 @@ jobs:
         run: |
           CGO_ENABLED=1 wails build -platform ${{ matrix.platform }} \
           -ldflags "-X main.version=v${{ steps.normalise_version.outputs.version }}" \
-          -o wd-reader
+          -o wdreader
 
       - name: Setup control template
         shell: bash
         run: |
-          content=$(cat build/linux/wd-reader_0.0.0_amd64/DEBIAN/control)
+          content=$(cat build/linux/wdreader_0.0.0_amd64/DEBIAN/control)
           content=$(echo "$content" | sed -e "s/{{.Name}}/$(jq -r '.name' wails.json)/g")
           content=$(echo "$content" | sed -e "s/{{.Info.ProductVersion}}/$(jq -r '.info.productVersion' wails.json)/g")
           content=$(echo "$content" | sed -e "s/{{.Author.Name}}/$(jq -r '.author.name' wails.json)/g")
           content=$(echo "$content" | sed -e "s/{{.Author.Email}}/$(jq -r '.author.email' wails.json)/g")
           content=$(echo "$content" | sed -e "s/{{.Info.Comments}}/$(jq -r '.info.comments' wails.json)/g")
           echo $content
-          echo "$content" > build/linux/wd-reader_0.0.0_amd64/DEBIAN/control
+          echo "$content" > build/linux/wdreader_0.0.0_amd64/DEBIAN/control
 
       - name: Setup app template
         shell: bash
         run: |
-          content=$(cat build/linux/wd-reader_0.0.0_amd64/usr/share/applications/wd-reader.desktop)
+          content=$(cat build/linux/wdreader_0.0.0_amd64/usr/share/applications/wdreader.desktop)
           content=$(echo "$content" | sed -e "s/{{.Info.ProductName}}/$(jq -r '.info.productName' wails.json)/g")
           content=$(echo "$content" | sed -e "s/{{.Info.Comments}}/$(jq -r '.info.comments' wails.json)/g")
           echo $content
-          echo "$content" > build/linux/wd-reader_0.0.0_amd64/usr/share/applications/wd-reader.desktop
+          echo "$content" > build/linux/wdreader_0.0.0_amd64/usr/share/applications/wdreader.desktop
 
       - name: Package up deb file
         shell: bash
         run: |
-          mv build/bin/wd-reader build/linux/wd-reader_0.0.0_amd64/usr/local/bin/
+          mv build/bin/wdreader build/linux/wdreader_0.0.0_amd64/usr/local/bin/
           cd build/linux
-          mv wd-reader_0.0.0_amd64 "wd-reader_${{ steps.normalise_version.outputs.version }}_amd64"
-          sed -i 's/0.0.0/${{ steps.normalise_version.outputs.version }}/g' "wd-reader_${{ steps.normalise_version.outputs.version }}_amd64/DEBIAN/control"
-          dpkg-deb --build -Zxz "wd-reader_${{ steps.normalise_version.outputs.version }}_amd64"
+          mv wdreader_0.0.0_amd64 "wdreader_${{ steps.normalise_version.outputs.version }}_amd64"
+          sed -i 's/0.0.0/${{ steps.normalise_version.outputs.version }}/g' "wdreader_${{ steps.normalise_version.outputs.version }}_amd64/DEBIAN/control"
+          dpkg-deb --build -Zxz "wdreader_${{ steps.normalise_version.outputs.version }}_amd64"
 
       - name: Package up appimage file
         run: |
@@ -137,13 +137,13 @@ jobs:
 
 
           mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
-          build_dir="build/linux/wd-reader_${{ steps.normalise_version.outputs.version }}_amd64"
+          build_dir="build/linux/wdreader_${{ steps.normalise_version.outputs.version }}_amd64"
 
-          cp -r $build_dir/usr/share/icons/hicolor/512x512/apps/wd-reader.png AppDir/usr/share/icons/hicolor/512x512/apps/
-          cp $build_dir/usr/local/bin/wd-reader AppDir/usr/bin/
+          cp -r $build_dir/usr/share/icons/hicolor/512x512/apps/wdreader.png AppDir/usr/share/icons/hicolor/512x512/apps/
+          cp $build_dir/usr/local/bin/wdreader AppDir/usr/bin/
 
 
-          sed -i 's#/usr/local/bin/wd-reader#wd-reader#g' $build_dir/usr/share/applications/wd-reader.desktop
+          sed -i 's#/usr/local/bin/wdreader#wdreader#g' $build_dir/usr/share/applications/wdreader.desktop
 
           curl -o linuxdeploy-plugin-gtk.sh "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
 
@@ -155,21 +155,21 @@ jobs:
           ./linuxdeploy --appdir AppDir \
              --output=appimage \
              --plugin=gtk \
-             -e $build_dir/usr/local/bin/wd-reader \
-             -d $build_dir/usr/share/applications/wd-reader.desktop
+             -e $build_dir/usr/local/bin/wdreader \
+             -d $build_dir/usr/share/applications/wdreader.desktop
 
       - name: Rename deb
         working-directory: ./build/linux
-        run: mv "wd-reader_${{ steps.normalise_version.outputs.version }}_amd64.deb" "wd-reader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.deb"
+        run: mv "wdreader_${{ steps.normalise_version.outputs.version }}_amd64.deb" "wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.deb"
 
       - name: Rename appimage
-        run: mv Tiny_RDM-${{ steps.normalise_platform_arch.outputs.arch }}.AppImage "wd-reader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.AppImage"
+        run: mv Tiny_RDM-${{ steps.normalise_platform_arch.outputs.arch }}.AppImage "wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.AppImage"
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.normalise_version.outputs.version }}
           files: |
-            ./build/linux/wd-reader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.deb
-            wd-reader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.AppImage
+            ./build/linux/wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.deb
+            wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.AppImage
           token: ${{ secrets.GITHUB_TOKEN }}

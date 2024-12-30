@@ -85,11 +85,11 @@ jobs:
           CGO_ENABLED=1 wails build -clean -platform ${{ matrix.platform }} \
           -webview2 embed \
           -ldflags "-X main.version=v${{ steps.normalise_version.outputs.version }}" \
-          -o Wd Reader.exe
+          -o wdreader.exe
 
       - name: Compress portable binary
         working-directory: ./build/bin
-        run: Compress-Archive "Wd Reader.exe" "WdReader_Portable_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip"
+        run: Compress-Archive "wdreader.exe" "WdReader_Portable_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip"
 
       - name: Upload release asset (Portable)
         uses: softprops/action-gh-release@v1

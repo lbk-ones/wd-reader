@@ -83,6 +83,8 @@ jobs:
         run: |
           CGO_ENABLED=1 wails build -platform ${{ matrix.platform }} \
           -ldflags "-X main.version=${{ steps.normalise_version.outputs.version }}" -o wdreader
+          pwd
+          ls
 
       #      - name: Notarise macOS app + create dmg
       #        shell: bash
@@ -102,18 +104,20 @@ jobs:
         shell: bash
         working-directory: ./build
         run: |
-          mv bin/wdreader.app "bin/Wd Reader.app"
+          pwd
+          ls
+          mv bin/wdreader.app "bin/WdReader.app"
           ./create-dmg/create-dmg \
             --no-internet-enable \
-            --volname "Wd Reader" \
-            --volicon "bin/Wd Reader.app/Contents/Resources/iconfile.icns" \
+            --volname "WdReader" \
+            --volicon "bin/WdReader.app/Contents/Resources/iconfile.icns" \
             --background "dmg/background.tiff" \
             --text-size 12 \
             --window-pos 400 400 \
             --window-size 660 450 \
             --icon-size 80 \
-            --icon "Wd Reader.app" 180 180 \
-            --hide-extension "Wd Reader.app" \
+            --icon "WdReader.app" 180 180 \
+            --hide-extension "WdReader.app" \
             --app-drop-link 480 180 \
             --add-file "Repair" "dmg/fix-app" 230 290 \
             --add-file "损坏修复" "dmg/fix-app_zh" 430 290 \
