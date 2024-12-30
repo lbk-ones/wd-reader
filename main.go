@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	"github.com/wailsapp/wails/v2"
@@ -12,17 +13,19 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+var version string
 
 func main() {
+	fmt.Println(version)
 	// Create an instance of the app structure
 	app := NewApp()
 	server := NewServer()
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "look-txt",
+		Title:  "wd-reader",
 		Width:  400,
-		Height: 500,
+		Height: 600,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

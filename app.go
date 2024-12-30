@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"look-txt/go/BookUtils"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"wd-reader/go/BookUtils"
 )
 
 const (
@@ -76,6 +76,11 @@ func (a *App) GetAppPath() string {
 	fmt.Println("当前工作目录:", wd)
 	return wd
 }
+
+// GetVersion 获取版本
+func (a *App) GetVersion() string {
+	return version
+}
 func (a *App) GetServerUrl() string {
 
 	return `http://localhost` + HttpPort + "/"
@@ -102,13 +107,14 @@ func (a *App) GetBookList() string {
 	path, _ := os.Getwd()
 	bookPath := filepath.Join(path, BooksPath)
 
-	fileInfo, err := os.Stat(bookPath)
+	fileInfo, err := os.Stat(bookPath + string(filepath.Separator))
 	if os.IsNotExist(err) {
-		return BookUtils.WrapperException(err)
+		return BookUtils.WrapperExceptionStr(bookPath + "::目录不存在::" + err.Error())
 	}
 	if !fileInfo.IsDir() {
 		return BookUtils.WrapperExceptionStr(fmt.Sprint(bookPath + " is not a directory"))
 	}
+
 	strs := make([]string, 0)
 	dirFiles, err := os.ReadDir(bookPath)
 	if err != nil {

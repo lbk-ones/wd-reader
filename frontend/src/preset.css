@@ -19,6 +19,14 @@
     flex-flow: column wrap;
 }
 
+.gap5 {
+    gap: 5px;
+}
+
+.gap10 {
+    gap: 5px;
+}
+
 .flex-column-nowrap {
     flex-flow: column nowrap;
 }
@@ -34,6 +42,10 @@
 .flex-item {
     display: flex;
     flex-shrink: 0;
+}
+
+.align-item-center {
+    align-items: center;
 }
 
 /* 伸缩 */
@@ -56,6 +68,16 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 100vw;
+    height: 100vh;
+}
+
+.color-red {
+    color: red;
+}
+
+.zIndex108 {
+    z-index: 108;
 }
 
 .font-bold {
@@ -72,6 +94,22 @@
 
 .h-full {
     height: 100vh;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+.w-50 {
+    width: 50%;
+}
+
+.h-50 {
+    height: 50%;
 }
 
 .wh-full {
@@ -105,4 +143,28 @@
 
     user-select: none; /* Non-prefixed version, currently not supported by any browser */
 
+}
+
+.ml-5 {
+    margin-left: 5px;
+}
+
+.mr-5 {
+    margin-right: 5px;
+}
+
+.mt-5 {
+    margin-top: 5px;
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+.mb-5 {
+    margin-bottom: 5px;
+}
+
+.mb-4 {
+    margin-bottom: 4px;
 }

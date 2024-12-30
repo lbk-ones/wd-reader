@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
+import CsSVg from "./assets/images/cs.svg"
 import './App.css';
 import {
     Button,
@@ -15,13 +16,13 @@ import {
     Tooltip
 } from 'antd';
 import {generate, green, presetPalettes, red} from '@ant-design/colors';
-import {findIndex, get, isEmpty} from 'lodash-es'
+import {filter, findIndex, get, isEmpty, isEqual} from 'lodash-es'
 import classNames from "classnames"
 import {
     GetAppPath,
     GetBookList,
     GetChapterListByFileName,
-    GetServerUrl,
+    GetServerUrl, GetVersion,
     Greet,
     OpenFileDialog, ParseEpubToTxt
 } from "../wailsjs/go/main/App";
@@ -37,7 +38,13 @@ import {
     WindowReloadApp,
     WindowSetAlwaysOnTop
 } from "../wailsjs/runtime/runtime.js";
-import {CloseOutlined, ExclamationCircleOutlined, MinusOutlined, RedoOutlined} from "@ant-design/icons";
+import {
+    CloseOutlined, DatabaseOutlined, DisconnectOutlined,
+    ExclamationCircleOutlined,
+    MinusOutlined,
+    PushpinOutlined,
+    RedoOutlined, SettingOutlined
+} from "@ant-design/icons";
 
 function App() {
     const [display, setDisplay] = useState(true)
@@ -53,7 +60,7 @@ function App() {
         showProgress: window.localStorage.getItem('showProgress') || '0',
         isAlwaysTop: window.localStorage.getItem('isAlwaysTop') || '1',
         transparentMode: window.localStorage.getItem('transparentMode') || '0',
-        leaveWindowHid: window.localStorage.getItem('leaveWindowHid') || '1',
+        leaveWindowHid: window.localStorage.getItem('leaveWindowHid') || '0',
     })
 
     const [state, setState, getState] = useAllState({
@@ -68,11 +75,18 @@ function App() {
         fontColor: '#000',
         muluVisible: false,
         serverUrl: '',
-        loadingBook: false
+        loadingBook: false,
+        errorInfo: '',
+        version: ''
     })
     const [location, setLocation] = useState(0)
 
     useEffect(function () {
+        GetVersion().then(res => {
+            setState({
+                version: res
+            })
+        })
         isAlwaysTop(null)
         reloadBookList();
 
@@ -88,14 +102,13 @@ function App() {
             loadIngBookList: true
         })
         GetBookList().then(res => {
-            if (res.startsWith("错误信息:")) {
-                message.error(res);
+            if (!hasError(res)) {
+                setState({
+                    loadIngBookList: false,
+                    currentBookList: res.split("\n").map(e => e.trim()).filter(Boolean)
+                })
+                cb && cb()
             }
-            setState({
-                loadIngBookList: false,
-                currentBookList: res.split("\n").map(e => e.trim()).filter(Boolean)
-            })
-            cb && cb()
         });
     }
 
@@ -104,6 +117,19 @@ function App() {
             top: pageContentRef.current.clientHeight,
             behavior: 'smooth' // 平滑滚动，可根据需要设置
         });
+    }
+
+    function hasError(res, displayError = true) {
+        if (res.startsWith("错误信息:")) {
+            // message.error(res);
+            if (displayError) {
+                setState({
+                    errorInfo: res
+                })
+            }
+            return true;
+        }
+        return false;
     }
 
     function pageUp() {
@@ -115,18 +141,23 @@ function App() {
 
     function goChapterByName(fileName, chapterName, cb = null) {
         GetChapterListByFileName(fileName).then(res => {
-            let strings = res.split("\n");
-            let firstChapter = isEmpty(chapterName) ? get(strings, "[0]", "") : chapterName;
-            GetChapterContentByChapterName(fileName, firstChapter).then(chapterContent => {
-                window.localStorage.setItem(fileName, firstChapter)
-                setState({
-                    currentBookName: fileName,
-                    currentBookChapterList: strings,
-                    currentBookChapterName: firstChapter,
-                    currentBookChapterContent: chapterContent.split("\n")
+            if (!hasError(res)) {
+                let strings = res.split("\n");
+                let firstChapter = isEmpty(chapterName) ? get(strings, "[0]", "") : chapterName;
+                GetChapterContentByChapterName(fileName, firstChapter).then(chapterContent => {
+                    if (!hasError(chapterContent)) {
+                        window.localStorage.setItem(fileName, firstChapter)
+                        setState({
+                            currentBookName: fileName,
+                            currentBookChapterList: strings,
+                            currentBookChapterName: firstChapter,
+                            currentBookChapterContent: chapterContent.split("\n")
+                        })
+                    }
+                    cb && cb();
                 })
-                cb && cb();
-            })
+            }
+
 
         })
     }
@@ -134,7 +165,6 @@ function App() {
     function isAlwaysTop(_isAlwaysTop) {
 
         let isAlwaysTop = _isAlwaysTop ? _isAlwaysTop : getSettingState().isAlwaysTop;
-        console.log('getSettingState().isAlwaysTop--->', isAlwaysTop)
         if (isAlwaysTop === '1') {
             WindowSetAlwaysOnTop(true)
         } else {
@@ -283,10 +313,105 @@ function App() {
         // red,
         // green,
     });
+
+    function sortBookList() {
+        let currentBookList = getState().currentBookList;
+
+        if (!isEmpty(currentBookList)) {
+            let item = window.localStorage.getItem("LastClickBook") || "";
+            let first = [];
+            let last = [];
+            (item.split(",")).forEach(e => {
+                if (currentBookList.indexOf(e) >= 0) {
+                    first.push(e);
+                }
+            })
+            currentBookList.forEach(e => {
+                if (first.indexOf(e) < 0) {
+                    last.push(e);
+                }
+            })
+            return first.concat(last);
+        }
+
+        return currentBookList;
+    }
+
+    function getMenuSuffixBtn(type = "0") {
+
+        return (
+            <>
+                {
+                    type === '1' && (
+                        <SettingOutlined title={"设置！"}
+                                         onClick={() => {
+                                             setState({
+                                                 settingVisible: true
+                                             })
+                                         }}/>
+                    )
+                }
+
+                {
+                    type === '1' && (
+                        <DatabaseOutlined title={"返回书架！"}
+                                          onClick={() => {
+                                              reloadBookList(() => {
+                                                  setState({
+                                                      currentBookChapterName: '',
+                                                      currentBookName: '',
+                                                      currentBookChapterContent: [],
+                                                      currentBookChapterList: [],
+                                                  })
+
+                                              })
+                                          }}/>
+                    )
+                }
+                <DisconnectOutlined
+                    title={"隐藏自己！"}
+                    style={{color: getSettingState().leaveWindowHid === '1' ? 'gray' : 'unset'}}
+                    onClick={() => {
+                        let qf = getSettingState().leaveWindowHid === '1' ? '0' : '1';
+                        window.localStorage.setItem("leaveWindowHid", qf)
+                        setSettingState({
+                            leaveWindowHid: qf
+                        })
+                    }}
+                />
+                <PushpinOutlined
+                    title={"窗口置顶"}
+                    style={{color: getSettingState().isAlwaysTop === '1' ? 'gray' : 'unset'}}
+                    onClick={() => {
+                        let qf = getSettingState().isAlwaysTop === '1' ? '0' : '1';
+                        isAlwaysTop(qf)
+                        window.localStorage.setItem("isAlwaysTop", qf)
+                        setSettingState({
+                            isAlwaysTop: qf
+                        })
+                    }}/>
+                {
+                    type !== '1' && (
+                        <RedoOutlined title={"刷新"} onClick={() => {
+                            WindowReloadApp()
+                        }}/>
+                    )
+                }
+                <MinusOutlined onClick={() => {
+                    WindowMinimise();
+                }}/>
+                <CloseOutlined onClick={() => {
+                    Quit();
+                }}/>
+            </>
+
+        )
+    }
+
     return (
         <div id="App"
              style={{
-                 // border: display?"#ccc solid 1px":"none",
+                 //border: getSettingState().leaveWindowHid === '0' ? "2px solid #ccc" : "1px solid transparent",
                  backgroundColor: (display && isEmpty(getState().currentBookChapterName)) ? '#fff' : 'rgba(0,0,0,0)',
              }}
              onMouseOver={() => {
@@ -307,10 +432,13 @@ function App() {
             {
                 display && (getState().showTitle || isEmpty(getState().currentBookName)) && (
                     <div className={"title"}>
+
                         {
                             !isEmpty(getState().currentBookName) && (
-                                <div className={"title-div"} style={{"--wails-draggable": 'drag', display: 'flex', flex: 1}}
+                                <div className={"title-div font-bold"}
+                                     style={{"--wails-draggable": 'drag', display: 'flex', flex: 1}}
                                      title={getState().currentBookName.replace(".txt", "")}>
+                                    &nbsp;<img src={CsSVg} alt=""/>&nbsp;
                                     {
                                         `${getState().currentBookName.replace(".txt", "")}`
                                     }
@@ -320,10 +448,12 @@ function App() {
 
                         {
                             !isEmpty(getState().currentBookName) && (
-                                <div className={"title-div"} style={{justifyContent: 'flex-end'}}
+                                <div className={"title-div font-bold mr-5"}
+                                     style={{justifyContent: 'flex-end', gap: 3, fontSize: 20}}
                                      title={getState().currentBookChapterName}>
+
                                     {
-                                        `${getState().currentBookChapterName}`
+                                        getMenuSuffixBtn("1")
                                     }
                                 </div>
                             )
@@ -343,23 +473,25 @@ function App() {
                                         justifyContent: 'space-between',
                                         alignItems: 'center'
                                     }}>
-                                        <div style={{"--wails-draggable": 'drag', display: 'flex', flex: 'auto'}}>
-                                            上班偷看小说神器
+                                        <div style={{
+                                            "--wails-draggable": 'drag',
+                                            display: 'flex',
+                                            flex: 'auto',
+                                            alignItems: 'center',
+                                            gap: '2px'
+                                        }}>
+                                            <img src={CsSVg} alt=""/>
+                                            <span>上班偷看小说神器</span>
+                                            <span>{getState().version || '1.0'}</span>
                                         </div>
 
-                                        <div style={{display: "flex", flexFlow: 'row nowrap', gap: 5, fontSize: 20}}
+                                        <div style={{display: "flex", flexFlow: 'row nowrap', gap: 3, fontSize: 20}}
                                              onClick={(e) => {
                                                  e.stopPropagation()
                                              }}>
-                                            <RedoOutlined onClick={() => {
-                                                WindowReloadApp()
-                                            }}/>
-                                            <MinusOutlined onClick={() => {
-                                                WindowMinimise();
-                                            }}/>
-                                            <CloseOutlined onClick={() => {
-                                                Quit();
-                                            }}/>
+                                            {
+                                                getMenuSuffixBtn()
+                                            }
                                         </div>
 
                                     </div>
@@ -371,7 +503,7 @@ function App() {
                 )
             }
             {
-                isEmpty(state.currentBookChapterName) && display && (function () {
+                isEmpty(state.currentBookChapterName) && display && isEmpty(getState().errorInfo) && (function () {
                     if (getState().loadIngBookList) {
                         return (
                             <div className={"flex-center"}>加载中....</div>
@@ -392,38 +524,49 @@ function App() {
                             <div className="book-list">
                                 <ul className={"book-list-ul"}>
                                     {
-                                        getState().currentBookList.map((tem, index) => {
-                                            return <li className={"book-list-ul-li"} key={"book-list-ul-li" + index}
-                                                       title={tem} onClick={() => {
-                                                if (tem.endsWith("epub")) {
-                                                    setState({
-                                                        loadingBook: true
-                                                    })
-                                                    ParseEpubToTxt(tem).then(res => {
-                                                        if (res.startsWith("错误信息:")) {
-                                                            message.error(res)
-                                                        }
-
-                                                        let s = tem.replace(".epub", ".txt");
-                                                        let item = window.localStorage.getItem(tem);
-                                                        reloadBookList(() => {
-                                                            goChapterByName(s, item, () => {
-                                                                setState({
-                                                                    loadingBook: false
-                                                                })
-                                                                DeleteEpubFile(tem).then(res => {
-                                                                    console.log(res)
-                                                                })
-                                                            });
+                                        sortBookList()
+                                            .filter(Boolean)
+                                            .map((tem, index) => {
+                                                return <li className={classNames("book-list-ul-li", {
+                                                    "book-list-ul-li-active": (window.localStorage.getItem("LastClickBook") || "").split(",").indexOf(tem) === 0
+                                                })}
+                                                           key={"book-list-ul-li" + index}
+                                                           title={tem} onClick={() => {
+                                                    let item1 = window.localStorage.getItem("LastClickBook") || "";
+                                                    if (item1) {
+                                                        item1 = [tem, ...((item1.replace(tem, "")).split(","))].join(",")
+                                                    }
+                                                    window.localStorage.setItem("LastClickBook", item1);
+                                                    if (tem.endsWith("epub")) {
+                                                        setState({
+                                                            loadingBook: true
                                                         })
+                                                        ParseEpubToTxt(tem).then(res => {
+                                                            if (res.startsWith("错误信息:")) {
+                                                                message.error(res)
+                                                            }
 
-                                                    })
-                                                } else {
-                                                    let item = window.localStorage.getItem(tem);
-                                                    goChapterByName(tem, item);
-                                                }
-                                            }}>{tem}</li>
-                                        })
+                                                            let s = tem.replace(".epub", ".txt");
+                                                            let item = window.localStorage.getItem(tem);
+                                                            reloadBookList(() => {
+                                                                goChapterByName(s, item, () => {
+                                                                    setState({
+                                                                        loadingBook: false
+                                                                    })
+                                                                    DeleteEpubFile(tem).then(res => {
+                                                                        // hasError(tem)
+                                                                        console.log(res)
+                                                                    })
+                                                                });
+                                                            })
+
+                                                        })
+                                                    } else {
+                                                        let item = window.localStorage.getItem(tem);
+                                                        goChapterByName(tem, item);
+                                                    }
+                                                }}>{tem}</li>
+                                            })
                                     }
                                 </ul>
 
@@ -468,8 +611,16 @@ function App() {
                     >
                         <div id={"book-content-div-top"} style={{width: '100%', height: '1px'}} ref={topRef}></div>
                         {
+                            !isEmpty(getState().currentBookChapterName) && (
+                                <p className={"mb-10 font-bold"}>
+                                    {getState().currentBookChapterName || ''}
+                                </p>
+                            )
+                        }
+
+                        {
                             getState().currentBookChapterContent.map(res => {
-                                return <p>
+                                return <p className={"mb-5"}>
                                     {res}
                                 </p>
                             })
@@ -512,14 +663,14 @@ function App() {
                                 layout={"horizontal"}
                                 name="basic"
                                 labelCol={{
-                                    span: 8,
-                                    xs: 8,
-                                    sm: 8
+                                    span: 9,
+                                    xs: 9,
+                                    sm: 9
                                 }}
                                 wrapperCol={{
-                                    span: 16,
-                                    xs: 16,
-                                    sm: 16,
+                                    span: 15,
+                                    xs: 15,
+                                    sm: 15,
                                 }}
                                 initialValues={{
                                     layout: "horizontal",
@@ -859,6 +1010,22 @@ function App() {
                 )
             }
             <Spin spinning={getState().loadingBook} tip={"加载中。。"} fullscreen/>
+
+            {
+                getState().errorInfo && (
+                    <div className={'fixed-txt-center color-red zIndex108'}>
+                        <div className={"flex flex-column gap5 w-full align-item-center"}>
+                            <span>{getState().errorInfo}</span>
+                            <Button size={"small"} className={'w-50'} onClick={() => {
+                                setState({
+                                    errorInfo: ""
+                                })
+                            }}>知道了</Button>
+                        </div>
+                    </div>
+                )
+            }
+            <div></div>
             {/*</Spin>*/}
         </div>
     )

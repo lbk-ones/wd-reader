@@ -1,4 +1,4 @@
-module look-txt
+module wd-reader
 
 go 1.21
 

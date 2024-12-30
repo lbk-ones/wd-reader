@@ -26,6 +26,10 @@ export function GetServerUrl() {
   return window['go']['main']['App']['GetServerUrl']();
 }
 
+export function GetVersion() {
+  return window['go']['main']['App']['GetVersion']();
+}
+
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }

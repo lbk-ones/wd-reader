@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/look-txt.iml" filepath="$PROJECT_DIR$/.idea/look-txt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/wd-reader.iml" filepath="$PROJECT_DIR$/.idea/wd-reader.iml" />
     </modules>
   </component>
 </project>

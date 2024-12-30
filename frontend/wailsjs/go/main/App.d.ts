@@ -13,6 +13,8 @@ export function GetChapterListByFileName(arg1:string):Promise<string>;
 
 export function GetServerUrl():Promise<string>;
 
+export function GetVersion():Promise<string>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function OpenFileDialog():Promise<string>;
