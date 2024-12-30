@@ -1,0 +1,108 @@
+
+.flex {
+    display: flex;
+}
+
+.flex-row {
+    flex-flow: row wrap;
+}
+
+.no-shrink {
+    flex-shrink: 0;
+}
+
+.shrink-1 {
+    flex-shrink: 1;
+}
+
+.flex-column {
+    flex-flow: column wrap;
+}
+
+.flex-column-nowrap {
+    flex-flow: column nowrap;
+}
+
+.flex-row-nowrap {
+    flex-flow: row nowrap;
+}
+
+.flex-container {
+    display: flex;
+}
+
+.flex-item {
+    display: flex;
+    flex-shrink: 0;
+}
+
+/* 伸缩 */
+.flex-basic {
+    flex-basis: 1%;
+}
+
+.justify-b {
+    justify-content: space-between;
+}
+
+.justify-r {
+    justify-content: space-around;
+}
+
+.fixed-txt-center {
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.font-bold {
+    font-weight: bold;
+}
+
+.font-bolder {
+    font-weight: bolder;
+}
+
+.w-full {
+    width: 100vw;
+}
+
+.h-full {
+    height: 100vh;
+}
+
+.wh-full {
+    width: 100vw;
+    height: 100vh;
+}
+
+.border-transparent-1 {
+    border: 1px solid transparent;
+}
+
+.cursor-point {
+
+}
+
+.cursor-point:hover {
+    cursor: pointer;
+}
+
+.no-select {
+
+    -webkit-touch-callout: none; /* iOS Safari */
+
+    -webkit-user-select: none; /* Chrome/Safari/Opera */
+
+    -khtml-user-select: none; /* Konqueror */
+
+    -moz-user-select: none; /* Firefox */
+
+    -ms-user-select: none; /* Internet Explorer/Edge */
+
+    user-select: none; /* Non-prefixed version, currently not supported by any browser */
+
+}
