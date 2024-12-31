@@ -86,11 +86,11 @@ jobs:
           -webview2 embed \
           -ldflags "-X main.version=${{ steps.normalise_version.outputs.version }}" \
           -o wdreader.exe
-          mkdir build/books
+          mkdir build/bin/books
 
       - name: Compress portable binary
         working-directory: ./build/bin
-        run: Compress-Archive -Path books,wdreader.exe "WdReader_Portable_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip"
+        run: Compress-Archive -Path "../books","wdreader.exe" "WdReader_Portable_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip"
 
       - name: Upload release asset (Portable)
         uses: softprops/action-gh-release@v1
