@@ -522,7 +522,9 @@ function App() {
                                 fontSize: 18,
                                 padding: 20,
                                 color: 'darkred'
-                            }}>未检索到文件列表,请将（txt、epub）格式文件放到{getState().booksPath}下面</div>
+                            }}><span
+                                className={"shrink-1"}>未读取到文件，文件目录为:{getState().booksPath}</span>
+                            </div>
                         );
                     }
                     if (!getState().loadIngBookList && !isEmpty(getState().currentBookList)) {
@@ -633,16 +635,17 @@ function App() {
                         }
 
                         <div className={"book-content-div-footer-btn"}>
-                            <Button size={"small"} onClick={(e) => {
+                            <Button type="link" size={"small"} onClick={(e) => {
                                 e.stopPropagation();
                                 lastChpater();
                             }}>上一章</Button>
-                            <Button size={"small"} onClick={(e) => {
+                            <Button type="link" size={"small"} onClick={(e) => {
                                 e.stopPropagation();
                                 nextChpater();
                             }}>下一章</Button>
-                            <span
-                                className={'book-content-div-footer-btn-txt'}>下一章: &nbsp;{getState().currentBookChapterList[findIndex(getState().currentBookChapterName) + 1] || "无"}</span>
+                            <div
+                                className={'book-content-div-footer-btn-txt text-overflow-dot'} title={"下一章"}
+                                style={{width: "120px"}}>{getState().currentBookChapterList[findIndex(getState().currentBookChapterName) + 1] || "无"}</div>
                         </div>
                         <ContextMenu options={options} onSelect={handleSelect}/>
                     </div>

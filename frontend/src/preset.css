@@ -168,3 +168,10 @@
 .mb-4 {
     margin-bottom: 4px;
 }
+
+.text-overflow-dot {
+    display: block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}

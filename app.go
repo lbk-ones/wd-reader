@@ -65,7 +65,7 @@ func (a *App) GetAppPath() string {
 
 // GetBooksPath 获取books的目录
 func (a *App) GetBooksPath() string {
-	return filepath.Join(BookUtils.GetAppPath() + constant.BOOK_PATH)
+	return filepath.Join(BookUtils.GetAppPath(), constant.BOOK_PATH)
 }
 
 // GetVersion 获取版本
