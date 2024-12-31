@@ -1,22 +1,23 @@
 import {useEffect, useRef, useState} from 'react';
+import pinyin from 'pinyin'
 import CsSVg from "./assets/images/cs.svg"
 import './App.css';
 import {
     Button,
     Checkbox,
-    ColorPicker,
+    ColorPicker, Drawer,
     Form,
     Input,
     InputNumber,
-    message,
-    Popover,
+    message, notification,
+    Popover, Space,
     Spin, Statistic,
     Switch,
     theme,
     Tooltip
 } from 'antd';
 import {generate, green, presetPalettes, red} from '@ant-design/colors';
-import {filter, findIndex, get, isEmpty, isEqual} from 'lodash-es'
+import {filter, findIndex, get, isEmpty, isEqual, trim} from 'lodash-es'
 import classNames from "classnames"
 import {
     GetAppPath,
@@ -24,14 +25,15 @@ import {
     GetChapterListByFileName,
     GetServerUrl, GetVersion,
     Greet,
-    OpenFileDialog, ParseEpubToTxt, GetBooksPath
+    OpenFileDialog, ParseEpubToTxt, GetBooksPath, AddFile
 } from "../wailsjs/go/main/App";
 import {DeleteEpubFile, GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
 import useAllState from "./components/lib/hooks/UseAllState.jsx";
 import ContextMenu from "./components/ContextMenu.jsx";
 import {SketchPicker} from "react-color";
 import {
-    Hide,
+    BrowserOpenURL,
+    Hide, OnFileDrop, OnFileDropOff,
     Quit,
     WindowMinimise,
     WindowReload,
@@ -40,7 +42,7 @@ import {
 } from "../wailsjs/runtime/runtime.js";
 import {
     CloseOutlined, DatabaseOutlined, DisconnectOutlined,
-    ExclamationCircleOutlined,
+    ExclamationCircleOutlined, LineOutlined,
     MinusOutlined, PlusOutlined,
     PushpinOutlined,
     RedoOutlined, SettingOutlined
@@ -50,6 +52,8 @@ function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
     let topRef = useRef(null);
+
+    const [api, contextHolder] = notification.useNotification();
 
     const [settingState, setSettingState, getSettingState] = useAllState({
         fontColor: window.localStorage.getItem('fontColor') || '#000',
@@ -64,7 +68,7 @@ function App() {
     })
 
     const [state, setState, getState] = useAllState({
-        bookList: [],
+        currentBookList:[],
         currentBookName: "",
         currentBookChapterList: [],
         currentBookChapterName: "",
@@ -76,11 +80,54 @@ function App() {
         muluVisible: false,
         serverUrl: '',
         loadingBook: false,
+        loadingBookTip: "加载中。。",
         errorInfo: '',
         version: '',
-        booksPath: ''
+        booksPath: '',
+        downloadFromUrlVisible:false,
+        downloadFromUrlList:[null],
     })
-    const [location, setLocation] = useState(0)
+
+
+    function handlerAddFileRes(res,list){
+        if(!hasError(res)){
+            console.log(res)
+            try{
+                let parse = JSON.parse(res);
+                let entries = Object.entries(parse);
+                console.log('entryis',entries)
+                let errorLength = entries.length;
+                let allLength = list.length;
+                entries.forEach((value, index, array) =>{
+                    let key = value[0];
+                    let Value = value[1];
+                    api.info({
+                        message: key,
+                        description: `${Value}`,
+                        placement:"bottomRight"
+                    });
+                })
+                setState({
+                    loadIngBook:true,
+                    loadingBookTip:"加载中。。",
+                })
+                reloadBookList();
+                message.info("共成功:"+(allLength-errorLength)+"份文件")
+            }catch (e){
+
+            }
+        }
+    }
+
+    function AddFleAndHandlerRes(paths) {
+        setState({
+            loadIngBook:true,
+            loadingBookTip:"解析中。。",
+        })
+        AddFile(paths).then(res => {
+            handlerAddFileRes(res, paths);
+        })
+    }
 
     useEffect(function () {
         GetVersion().then(res => {
@@ -101,21 +148,57 @@ function App() {
                 serverUrl: res
             })
         })
+        OnFileDrop(function (x,y,paths){
+            // console.log('paths--->',paths)
+            // message.info(JSON.stringify(paths))
+            AddFleAndHandlerRes(paths);
+
+        },true)
+
+        return ()=>{
+            OnFileDropOff()
+        }
     }, [])
 
     function reloadBookList(cb = null) {
         setState({
-            loadIngBookList: true
+            loadIngBook: true
         })
         GetBookList().then(res => {
             if (!hasError(res)) {
                 setState({
-                    loadIngBookList: false,
+                    loadIngBook: false,
                     currentBookList: res.split("\n").map(e => e.trim()).filter(Boolean)
                 })
+
                 cb && cb()
+            }else{
+                setState({
+                    loadIngBook:false
+                })
             }
         });
+    }
+
+
+    function convertToInitials(arr) {
+        return arr.map(item => {
+            // 使用 pinyin 库将中文转换为拼音
+            const pinyinArray = pinyin(item, {
+                style: pinyin.STYLE_FIRST_LETTER  // 只取首字母
+            });
+            // 将拼音数组转换为字符串
+            const initials = pinyinArray.map(letterArray => letterArray[0]).join('');
+            return {
+                name: item,
+                initials: initials.toLowerCase()
+            };
+        });
+    }
+
+    function searchByInitials(query, data) {
+        const convertedData = convertToInitials(data);
+        return convertedData.filter(item => item.initials.startsWith(query));
     }
 
     function pageDown() {
@@ -133,6 +216,11 @@ function App() {
                     errorInfo: res
                 })
             }
+            api.info({
+                message: `提示`,
+                description: `${res}`,
+                placement:"bottomRight"
+            });
             return true;
         }
         return false;
@@ -418,6 +506,14 @@ function App() {
         )
     }
 
+    function clickBookToFirst(tem) {
+        let item1 = window.localStorage.getItem("LastClickBook") || tem;
+        if (item1) {
+            item1 = [tem, ...((item1.replace(tem, "")).split(","))].filter(Boolean).join(",")
+        }
+        window.localStorage.setItem("LastClickBook", item1);
+    }
+
     return (
         <div id="App"
              style={{
@@ -526,119 +622,177 @@ function App() {
             }
             {
                 isEmpty(state.currentBookChapterName) && display && isEmpty(getState().errorInfo) && (function () {
-                    if (getState().loadIngBookList) {
-                        return (
-                            <div className={"flex-center"}>加载中....</div>
-                        )
-                    }
-                    if (!getState().loadIngBookList && isEmpty(getState().currentBookList)) {
-
-                        return (
-                            <div className={"flex-center"} style={{
-                                fontSize: 18,
-                                padding: 20,
-                                color: 'darkred'
-                            }}><span
-                                className={"shrink-1"}>未读取到文件，文件目录为:{getState().booksPath}</span>
-                            </div>
-                        );
-                    }
-                    if (!getState().loadIngBookList && !isEmpty(getState().currentBookList)) {
-                        return (
-                            <div className="book-list">
-                                <ul className={"book-list-ul flex flex-column-nowrap"}>
-                                    <div className="book-list-top-box">
-                                        <div className={"add-book"}>
-                                            <PlusOutlined/>
-                                        </div>
-                                        <div className={"search-box"}>
-                                            <Input placeholder={"搜索"} style={{
-                                                width: '100%',
-                                                marginTop: "10px",
-                                                // borderBottom: "1px solid #ccc",
-                                                borderRadius: 'none'
-                                            }}/>
-
-                                            <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
-
-                                        </div>
-                                    </div>
-                                    <div className={"flex-auto"}>
-                                        <div className={"w-100 h-100 over-y-auto"}>
-                                            {
-                                                sortBookList()
-                                                    .filter(Boolean)
-                                                    .map((tem, index) => {
-                                                        return <li className={classNames("book-list-ul-li", {
-                                                            "book-list-ul-li-active": (window.localStorage.getItem("LastClickBook") || "").split(",").indexOf(tem) === 0
-                                                        })}
-                                                                   key={"book-list-ul-li" + index}
-                                                                   title={tem} onClick={() => {
-                                                            let item1 = window.localStorage.getItem("LastClickBook") || tem;
-                                                            if (item1) {
-                                                                item1 = [tem, ...((item1.replace(tem, "")).split(","))].join(",")
-                                                            }
-                                                            setState({
-                                                                loadingBook: true
-                                                            })
-                                                            window.localStorage.setItem("LastClickBook", item1);
-                                                            if (tem.endsWith("epub")) {
-
-                                                                ParseEpubToTxt(tem).then(res => {
-                                                                    if (res.startsWith("错误信息:")) {
-                                                                        message.error(res)
-                                                                    }
-
-                                                                    let s = tem.replace(".epub", ".txt");
-                                                                    let item = window.localStorage.getItem(tem);
-                                                                    reloadBookList(() => {
-                                                                        goChapterByName(s, item, () => {
-                                                                            setState({
-                                                                                loadingBook: false
-                                                                            })
-                                                                            DeleteEpubFile(tem).then(res => {
-                                                                                // hasError(tem)
-                                                                                console.log(res)
-                                                                            })
-                                                                        });
-                                                                    })
-
-                                                                })
-                                                            } else {
-                                                                let item = window.localStorage.getItem(tem);
-                                                                goChapterByName(tem, item, () => {
-                                                                    setState({
-                                                                        loadingBook: false
-                                                                    })
-                                                                });
-                                                            }
-                                                        }}>{tem}</li>
-                                                    })
-                                            }
-                                        </div>
-
-                                    </div>
-
-                                    <li className={'book-list-ul-li no-shrink'} style={{
-                                        position: 'sticky',
-                                        bottom: 0,
-                                        backgroundColor: '#fff',
-                                        color: "darkred",
-                                        borderTop: '1px solid rgba(204, 204, 204, 0.32)',
-                                        // borderBottom: '1px solid #ccc',
+                    // if (!getState().loadIngBookList && isEmpty(getState().currentBookList)) {
+                    //
+                    //     return (
+                    //         <div className={"flex-center"} style={{
+                    //             fontSize: 18,
+                    //             padding: 20,
+                    //             color: 'darkred'
+                    //         }}><span
+                    //             className={"shrink-1"}>未读取到文件，文件目录为:{getState().booksPath}</span>
+                    //         </div>
+                    //     );
+                    // }
+                    return (
+                        <div className="book-list">
+                            <ul className={"book-list-ul flex flex-column-nowrap"}>
+                                <div className="book-list-top-box">
+                                    <div className={"add-book"} title={"添加文件，右键更多功能"} style={{
+                                        "--wails-drop-target":"drop"
+                                    }} onClick={()=>{
+                                        OpenFileDialog().then(r => {
+                                            AddFleAndHandlerRes([r]);
+                                        })
                                     }}>
+                                        <PlusOutlined/>
+
+                                        <ContextMenu
+                                            fontSize={16}
+                                            options={
+                                                [{label: 'URL下载'},
+                                                {label: '去下载'}]}
+                                            onSelect={function (option){
+                                                if(option.label === 'URL下载') {
+                                                    setState({
+                                                        downloadFromUrlVisible:true
+                                                    })
+                                                }else if(option.label === '去下载'){
+                                                    BrowserOpenURL("https://zh.opendelta.org/")
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div className={"search-box"}>
+                                        <Input.Search allowClear={true} placeholder={"搜索"} style={{
+                                            width: '100%',
+                                            // borderBottom: "1px solid #ccc",
+                                            borderRadius: 'none'
+                                        }}
+                                               onSearch={(_value,e)=>{
+                                                   let value = trim(_value)
+                                                   reloadBookList(()=>{
+                                                       if(!value){
+                                                          return
+                                                       }
+                                                       let searchByInitials1 = searchByInitials(value.toLowerCase(),getState().currentBookList);
+                                                       let searchSuccess = false;
+                                                       if(!isEmpty(searchByInitials1)) {
+                                                           searchSuccess  = true;
+                                                           searchByInitials1.forEach(et=>{
+                                                               clickBookToFirst(et.name)
+                                                           })
+                                                       }else {
+                                                           let filter1 = filter(getState().currentBookList, e=>e.indexOf(value)>=0);
+                                                           searchSuccess = !isEmpty(filter1);
+                                                           filter1.forEach(e=>{
+                                                               clickBookToFirst(e)
+                                                           })
+                                                       }
+                                                       if(searchSuccess){
+                                                           message.success("查询到列表，已经置顶")
+                                                       }else{
+                                                           message.success("未查询到列表")
+                                                       }
+                                                   })
+
+                                               }}
+                                        />
+
+                                        <div className={"flex flex-row gap10 align-item-center"}>
+                                            <Statistic title="正在阅读" value={ (window.localStorage.getItem("LastClickBook") || "").split(",").length + "本"}/>
+                                            <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <div className={"flex-auto"}>
+                                    <div className={"w-100 h-100 over-y-auto"}>
                                         {
-                                            ["没有人比我更懂你的需求😀", "加油吧打工人💪", "打工人，轻松一下😊", "Life Is Fucking Move!😞", "什么时候才能不为了一日三餐奔波啊✿"][parseInt(Math.random() * 4)]
+                                            sortBookList()
+                                                .filter(Boolean)
+                                                .map((tem, index) => {
+                                                    return <li className={classNames("book-list-ul-li", {
+                                                        "book-list-ul-li-active": (window.localStorage.getItem("LastClickBook") || "").split(",").indexOf(tem) === 0
+                                                    })}
+                                                               key={"book-list-ul-li" + index}
+                                                               title={tem} onClick={() => {
+
+                                                        clickBookToFirst(tem);
+                                                        setState({
+                                                            loadingBook: true
+                                                        })
+                                                        if (tem.endsWith("epub")) {
+
+                                                            ParseEpubToTxt(tem).then(res => {
+                                                                if (res.startsWith("错误信息:")) {
+                                                                    message.error(res)
+                                                                }
+
+                                                                let s = tem.replace(".epub", ".txt");
+                                                                let item = window.localStorage.getItem(tem);
+                                                                reloadBookList(() => {
+                                                                    goChapterByName(s, item, () => {
+                                                                        setState({
+                                                                            loadingBook: false
+                                                                        })
+                                                                        DeleteEpubFile(tem).then(res => {
+                                                                            // hasError(tem)
+                                                                            console.log(res)
+                                                                        })
+                                                                    });
+                                                                })
+
+                                                            })
+                                                        } else {
+                                                            let item = window.localStorage.getItem(tem);
+                                                            goChapterByName(tem, item, () => {
+                                                                setState({
+                                                                    loadingBook: false
+                                                                })
+                                                            });
+                                                        }
+                                                    }}>{tem}</li>
+                                                })
                                         }
+                                    </div>
+
+                                </div>
+
+                                <li className={'book-list-ul-li flex align-item-center no-shrink'} style={{
+                                    width:'100%',
+                                    justifyContent:'space-between',
+                                    position: 'sticky',
+                                    bottom: 0,
+                                    backgroundColor: '#fff',
+                                    color: "darkred",
+                                    borderTop: '1px solid rgba(204, 204, 204, 0.32)',
+                                    // borderBottom: '1px solid #ccc',
+                                }}>
+                                    <span>
+                                    {
+                                        ["没有人比我更懂你的需求😀", "加油吧打工人💪", "打工人，轻松一下😊", "Life Is A Fucking Move!😞", "什么时候才能不为了一日三餐奔波啊✿"][parseInt(Math.random() * 4)]
+                                    }
+                                    </span>
 
 
-                                    </li>
-                                </ul>
 
-                            </div>
+                                    <SettingOutlined style={{
+                                        fontSize:'20px',
+                                        paddingRight:'5px'
+                                    }}  title={"设置！"}
+                                                     onClick={() => {
+                                                         setState({
+                                                             settingVisible: true
+                                                         })
+                                                     }}/>
 
-                        )
-                    }
+                                </li>
+                            </ul>
+
+                        </div>
+
+                    )
                 })()
             }
 
@@ -690,11 +844,11 @@ function App() {
 
                                         if (res && res.trim()) {
                                             if (index === 0 && res !== getState().currentBookChapterName) {
-                                                return <p className={"mb-5"}>
+                                                return <p key={"mulu-li"+index} className={"mb-5"}>
                                                     {res.trim()}
                                                 </p>
                                             } else if (index > 0) {
-                                                return <p className={"mb-5"}>
+                                                return <p key={"mulu-li"+index} className={"mb-5"}>
                                                     {res.trim()}
                                                 </p>
                                             }
@@ -1100,7 +1254,7 @@ function App() {
                     </ul>
                 </div>
             </div>
-            <Spin spinning={getState().loadingBook} tip={"加载中。。"} fullscreen/>
+            <Spin spinning={getState().loadingBook} tip={getState().loadingBookTip} fullscreen/>
 
             {
                 getState().errorInfo && (
@@ -1116,8 +1270,85 @@ function App() {
                     </div>
                 )
             }
-            <div></div>
+
+
+            <Drawer
+                title="从链接中下载"
+                placement={"top"}
+                width={500}
+                onClose={function (){
+                    setState({
+                        downloadFromUrlVisible:false
+                    })
+                }}
+                open={getState().downloadFromUrlVisible}
+                extra={
+                    <Space>
+                        <Button onClick={(e)=>{
+                            message.info("已取消操作")
+                            setState({
+                                downloadFromUrlVisible:false
+                            })
+                        }}>取消</Button>
+                        <Button type="primary" onClick={(e)=>{
+                            let filter1 = getState().downloadFromUrlList.filter(Boolean);
+                            console.log('filter1--->',filter1)
+                            if(isEmpty(filter1)){
+                                message.error("请输入要下载的地址在提交")
+                            }else{
+                                AddFleAndHandlerRes(filter1);
+
+                            }}}
+                        >
+                            提交
+                        </Button>
+                    </Space>
+                }
+            >
+                <p className={"mb-5"}>
+                    <Space>
+                        <Button onClick={(e)=>{
+                            let downloadFromUrlList = getState().downloadFromUrlList;
+                            downloadFromUrlList.push(null)
+                            setState({
+                                downloadFromUrlList
+                            })
+                        }}><PlusOutlined/></Button>
+
+                        <Button onClick={(e)=>{
+                            let downloadFromUrlList = getState().downloadFromUrlList;
+                            if(downloadFromUrlList.length>1) {
+                                downloadFromUrlList.pop()
+                                setState({
+                                    downloadFromUrlList
+                                })
+                            }
+
+                        }}><LineOutlined /></Button>
+                    </Space>
+
+                </p>
+
+                <div className="flex flex-column-nowrap gap5">
+                    {
+                        getState().downloadFromUrlList.map((ite,index)=>{
+                            return <Input key={"downloadFromUrlList-"+index} style={{width:'100%'}} onChange={(e)=>{
+                                let value = e.target.value;
+                                let downloadFromUrlList = getState().downloadFromUrlList;
+                                downloadFromUrlList[index] = value
+                                setState({
+                                    downloadFromUrlList
+                                })
+                            }} placeHolder={"请输入地址"}/>
+                        })
+                    }
+                </div>
+
+
+            </Drawer>
             {/*</Spin>*/}
+
+            {contextHolder}
         </div>
     )
 }

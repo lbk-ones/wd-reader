@@ -61,8 +61,8 @@ func main() {
 				Message: "WdReader \n\nCopyright © 2024",
 				Icon:    icon,
 			},
-			WebviewIsTransparent: false,
-			WindowIsTranslucent:  false,
+			WebviewIsTransparent: true,
+			WindowIsTranslucent:  true,
 		},
 		Linux: &linux.Options{
 			ProgramName:         constant.APP_NAME,

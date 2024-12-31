@@ -3,8 +3,9 @@ package constant
 import "regexp"
 
 const (
-	BOOK_PATH = "books"
-	APP_NAME  = "WdReader"
+	BOOK_PATH    = "books"
+	APP_NAME     = "WdReader"
+	ERROR_PREFIX = "错误信息:"
 )
 
 var (

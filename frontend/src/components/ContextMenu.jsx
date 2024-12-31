@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import "./ContextMenu.css"
 
-const ContextMenu = ({options, onSelect}) => {
+const ContextMenu = ({options, onSelect,fontSize}) => {
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
     const menuRef = useRef(null);
@@ -48,6 +48,7 @@ const ContextMenu = ({options, onSelect}) => {
             {options.map((option, index) => (
                 <div
                     key={index}
+                    title={option.label}
                     className={'context-optional'}
                     style={{
                         cursor: 'pointer',
@@ -59,6 +60,17 @@ const ContextMenu = ({options, onSelect}) => {
                         whiteSpace: 'nowrap',
                         textAlign: 'center',
                         textIndent: 0,
+                        ...(function (){
+
+                            if(fontSize){
+                                return  {
+                                    fontSize
+                                }
+                            }
+                            return {
+
+                            }
+                        })()
                     }}
                     onClick={(e) => {
                         e.preventDefault();

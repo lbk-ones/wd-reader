@@ -6,7 +6,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
 	"path/filepath"
-	"strings"
 	"wd-reader/go/BookUtils"
 	"wd-reader/go/constant"
 )
@@ -95,134 +94,29 @@ func (a *App) DeleteEpubFile(filename string) string {
 
 // GetBookList 获取文件列表
 func (a *App) GetBookList() string {
-	BookUtils.CheckBooksPath()
-	path := BookUtils.GetAppPath()
-	bookPath := filepath.Join(path, constant.BOOK_PATH)
-	strs := make([]string, 0)
-	dirFiles, err := os.ReadDir(bookPath)
-	if err != nil {
-		return BookUtils.WrapperException(err)
-	}
-	for _, file := range dirFiles {
-		name := file.Name()
-
-		if strings.HasSuffix(name, ".txt") || strings.HasSuffix(name, ".epub") {
-			// 只处理 txt 和 epub
-			strs = append(strs, name)
-		}
-	}
-	return strings.Join(strs, "\n")
+	return BookUtils.GetBookListExtract()
 }
 
 // GetChapterListByFileName 传入文件名称获取文件章节或者卷列表
 func (a *App) GetChapterListByFileName(_fileName string) string {
-	path := BookUtils.GetAppPath()
-	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
-	if strings.HasSuffix(fileName, ".txt") {
-		strs := make([]string, 0)
-		// 判断文件是否存在
-		_, err := os.Stat(fileName)
-		if os.IsNotExist(err) {
-			return BookUtils.WrapperException(err)
-		}
-		file, err := os.Open(fileName)
-		if err != nil {
-			return BookUtils.WrapperException(err)
-		}
-		defer file.Close()
-		scanner := BookUtils.GetScanner(fileName, file)
-		unique := make(map[string]struct{})
-		var index int = 0
-		var lstIndex int = -3
-		for scanner.Scan() {
-			text := scanner.Text()
-			prefix := strings.HasPrefix(text, "  ")
-			if prefix {
-				continue
-			}
-			line := strings.TrimSpace(text)
-			if line == "" {
-				continue
-			}
-			index++
-			lineLen := len(line)
-			findString := constant.RegChapter.FindString(line)
-			b := lstIndex+1 == index
-			if findString != "" && !b && lineLen < 50 {
-				replaceNonSpace := strings.Replace(line, " ", "", -1)
-				if _, exists := unique[replaceNonSpace]; !exists {
-					unique[replaceNonSpace] = struct{}{}
-					strs = append(strs, line)
-					lstIndex = index
-				}
-			}
-		}
-		return strings.Join(strs, "\n")
-	}
-	return ""
+	return BookUtils.GetChapterListByFileNameExtract(_fileName)
 }
 
 // GetChapterContentByChapterName 根据传入文件名和章节名称来获取这一章节的内容
 func (a *App) GetChapterContentByChapterName(_fileName string, chapterName string) string {
-	path := BookUtils.GetAppPath()
-	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
-	_, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return BookUtils.WrapperException(err)
-	}
-	file, err := os.Open(fileName)
-	if err != nil {
-		return BookUtils.WrapperException(err)
-	}
-	if chapterName == "" {
-		return BookUtils.WrapperExceptionStr(fileName + " is not a chapter name")
-	}
-	defer file.Close()
-	scanner := BookUtils.GetScanner(fileName, file)
-	var strs []string
-	var start bool
-	lastLineNoAllSpace := strings.Replace(chapterName, " ", "", -1)
-	chapterNameNoSpace := strings.TrimSpace(chapterName)
-	var index int = 0
-	var lstIndex int = 0
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-		lineNoAllSpace := strings.Replace(line, " ", "", -1)
-		index++
-		// 开始记录 跳过标题
-		if line == chapterNameNoSpace && !start {
-			start = true
-			lstIndex = index
-			continue
-		}
-		// 碰到下一个结束标识符
-		// 因为有些文本有重复章节名称 且除了空格都一样 所以这里要 去掉空格之后 再去比较 不等于才退出
-		findString := constant.RegChapter.FindString(line)
-		// 两行临近这种也不记录 可能是错误的文本校准 只有文本相同了才跳过
-		// 不跳过
-		if start {
-			if findString != "" {
-				// 第二行重复跳出
-				b := lstIndex+1 == index && lastLineNoAllSpace == lineNoAllSpace
-				if b {
-					continue
-				}
-				// 第二行不重复 直接跳出
-				b2 := index > lstIndex+1
-				if b2 {
-					break
-				}
-			}
-		}
-		if start {
-			strs = append(strs, line)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return BookUtils.WrapperExceptionStr(fmt.Sprintln(fmt.Errorf("error while scanning file: %w", err)))
-	}
-	return strings.Join(strs, "\n")
+	return BookUtils.GetChapterContentByChpaterNameExtract(_fileName, chapterName)
+}
+
+// AddFile 添加文件
+func (*App) AddFile(name []string) string {
+	var str string
+	str = BookUtils.TransferFileFromFileSys(name)
+	return str
+}
+
+// DeleteFile 删除文件
+func (*App) DeleteFile(name string) string {
+	var str string
+	str = BookUtils.DeleteFile(name)
+	return str
 }
