@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"wd-reader/go/BookUtils"
+	"wd-reader/go/constant"
 )
 
 const (
@@ -34,8 +35,8 @@ func (a *Server) startup(ctx context.Context) {
 	//	fmt.Fprintf(w, "Hello, World!")
 	//}
 
-	dir, _ := os.Getwd()
-	join := filepath.Join(dir, BooksPath)
+	dir := BookUtils.GetAppPath()
+	join := filepath.Join(dir, constant.BOOK_PATH)
 	fmt.Println("资源目录", join)
 	//fileServer := http.FileServer(http.Dir(join))
 	// 自定义文件服务器处理函数

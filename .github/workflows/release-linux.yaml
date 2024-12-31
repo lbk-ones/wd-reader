@@ -158,12 +158,14 @@ jobs:
              -e $build_dir/usr/local/bin/wdreader \
              -d $build_dir/usr/share/applications/wdreader.desktop
 
+          ls
+
       - name: Rename deb
         working-directory: ./build/linux
         run: mv "wdreader_${{ steps.normalise_version.outputs.version }}_amd64.deb" "wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.deb"
 
       - name: Rename appimage
-        run: mv Tiny_RDM-${{ steps.normalise_platform_arch.outputs.arch }}.AppImage "wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.AppImage"
+        run: mv wdreader-${{ steps.normalise_platform_arch.outputs.arch }}.AppImage "wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.AppImage"
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v1

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name={{.Info.ProductName}}
-Exec=/usr/local/bin/wd-reader %U
+Exec=/usr/local/bin/wdreader %U
 Terminal=false
 Type=Application
 Icon=wdreader

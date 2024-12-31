@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"wd-reader/go/constant"
 )
 
 // Package 是最外层的结构体，对应 XML 的 <package> 元素
@@ -101,8 +102,8 @@ type Reference struct {
 
 // ParseEpubToTxt 解析epub文件生成对应的txt文件
 func ParseEpubToTxt(filename string) string {
-	dir, _ := os.Getwd()
-	join := filepath.Join(dir, "books", filename)
+	dir := GetAppPath()
+	join := filepath.Join(dir, constant.BOOK_PATH, filename)
 	_, err2 := os.Stat(join)
 	if os.IsNotExist(err2) {
 		return WrapperException(err2)

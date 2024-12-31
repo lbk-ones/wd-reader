@@ -6,17 +6,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"wd-reader/go/BookUtils"
-)
-
-const (
-	BooksPath = "books"
-)
-
-var (
-	RegChapter = regexp.MustCompile(`第([ ,、一二三四五六七八九十零百千万亿\d]+)[章巻]`)
+	"wd-reader/go/constant"
 )
 
 // App struct
@@ -68,13 +60,12 @@ func (a *App) OpenFileDialog() string {
 
 // GetAppPath 获取目前程序运行目录
 func (a *App) GetAppPath() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("获取当前工作目录时出错:", err)
-		return ""
-	}
-	fmt.Println("当前工作目录:", wd)
-	return wd
+	return BookUtils.GetAppPath()
+}
+
+// GetBooksPath 获取books的目录
+func (a *App) GetBooksPath() string {
+	return filepath.Join(BookUtils.GetAppPath() + constant.BOOK_PATH)
 }
 
 // GetVersion 获取版本
@@ -93,8 +84,8 @@ func (a *App) ParseEpubToTxt(filename string) string {
 
 // DeleteEpubFile 删除文件
 func (a *App) DeleteEpubFile(filename string) string {
-	dir, _ := os.Getwd()
-	join := filepath.Join(dir, BooksPath, filename)
+	dir := BookUtils.GetAppPath()
+	join := filepath.Join(dir, constant.BOOK_PATH, filename)
 	err := os.Remove(join)
 	if err != nil {
 		return BookUtils.WrapperException(err)
@@ -104,17 +95,9 @@ func (a *App) DeleteEpubFile(filename string) string {
 
 // GetBookList 获取文件列表
 func (a *App) GetBookList() string {
-	path, _ := os.Getwd()
-	bookPath := filepath.Join(path, BooksPath)
-
-	fileInfo, err := os.Stat(bookPath + string(filepath.Separator))
-	if os.IsNotExist(err) {
-		return BookUtils.WrapperExceptionStr(bookPath + "::目录不存在::" + err.Error())
-	}
-	if !fileInfo.IsDir() {
-		return BookUtils.WrapperExceptionStr(fmt.Sprint(bookPath + " is not a directory"))
-	}
-
+	BookUtils.CheckBooksPath()
+	path := BookUtils.GetAppPath()
+	bookPath := filepath.Join(path, constant.BOOK_PATH)
 	strs := make([]string, 0)
 	dirFiles, err := os.ReadDir(bookPath)
 	if err != nil {
@@ -133,8 +116,8 @@ func (a *App) GetBookList() string {
 
 // GetChapterListByFileName 传入文件名称获取文件章节或者卷列表
 func (a *App) GetChapterListByFileName(_fileName string) string {
-	path, _ := os.Getwd()
-	fileName := filepath.Join(path, BooksPath, _fileName)
+	path := BookUtils.GetAppPath()
+	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
 	if strings.HasSuffix(fileName, ".txt") {
 		strs := make([]string, 0)
 		// 判断文件是否存在
@@ -163,7 +146,7 @@ func (a *App) GetChapterListByFileName(_fileName string) string {
 				continue
 			}
 			lineLen := len(line)
-			findString := RegChapter.FindString(line)
+			findString := constant.RegChapter.FindString(line)
 			b := lstIndex+1 == index
 			if findString != "" && !b && lineLen < 50 {
 				replaceNonSpace := strings.Replace(line, " ", "", -1)
@@ -181,8 +164,8 @@ func (a *App) GetChapterListByFileName(_fileName string) string {
 
 // GetChapterContentByChapterName 根据传入文件名和章节名称来获取这一章节的内容
 func (a *App) GetChapterContentByChapterName(_fileName string, chapterName string) string {
-	path, _ := os.Getwd()
-	fileName := filepath.Join(path, BooksPath, _fileName)
+	path := BookUtils.GetAppPath()
+	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
 	_, err := os.Stat(fileName)
 	if os.IsNotExist(err) {
 		return BookUtils.WrapperException(err)
@@ -214,7 +197,7 @@ func (a *App) GetChapterContentByChapterName(_fileName string, chapterName strin
 		}
 		// 碰到下一个结束标识符
 		// 因为有些文本有重复章节名称 且除了空格都一样 所以这里要 去掉空格之后 再去比较 不等于才退出
-		findString := RegChapter.FindString(line)
+		findString := constant.RegChapter.FindString(line)
 		// 两行临近这种也不记录 可能是错误的文本校准
 		b := findString != "" && lstIndex+1 != index
 		if start && b && lineNoAllSpace != lastLineNoAllSpace {

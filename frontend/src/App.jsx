@@ -24,7 +24,7 @@ import {
     GetChapterListByFileName,
     GetServerUrl, GetVersion,
     Greet,
-    OpenFileDialog, ParseEpubToTxt
+    OpenFileDialog, ParseEpubToTxt, GetBooksPath
 } from "../wailsjs/go/main/App";
 import {DeleteEpubFile, GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
 import useAllState from "./components/lib/hooks/UseAllState.jsx";
@@ -77,7 +77,8 @@ function App() {
         serverUrl: '',
         loadingBook: false,
         errorInfo: '',
-        version: ''
+        version: '',
+        booksPath: ''
     })
     const [location, setLocation] = useState(0)
 
@@ -85,6 +86,11 @@ function App() {
         GetVersion().then(res => {
             setState({
                 version: res
+            })
+        })
+        GetBooksPath().then(res => {
+            setState({
+                booksPath: res
             })
         })
         isAlwaysTop(null)
@@ -516,7 +522,7 @@ function App() {
                                 fontSize: 18,
                                 padding: 20,
                                 color: 'darkred'
-                            }}>未检索到文件列表,请将（txt、epub）格式文件放到程序同级目录books下面</div>
+                            }}>未检索到文件列表,请将（txt、epub）格式文件放到{getState().booksPath}下面</div>
                         );
                     }
                     if (!getState().loadIngBookList && !isEmpty(getState().currentBookList)) {
