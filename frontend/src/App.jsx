@@ -10,7 +10,7 @@ import {
     InputNumber,
     message,
     Popover,
-    Spin,
+    Spin, Statistic,
     Switch,
     theme,
     Tooltip
@@ -41,7 +41,7 @@ import {
 import {
     CloseOutlined, DatabaseOutlined, DisconnectOutlined,
     ExclamationCircleOutlined,
-    MinusOutlined,
+    MinusOutlined, PlusOutlined,
     PushpinOutlined,
     RedoOutlined, SettingOutlined
 } from "@ant-design/icons";
@@ -157,7 +157,7 @@ function App() {
                             currentBookName: fileName,
                             currentBookChapterList: strings,
                             currentBookChapterName: firstChapter,
-                            currentBookChapterContent: chapterContent.split("\n")
+                            currentBookChapterContent: chapterContent.split("\n").filter(Boolean)
                         })
                     }
                     cb && cb();
@@ -255,6 +255,8 @@ function App() {
                     currentBookName: '',
                     currentBookChapterContent: [],
                     currentBookChapterList: [],
+                    muluVisible: false,
+                    settingVisible: false
                 })
 
             })
@@ -368,6 +370,8 @@ function App() {
                                                       currentBookName: '',
                                                       currentBookChapterContent: [],
                                                       currentBookChapterList: [],
+                                                      muluVisible: false,
+                                                      settingVisible: false
                                                   })
 
                                               })
@@ -417,9 +421,21 @@ function App() {
     return (
         <div id="App"
              style={{
-                 //border: getSettingState().leaveWindowHid === '0' ? "2px solid #ccc" : "1px solid transparent",
+                 border: display ? getState().currentBookChapterName ? "1px solid transparent" : "1px solid rgba(204, 204, 204, 0.32)" : "none",
                  backgroundColor: (display && isEmpty(getState().currentBookChapterName)) ? '#fff' : 'rgba(0,0,0,0)',
+                 ...(function () {
+                     if (!display) {
+                         return {
+                             color: 'rgba(0,0,0,0)',
+                             border: 'none'
+                         }
+                     }
+                     return {}
+                 })
              }}
+            // className={classNames({
+            //     "track-transparent": !!getState().currentBookChapterName
+            // })}
              onMouseOver={() => {
                  let leaveWindowHid = getSettingState().leaveWindowHid;
                  if (leaveWindowHid === '1') {
@@ -530,52 +546,93 @@ function App() {
                     if (!getState().loadIngBookList && !isEmpty(getState().currentBookList)) {
                         return (
                             <div className="book-list">
-                                <ul className={"book-list-ul"}>
-                                    {
-                                        sortBookList()
-                                            .filter(Boolean)
-                                            .map((tem, index) => {
-                                                return <li className={classNames("book-list-ul-li", {
-                                                    "book-list-ul-li-active": (window.localStorage.getItem("LastClickBook") || "").split(",").indexOf(tem) === 0
-                                                })}
-                                                           key={"book-list-ul-li" + index}
-                                                           title={tem} onClick={() => {
-                                                    let item1 = window.localStorage.getItem("LastClickBook") || "";
-                                                    if (item1) {
-                                                        item1 = [tem, ...((item1.replace(tem, "")).split(","))].join(",")
-                                                    }
-                                                    window.localStorage.setItem("LastClickBook", item1);
-                                                    if (tem.endsWith("epub")) {
-                                                        setState({
-                                                            loadingBook: true
-                                                        })
-                                                        ParseEpubToTxt(tem).then(res => {
-                                                            if (res.startsWith("错误信息:")) {
-                                                                message.error(res)
-                                                            }
+                                <ul className={"book-list-ul flex flex-column-nowrap"}>
+                                    <div className="book-list-top-box">
+                                        <div className={"add-book"}>
+                                            <PlusOutlined/>
+                                        </div>
+                                        <div className={"search-box"}>
+                                            <Input placeholder={"搜索"} style={{
+                                                width: '100%',
+                                                marginTop: "10px",
+                                                // borderBottom: "1px solid #ccc",
+                                                borderRadius: 'none'
+                                            }}/>
 
-                                                            let s = tem.replace(".epub", ".txt");
-                                                            let item = window.localStorage.getItem(tem);
-                                                            reloadBookList(() => {
-                                                                goChapterByName(s, item, () => {
+                                            <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
+
+                                        </div>
+                                    </div>
+                                    <div className={"flex-auto"}>
+                                        <div className={"w-100 h-100 over-y-auto"}>
+                                            {
+                                                sortBookList()
+                                                    .filter(Boolean)
+                                                    .map((tem, index) => {
+                                                        return <li className={classNames("book-list-ul-li", {
+                                                            "book-list-ul-li-active": (window.localStorage.getItem("LastClickBook") || "").split(",").indexOf(tem) === 0
+                                                        })}
+                                                                   key={"book-list-ul-li" + index}
+                                                                   title={tem} onClick={() => {
+                                                            let item1 = window.localStorage.getItem("LastClickBook") || tem;
+                                                            if (item1) {
+                                                                item1 = [tem, ...((item1.replace(tem, "")).split(","))].join(",")
+                                                            }
+                                                            setState({
+                                                                loadingBook: true
+                                                            })
+                                                            window.localStorage.setItem("LastClickBook", item1);
+                                                            if (tem.endsWith("epub")) {
+
+                                                                ParseEpubToTxt(tem).then(res => {
+                                                                    if (res.startsWith("错误信息:")) {
+                                                                        message.error(res)
+                                                                    }
+
+                                                                    let s = tem.replace(".epub", ".txt");
+                                                                    let item = window.localStorage.getItem(tem);
+                                                                    reloadBookList(() => {
+                                                                        goChapterByName(s, item, () => {
+                                                                            setState({
+                                                                                loadingBook: false
+                                                                            })
+                                                                            DeleteEpubFile(tem).then(res => {
+                                                                                // hasError(tem)
+                                                                                console.log(res)
+                                                                            })
+                                                                        });
+                                                                    })
+
+                                                                })
+                                                            } else {
+                                                                let item = window.localStorage.getItem(tem);
+                                                                goChapterByName(tem, item, () => {
                                                                     setState({
                                                                         loadingBook: false
                                                                     })
-                                                                    DeleteEpubFile(tem).then(res => {
-                                                                        // hasError(tem)
-                                                                        console.log(res)
-                                                                    })
                                                                 });
-                                                            })
+                                                            }
+                                                        }}>{tem}</li>
+                                                    })
+                                            }
+                                        </div>
 
-                                                        })
-                                                    } else {
-                                                        let item = window.localStorage.getItem(tem);
-                                                        goChapterByName(tem, item);
-                                                    }
-                                                }}>{tem}</li>
-                                            })
-                                    }
+                                    </div>
+
+                                    <li className={'book-list-ul-li no-shrink'} style={{
+                                        position: 'sticky',
+                                        bottom: 0,
+                                        backgroundColor: '#fff',
+                                        color: "darkred",
+                                        borderTop: '1px solid rgba(204, 204, 204, 0.32)',
+                                        // borderBottom: '1px solid #ccc',
+                                    }}>
+                                        {
+                                            ["没有人比我更懂你的需求😀", "加油吧打工人💪", "打工人，轻松一下😊", "Life Is Fucking Move!😞", "什么时候才能不为了一日三餐奔波啊✿"][parseInt(Math.random() * 4)]
+                                        }
+
+
+                                    </li>
                                 </ul>
 
                             </div>
@@ -592,8 +649,8 @@ function App() {
                     <div className={"book-content-div"} style={{
                         lineHeight: Number(getSettingState().fontLineHeight) + "px",
                         padding: "0 10px",
-                        width: 'inherit',
-                        height: 'inherit',
+                        // width: 'inherit',
+                        // height: 'inherit',
                         boxSizing: 'border-box',
                         textAlign: 'left',
                         textIndent: '2em',
@@ -617,36 +674,62 @@ function App() {
                              }
                          }}
                     >
-                        <div id={"book-content-div-top"} style={{width: '100%', height: '1px'}} ref={topRef}></div>
+                        <div className={"flex flex-auto flex-column"}>
+                            <div className={"w-100 h-100"}>
+                                <div id={"book-content-div-top"} style={{width: '100%', height: '1px'}} ref={topRef}></div>
+                                {
+                                    !isEmpty(getState().currentBookChapterName)
+                                    && (
+                                        <p className={"mb-10 font-bold"}>
+                                            {getState().currentBookChapterName || ''}
+                                        </p>
+                                    )
+                                }
+                                {
+                                    getState().currentBookChapterContent.map((res, index) => {
+
+                                        if (res && res.trim()) {
+                                            if (index === 0 && res !== getState().currentBookChapterName) {
+                                                return <p className={"mb-5"}>
+                                                    {res.trim()}
+                                                </p>
+                                            } else if (index > 0) {
+                                                return <p className={"mb-5"}>
+                                                    {res.trim()}
+                                                </p>
+                                            }
+                                        }
+                                        return null;
+                                    })
+                                }
+                            </div>
+                        </div>
+
                         {
-                            !isEmpty(getState().currentBookChapterName) && (
-                                <p className={"mb-10 font-bold"}>
-                                    {getState().currentBookChapterName || ''}
-                                </p>
+                            getState().showTitle && getSettingState().transparentMode !== '1' && (
+                                <div className={"book-content-div-footer-btn"} style={{
+                                    color: getSettingState().fontColor,
+                                    backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
+                                }}>
+                                    <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
+                                        e.stopPropagation();
+                                        lastChpater();
+                                    }}>上一章</a>
+                                    <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
+                                        e.stopPropagation();
+                                        nextChpater();
+                                    }}>下一章</a>
+                                    <span
+                                        className={'book-content-div-footer-btn-txt cursor-point'}
+                                        title={getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
+                                        style={{width: "120px", overflow: 'hidden'}}>
+                                        {getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
+                                    </span>
+                                </div>
                             )
                         }
 
-                        {
-                            getState().currentBookChapterContent.map(res => {
-                                return <p className={"mb-5"}>
-                                    {res}
-                                </p>
-                            })
-                        }
 
-                        <div className={"book-content-div-footer-btn"}>
-                            <Button type="link" size={"small"} onClick={(e) => {
-                                e.stopPropagation();
-                                lastChpater();
-                            }}>上一章</Button>
-                            <Button type="link" size={"small"} onClick={(e) => {
-                                e.stopPropagation();
-                                nextChpater();
-                            }}>下一章</Button>
-                            <div
-                                className={'book-content-div-footer-btn-txt text-overflow-dot'} title={"下一章"}
-                                style={{width: "120px"}}>{getState().currentBookChapterList[findIndex(getState().currentBookChapterName) + 1] || "无"}</div>
-                        </div>
                         <ContextMenu options={options} onSelect={handleSelect}/>
                     </div>
                 )
@@ -978,9 +1061,9 @@ function App() {
             }
 
             {/*目录 -- 弹窗*/}
-            {
-                display && getState().muluVisible && (
-                    <div className="mulu-modal">
+            <div className="mulu-modal" style={{
+                visibility: (display && getState().muluVisible && getState().currentBookChapterName) ? "visible" : "hidden"
+            }}>
                             <span className={'mulu-modal-close'} onClick={() => {
                                 setState({
                                     muluVisible: false
@@ -991,33 +1074,32 @@ function App() {
                                 </span>
                                 <span className={'mulu-modal-close-x'}>×</span>
                             </span>
-                        <div className={"mulu-modal-center"} onClick={(e) => {
-                            e.stopPropagation();
-                        }}>
-                            <ul className={'mulu-modal-center-ul'}>
+                <div className={"mulu-modal-center"} onClick={(e) => {
+                    e.stopPropagation();
+                }}>
+                    <ul className={'mulu-modal-center-ul'}>
 
-                                {
-                                    getState().currentBookChapterList.map((ie, index) => {
-                                        return <li key={"mulu-modal-center-ul-li" + index}
-                                                   title={ie}
-                                                   className={classNames('mulu-modal-center-ul-li', {"mulu-modal-center-ul-li-active": ie === getState().currentBookChapterName})}
-                                                   onClick={() => {
-                                                       goChapterByName(getState().currentBookName, ie)
-                                                       setState({
-                                                           muluVisible: false
-                                                       })
-                                                   }}
-                                        >
-                                            {ie}
-                                        </li>
+                        {
+                            getState().currentBookChapterList.map((ie, index) => {
+                                return <li key={"mulu-modal-center-ul-li" + index}
+                                           title={ie}
+                                           className={classNames('mulu-modal-center-ul-li', {"mulu-modal-center-ul-li-active": ie === getState().currentBookChapterName})}
+                                           onClick={(e) => {
+                                               e.stopPropagation();
+                                               goChapterByName(getState().currentBookName, ie)
+                                               setState({
+                                                   muluVisible: false
+                                               })
+                                           }}
+                                >
+                                    {ie}
+                                </li>
 
-                                    })
-                                }
-                            </ul>
-                        </div>
-                    </div>
-                )
-            }
+                            })
+                        }
+                    </ul>
+                </div>
+            </div>
             <Spin spinning={getState().loadingBook} tip={"加载中。。"} fullscreen/>
 
             {

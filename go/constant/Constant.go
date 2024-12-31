@@ -4,6 +4,7 @@ import "regexp"
 
 const (
 	BOOK_PATH = "books"
+	APP_NAME  = "WdReader"
 )
 
 var (

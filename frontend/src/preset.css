@@ -3,6 +3,10 @@
     display: flex;
 }
 
+.flex-auto {
+    flex: auto;
+}
+
 .flex-row {
     flex-flow: row wrap;
 }
@@ -174,4 +178,48 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+}
+
+.no-transition {
+    transition: none !important;
+}
+
+.text-indent0 {
+    text-indent: 0 !important;
+}
+
+.text-nowrap {
+    text-wrap: nowrap;
+}
+
+.pl-5 {
+    padding-left: 5px;
+}
+
+.pr-5 {
+    padding-right: 5px;
+}
+
+.pt-5 {
+    padding-top: 5px;
+}
+
+.pb-10 {
+    padding-bottom: 10px;
+}
+
+.pb-5 {
+    padding-bottom: 5px;
+}
+
+.pb-4 {
+    padding-bottom: 4px;
+}
+
+.p-5 {
+    padding: 5px;
+}
+
+.over-y-auto {
+    overflow-y: auto;
 }

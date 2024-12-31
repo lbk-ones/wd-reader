@@ -133,10 +133,9 @@ func (a *App) GetChapterListByFileName(_fileName string) string {
 		scanner := BookUtils.GetScanner(fileName, file)
 		unique := make(map[string]struct{})
 		var index int = 0
-		var lstIndex int = 0
+		var lstIndex int = -3
 		for scanner.Scan() {
 			text := scanner.Text()
-			index++
 			prefix := strings.HasPrefix(text, "  ")
 			if prefix {
 				continue
@@ -145,6 +144,7 @@ func (a *App) GetChapterListByFileName(_fileName string) string {
 			if line == "" {
 				continue
 			}
+			index++
 			lineLen := len(line)
 			findString := constant.RegChapter.FindString(line)
 			b := lstIndex+1 == index
@@ -187,9 +187,12 @@ func (a *App) GetChapterContentByChapterName(_fileName string, chapterName strin
 	var lstIndex int = 0
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
 		lineNoAllSpace := strings.Replace(line, " ", "", -1)
 		index++
-		// 开始记录
+		// 开始记录 跳过标题
 		if line == chapterNameNoSpace && !start {
 			start = true
 			lstIndex = index
@@ -198,10 +201,21 @@ func (a *App) GetChapterContentByChapterName(_fileName string, chapterName strin
 		// 碰到下一个结束标识符
 		// 因为有些文本有重复章节名称 且除了空格都一样 所以这里要 去掉空格之后 再去比较 不等于才退出
 		findString := constant.RegChapter.FindString(line)
-		// 两行临近这种也不记录 可能是错误的文本校准
-		b := findString != "" && lstIndex+1 != index
-		if start && b && lineNoAllSpace != lastLineNoAllSpace {
-			break
+		// 两行临近这种也不记录 可能是错误的文本校准 只有文本相同了才跳过
+		// 不跳过
+		if start {
+			if findString != "" {
+				// 第二行重复跳出
+				b := lstIndex+1 == index && lastLineNoAllSpace == lineNoAllSpace
+				if b {
+					continue
+				}
+				// 第二行不重复 直接跳出
+				b2 := index > lstIndex+1
+				if b2 {
+					break
+				}
+			}
 		}
 		if start {
 			strs = append(strs, line)

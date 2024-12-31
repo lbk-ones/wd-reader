@@ -4,7 +4,10 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	"wd-reader/go/constant"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -14,6 +17,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 var version string
+
+//go:embed build/appicon.png
+var icon []byte
 
 func main() {
 	fmt.Println(version)
@@ -47,6 +53,22 @@ func main() {
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop: true,
+		},
+		Mac: &mac.Options{
+			TitleBar: mac.TitleBarHiddenInset(),
+			About: &mac.AboutInfo{
+				Title:   fmt.Sprintf("%s %s", constant.APP_NAME, version),
+				Message: "WdReader \n\nCopyright © 2024",
+				Icon:    icon,
+			},
+			WebviewIsTransparent: false,
+			WindowIsTranslucent:  false,
+		},
+		Linux: &linux.Options{
+			ProgramName:         constant.APP_NAME,
+			Icon:                icon,
+			WebviewGpuPolicy:    linux.WebviewGpuPolicyOnDemand,
+			WindowIsTranslucent: true,
 		},
 	})
 
