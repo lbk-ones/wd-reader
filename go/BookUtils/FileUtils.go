@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	url2 "net/url"
 	"os"
 )
 
 // DownLoadFile 下载文件
 func DownLoadFile(url, filePath string, reMap map[string]string) {
 	//filePath := "downloaded_file.zip"  // 下载后保存的文件路径
-
 	// 发送 HTTP GET 请求
 	response, err := http.Get(url)
+	url, _ = url2.QueryUnescape(url)
 	if err != nil {
 		reMap[url] = WrapperException(err)
 		fmt.Println("Error making HTTP request:", err)

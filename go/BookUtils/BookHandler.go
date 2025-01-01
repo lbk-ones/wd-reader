@@ -8,6 +8,7 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
+	url2 "net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -229,6 +230,7 @@ func TransferFileFromFileSys(name []string) string {
 		for _, ht := range httpUrl {
 			base := filepath.Base(ht)
 			join := filepath.Join(bookToPath, base)
+			join, _ = url2.QueryUnescape(join)
 			if base != "." {
 				DownLoadFile(ht, join, resJsonMap)
 			} else {

@@ -19,7 +19,7 @@ root.render(
                 token: {
                     // Seed Token，影响范围大
                     colorPrimary: '#8B0000',
-                    borderRadius: 0
+                    borderRadius: 0,
                 },
             }}
         >

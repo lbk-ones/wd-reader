@@ -43,6 +43,9 @@ func (a *App) OpenFileDialog() string {
 			{
 				DisplayName: "*.txt",
 				Pattern:     "*.txt",
+			}, {
+				DisplayName: "*.epub",
+				Pattern:     "*.epub",
 			},
 		},
 		ShowHiddenFiles:            false,

@@ -4,27 +4,24 @@ import CsSVg from "./assets/images/cs.svg"
 import './App.css';
 import {
     Button,
-    Checkbox,
-    ColorPicker, Drawer,
+    Drawer,
     Form,
     Input,
     InputNumber,
-    message, notification,
+    message, Modal, notification,
     Popover, Space,
     Spin, Statistic,
     Switch,
     theme,
     Tooltip
 } from 'antd';
-import {generate, green, presetPalettes, red} from '@ant-design/colors';
-import {filter, findIndex, get, isEmpty, isEqual, trim} from 'lodash-es'
+import {presetPalettes} from '@ant-design/colors';
+import {filter, find, findIndex, get, isEmpty, trim} from 'lodash-es'
 import classNames from "classnames"
 import {
-    GetAppPath,
     GetBookList,
     GetChapterListByFileName,
     GetServerUrl, GetVersion,
-    Greet,
     OpenFileDialog, ParseEpubToTxt, GetBooksPath, AddFile
 } from "../wailsjs/go/main/App";
 import {DeleteEpubFile, GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
@@ -33,10 +30,9 @@ import ContextMenu from "./components/ContextMenu.jsx";
 import {SketchPicker} from "react-color";
 import {
     BrowserOpenURL,
-    Hide, OnFileDrop, OnFileDropOff,
+    OnFileDrop, OnFileDropOff,
     Quit,
     WindowMinimise,
-    WindowReload,
     WindowReloadApp,
     WindowSetAlwaysOnTop
 } from "../wailsjs/runtime/runtime.js";
@@ -86,16 +82,17 @@ function App() {
         booksPath: '',
         downloadFromUrlVisible:false,
         downloadFromUrlList:[null],
+        sysSettingVisible:false,
+        lastSearchMulu:-1,
+        lastSearchMuluName:"",
     })
 
 
     function handlerAddFileRes(res,list){
         if(!hasError(res)){
-            console.log(res)
             try{
                 let parse = JSON.parse(res);
                 let entries = Object.entries(parse);
-                console.log('entryis',entries)
                 let errorLength = entries.length;
                 let allLength = list.length;
                 entries.forEach((value, index, array) =>{
@@ -108,7 +105,7 @@ function App() {
                     });
                 })
                 setState({
-                    loadIngBook:true,
+                    loadingBook:true,
                     loadingBookTip:"加载中。。",
                 })
                 reloadBookList();
@@ -121,7 +118,7 @@ function App() {
 
     function AddFleAndHandlerRes(paths) {
         setState({
-            loadIngBook:true,
+            loadingBook:true,
             loadingBookTip:"解析中。。",
         })
         AddFile(paths).then(res => {
@@ -149,8 +146,6 @@ function App() {
             })
         })
         OnFileDrop(function (x,y,paths){
-            // console.log('paths--->',paths)
-            // message.info(JSON.stringify(paths))
             AddFleAndHandlerRes(paths);
 
         },true)
@@ -162,20 +157,40 @@ function App() {
 
     function reloadBookList(cb = null) {
         setState({
-            loadIngBook: true
+            loadingBook: true
         })
         GetBookList().then(res => {
+            let strings = null;
             if (!hasError(res)) {
+                strings = res.split("\n").map(e => e.trim()).filter(Boolean);
                 setState({
-                    loadIngBook: false,
-                    currentBookList: res.split("\n").map(e => e.trim()).filter(Boolean)
+                    loadingBook: false,
+                    currentBookList: strings
                 })
+
 
                 cb && cb()
             }else{
                 setState({
-                    loadIngBook:false
+                    loadingBook:false
                 })
+            }
+
+            // 刷新一下缓存
+            let item = window.localStorage.getItem("LastClickBook");
+            if(item){
+                if(!strings){
+                    window.localStorage.setItem("LastClickBook","");
+                    return;
+                }
+                let strings1 = item.split(",");
+                let nweCacheList = [];
+                strings1.forEach(et=>{
+                    if(find(strings,e=> e === et)){
+                        nweCacheList.push(et);
+                    }
+                })
+                window.localStorage.setItem("LastClickBook",nweCacheList.join(","))
             }
         });
     }
@@ -198,13 +213,13 @@ function App() {
 
     function searchByInitials(query, data) {
         const convertedData = convertToInitials(data);
-        return convertedData.filter(item => item.initials.startsWith(query));
+        return convertedData.filter(item => item.initials.indexOf(query)>=0);
     }
 
     function pageDown() {
         pageContentRef.current.scrollBy({
             top: pageContentRef.current.clientHeight,
-            behavior: 'smooth' // 平滑滚动，可根据需要设置
+            behavior: 'instant' // 平滑滚动，可根据需要设置
         });
     }
 
@@ -229,7 +244,7 @@ function App() {
     function pageUp() {
         pageContentRef.current.scrollBy({
             top: -pageContentRef.current.clientHeight,
-            behavior: 'smooth' // 平滑滚动，可根据需要设置
+            behavior: 'instant' // 平滑滚动，可根据需要设置
         });
     }
 
@@ -292,12 +307,6 @@ function App() {
                         let currentBookName = getState().currentBookName;
                         goChapterByName(currentBookName, currentBookChapterListElement);
                         toCurrentChapterNameInList()
-                        // if (topRef.current) {
-                        //     console.log('topRef.current---->',topRef.current)
-                        //     topRef.current.scrollIntoView({
-                        //         behavior:"instant"
-                        //     })
-                        // }
                         let current = pageContentRef.current;
                         current.scrollTop = 0
                     }
@@ -344,6 +353,8 @@ function App() {
                     currentBookChapterContent: [],
                     currentBookChapterList: [],
                     muluVisible: false,
+                    lastSearchMulu:-1,
+                    lastSearchMuluName:"",
                     settingVisible: false
                 })
 
@@ -459,6 +470,8 @@ function App() {
                                                       currentBookChapterContent: [],
                                                       currentBookChapterList: [],
                                                       muluVisible: false,
+                                                      lastSearchMulu:-1,
+                                                      lastSearchMuluName:"",
                                                       settingVisible: false
                                                   })
 
@@ -642,7 +655,9 @@ function App() {
                                         "--wails-drop-target":"drop"
                                     }} onClick={()=>{
                                         OpenFileDialog().then(r => {
-                                            AddFleAndHandlerRes([r]);
+                                            if(r){
+                                                AddFleAndHandlerRes([r]);
+                                            }
                                         })
                                     }}>
                                         <PlusOutlined/>
@@ -655,7 +670,8 @@ function App() {
                                             onSelect={function (option){
                                                 if(option.label === 'URL下载') {
                                                     setState({
-                                                        downloadFromUrlVisible:true
+                                                        downloadFromUrlVisible:true,
+                                                        downloadFromUrlList:[null]
                                                     })
                                                 }else if(option.label === '去下载'){
                                                     BrowserOpenURL("https://zh.opendelta.org/")
@@ -700,7 +716,7 @@ function App() {
                                         />
 
                                         <div className={"flex flex-row gap10 align-item-center"}>
-                                            <Statistic title="正在阅读" value={ (window.localStorage.getItem("LastClickBook") || "").split(",").length + "本"}/>
+                                            <Statistic title="正在阅读" value={ (window.localStorage.getItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
                                             <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
                                         </div>
 
@@ -774,18 +790,18 @@ function App() {
                                         ["没有人比我更懂你的需求😀", "加油吧打工人💪", "打工人，轻松一下😊", "Life Is A Fucking Move!😞", "什么时候才能不为了一日三餐奔波啊✿"][parseInt(Math.random() * 4)]
                                     }
                                     </span>
-
-
-
-                                    <SettingOutlined style={{
-                                        fontSize:'20px',
-                                        paddingRight:'5px'
-                                    }}  title={"设置！"}
-                                                     onClick={() => {
-                                                         setState({
-                                                             settingVisible: true
-                                                         })
-                                                     }}/>
+                                    <SettingOutlined
+                                         style={{
+                                            fontSize:'20px',
+                                            paddingRight:'5px'
+                                         }}
+                                         title={"设置！"}
+                                         onClick={() => {
+                                             setState({
+                                                 sysSettingVisible: true
+                                             })
+                                         }}
+                                    />
 
                                 </li>
                             </ul>
@@ -1029,7 +1045,6 @@ function App() {
                                                 color={getSettingState().fontColor}
                                                 onChange={(color) => {
                                                     let hex = color.hex;
-                                                    console.log('hex--->', hex)
                                                     window.localStorage.setItem('fontColor', hex)
                                                     setSettingState({
                                                         fontColor: hex
@@ -1057,45 +1072,19 @@ function App() {
 
                                     </Popover>
 
-                                    {/*<ColorPicker size={'small'} onChange={(color,css)=>{*/}
-                                    {/*    console.log(color.toHex(),css)*/}
-                                    {/*    let s = "#"+color.toHex();*/}
-                                    {/*    setSettingState({*/}
-                                    {/*        fontColor: s*/}
-                                    {/*    })*/}
-                                    {/*    window.localStorage.setItem('fontColor',)*/}
-                                    {/*}} presets={presets} value={getSettingState().fontColor} />*/}
-
                                 </Form.Item>
                                 <Form.Item
                                     label="点击翻页"
                                     name="clickPage"
-                                    // initialValue={isChecked}
                                 >
                                     <input style={{zIndex: 9000, width: 30, height: 30}} type={'checkbox'}
                                            checked={getSettingState().clickPage === '1'} onChange={e => {
                                         let string = e.target.checked === true ? "1" : "0";
-                                        console.log('gagaga', e.target.checked)
                                         window.localStorage.setItem('clickPage', string)
                                         setSettingState({
                                             clickPage: string
                                         })
                                     }}/>
-                                    {/*<Switch checked={getSettingState().clickPage === '1'} onChange={(value)=>{*/}
-                                    {/*    let string = value === true ? "1":"0";*/}
-                                    {/*    window.localStorage.setItem('clickPage',string)*/}
-                                    {/*    setSettingState({*/}
-                                    {/*        clickPage: string*/}
-                                    {/*    })*/}
-                                    {/*}} />*/}
-                                    {/*<Checkbox checked={isChecked} onChange={function (e){*/}
-                                    {/*    let string = e.target.checked === true ? "1":"0";*/}
-                                    {/*    console.log('check--0-',string)*/}
-                                    {/*    window.localStorage.setItem('clickPage',string)*/}
-                                    {/*    setSettingState({*/}
-                                    {/*        clickPage: string*/}
-                                    {/*    })*/}
-                                    {/*}}>是</Checkbox>*/}
                                 </Form.Item>
                                 <Form.Item
                                     label="显示进度"
@@ -1189,7 +1178,7 @@ function App() {
                                         window.localStorage.setItem('showProgress', "0")
                                         window.localStorage.setItem('isAlwaysTop', "1")
                                         window.localStorage.setItem('transparentMode', "0")
-                                        window.localStorage.setItem('leaveWindowHid', "1")
+                                        window.localStorage.setItem('leaveWindowHid', "0")
                                         setSettingState({
                                             fontColor: "#000",
                                             fontLineHeight: "30",
@@ -1199,7 +1188,7 @@ function App() {
                                             showProgress: "0",
                                             isAlwaysTop: "1",
                                             transparentMode: "0",
-                                            leaveWindowHid: "1",
+                                            leaveWindowHid: "0",
                                         })
                                         setDisplay(true)
                                         isAlwaysTop(window.localStorage.getItem('isAlwaysTop'));
@@ -1216,11 +1205,14 @@ function App() {
 
             {/*目录 -- 弹窗*/}
             <div className="mulu-modal" style={{
-                visibility: (display && getState().muluVisible && getState().currentBookChapterName) ? "visible" : "hidden"
+                visibility: (display && getState().muluVisible && getState().currentBookChapterName) ? "visible" : "hidden",
+                opacity: (display && getState().muluVisible && getState().currentBookChapterName) ? 1 : 0,
             }}>
                             <span className={'mulu-modal-close'} onClick={() => {
                                 setState({
-                                    muluVisible: false
+                                    muluVisible: false,
+                                    lastSearchMulu: -1,
+                                    lastSearchMuluName: "",
                                 })
                             }}>
                                 <span style={{fontSize: 16}}>
@@ -1228,21 +1220,96 @@ function App() {
                                 </span>
                                 <span className={'mulu-modal-close-x'}>×</span>
                             </span>
+                <div className={"flex"} style={{
+                    position: 'sticky',
+                    top: 0,
+                    backgroundColor: '#fff'
+                }}>
+                    <Input.Search onSearch={(_value) => {
+                        let currentBookChapterList = getState().currentBookChapterList;
+                        let lastSearchMulu = getState().lastSearchMulu;
+                        let lastSearchMuluName = getState().lastSearchMuluName;
+                        let value = trim(_value);
+                        if (isEmpty(value)) {
+                            message.info("please input search content")
+                            return;
+                        }
+                        let searchByInitials1 = searchByInitials(value.toLowerCase(), currentBookChapterList);
+                        let pickList = [];
+                        if (!isEmpty(searchByInitials1)) {
+                            pickList = pickList.concat(searchByInitials1.map(e => e.name)).filter(Boolean)
+                        } else {
+                            let filter1 = filter(currentBookChapterList, e => e.indexOf(value) >= 0);
+                            pickList = pickList.concat(filter1).filter(Boolean);
+                        }
+                        let lastSearchMuluNameW = null;
+                        if (!isEmpty(pickList)) {
+                            lastSearchMuluNameW = pickList[0]
+                            let nextElementIndex = -1;
+                            let lastNotEnded = true;
+                            // change search content
+                            if (!pickList.includes(lastSearchMuluName)) {
+                                lastNotEnded = false
+                            }
+                            if (lastSearchMulu !== -1 && lastNotEnded) {
+                                let lastSearchName = pickList[lastSearchMulu];
+                                let pickListElement1 = pickList[lastSearchMulu + 1];
+                                // have next
+                                if (pickListElement1) {
+                                    // find next
+                                    let findIndex2 = findIndex(currentBookChapterList, e => e === pickListElement1);
+                                    if (findIndex2 >= 0) {
+                                        nextElementIndex = findIndex2;
+                                    }
+                                } else {
+                                    //no next
+                                    nextElementIndex = findIndex(currentBookChapterList, e => e === lastSearchName);
+                                }
+                            } else {
+                                nextElementIndex = findIndex(currentBookChapterList, e => e === lastSearchMuluNameW);
+                            }
+                            if (nextElementIndex > 0) {
+                                let element = document.querySelector(`[data-key="mulu-index-${nextElementIndex}"]`);
+                                if (!isEmpty(element)) {
+                                    element.scrollIntoView({
+                                        behavior: "instant"
+                                    })
+                                    setState({
+                                        lastSearchMulu: lastSearchMulu + 1,
+                                        lastSearchMuluName: currentBookChapterList.find((ite,inde)=>inde === nextElementIndex),
+                                    })
+                                }
+                            }
+                        }else {
+                            setState({
+                                lastSearchMulu: -1,
+                                lastSearchMuluName: '',
+                            })
+                            message.info("not match "+value)
+                        }
+
+                    }} style={{flex: '2'}} placeholder={"搜索"}/>
+                </div>
                 <div className={"mulu-modal-center"} onClick={(e) => {
                     e.stopPropagation();
                 }}>
-                    <ul className={'mulu-modal-center-ul'}>
 
+
+                    <ul className={'mulu-modal-center-ul'}>
                         {
                             getState().currentBookChapterList.map((ie, index) => {
                                 return <li key={"mulu-modal-center-ul-li" + index}
                                            title={ie}
+                                           data-key={'mulu-index-' + index}
+                                           data-name={ie}
                                            className={classNames('mulu-modal-center-ul-li', {"mulu-modal-center-ul-li-active": ie === getState().currentBookChapterName})}
                                            onClick={(e) => {
                                                e.stopPropagation();
                                                goChapterByName(getState().currentBookName, ie)
                                                setState({
-                                                   muluVisible: false
+                                                   muluVisible: false,
+                                                   lastSearchMulu:-1,
+                                                   lastSearchMuluName:"",
                                                })
                                            }}
                                 >
@@ -1275,30 +1342,36 @@ function App() {
             <Drawer
                 title="从链接中下载"
                 placement={"top"}
-                width={500}
-                onClose={function (){
+                // width={500}
+                onClose={function () {
                     setState({
-                        downloadFromUrlVisible:false
+                        downloadFromUrlVisible: false,
+                        downloadFromUrlList: [null]
                     })
                 }}
                 open={getState().downloadFromUrlVisible}
                 extra={
                     <Space>
-                        <Button onClick={(e)=>{
+                        <Button onClick={(e) => {
                             message.info("已取消操作")
                             setState({
-                                downloadFromUrlVisible:false
+                                downloadFromUrlVisible: false,
+                                downloadFromUrlList: [null]
                             })
                         }}>取消</Button>
-                        <Button type="primary" onClick={(e)=>{
+                        <Button type="primary" onClick={(e) => {
                             let filter1 = getState().downloadFromUrlList.filter(Boolean);
-                            console.log('filter1--->',filter1)
-                            if(isEmpty(filter1)){
+                            if (isEmpty(filter1)) {
                                 message.error("请输入要下载的地址在提交")
-                            }else{
+                            } else {
                                 AddFleAndHandlerRes(filter1);
+                            }
+                            setState({
+                                downloadFromUrlVisible: false,
+                                downloadFromUrlList: [null]
+                            })
+                        }}
 
-                            }}}
                         >
                             提交
                         </Button>
@@ -1307,7 +1380,7 @@ function App() {
             >
                 <p className={"mb-5"}>
                     <Space>
-                        <Button onClick={(e)=>{
+                        <Button onClick={(e) => {
                             let downloadFromUrlList = getState().downloadFromUrlList;
                             downloadFromUrlList.push(null)
                             setState({
@@ -1315,27 +1388,29 @@ function App() {
                             })
                         }}><PlusOutlined/></Button>
 
-                        <Button onClick={(e)=>{
+                        <Button onClick={(e) => {
                             let downloadFromUrlList = getState().downloadFromUrlList;
-                            if(downloadFromUrlList.length>1) {
+                            if (downloadFromUrlList.length > 1) {
                                 downloadFromUrlList.pop()
                                 setState({
                                     downloadFromUrlList
                                 })
                             }
 
-                        }}><LineOutlined /></Button>
+                        }}><LineOutlined/></Button>
                     </Space>
 
                 </p>
 
                 <div className="flex flex-column-nowrap gap5">
                     {
-                        getState().downloadFromUrlList.map((ite,index)=>{
+                        getState().downloadFromUrlList.map((ite, index) => {
                             return <Input key={"downloadFromUrlList-"+index} style={{width:'100%'}} onChange={(e)=>{
                                 let value = e.target.value;
+                                let s = window.decodeURI(value);
+                                let s1 = window.encodeURI(s);
                                 let downloadFromUrlList = getState().downloadFromUrlList;
-                                downloadFromUrlList[index] = value
+                                downloadFromUrlList[index] = s1
                                 setState({
                                     downloadFromUrlList
                                 })
@@ -1346,7 +1421,48 @@ function App() {
 
 
             </Drawer>
-            {/*</Spin>*/}
+
+
+            {/*系统设置*/}
+            {
+                display && (
+                    <Drawer
+                        title="系统设置"
+                        placement={"bottom"}
+                        // width={500}
+                        onClose={function (){
+                            setState({
+                                sysSettingVisible:false
+                            })
+                        }}
+                        open={getState().sysSettingVisible}
+                    >
+                        <div className={"flex flex-column gap10"}>
+                            <span>工作目录: {state.booksPath}</span>
+                            <span>地址: {window.location.href}</span>
+                            <span>缓存: {window.localStorage.length}</span>
+                            <span><Button size={"small"} onClick={function (){
+                                Modal.confirm({
+                                    title:"警告！",
+                                    type:'warning',
+                                    okText:"我确定",
+                                    cancelText:"取消",
+                                    content:"清空缓存会丢失所有文本的阅读记录",
+                                    onOk:()=>{
+                                        window.localStorage.clear()
+                                        WindowReloadApp();
+                                    }
+                                })
+
+                            }}>清空所有缓存</Button></span>
+                            <span><Button size={"small"} onClick={function (){
+                                window.localStorage.setItem("LastClickBook","")
+                                WindowReloadApp();
+                            }}>清除阅读记录</Button></span>
+                        </div>
+                    </Drawer>
+                )
+            }
 
             {contextHolder}
         </div>
