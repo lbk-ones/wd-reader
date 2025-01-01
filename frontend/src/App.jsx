@@ -43,7 +43,7 @@ import {
     PushpinOutlined,
     RedoOutlined, SettingOutlined
 } from "@ant-design/icons";
-
+const CACHE_PREFIX = "Wd-"
 function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
@@ -52,15 +52,15 @@ function App() {
     const [api, contextHolder] = notification.useNotification();
 
     const [settingState, setSettingState, getSettingState] = useAllState({
-        fontColor: window.localStorage.getItem('fontColor') || '#000',
-        fontLineHeight: window.localStorage.getItem('fontLineHeight') || '30',
-        bgColor: window.localStorage.getItem('bgColor') || '#fff',
-        fontSize: window.localStorage.getItem('fontSize') || '16',
-        clickPage: window.localStorage.getItem('clickPage') || '1',
-        showProgress: window.localStorage.getItem('showProgress') || '0',
-        isAlwaysTop: window.localStorage.getItem('isAlwaysTop') || '1',
-        transparentMode: window.localStorage.getItem('transparentMode') || '0',
-        leaveWindowHid: window.localStorage.getItem('leaveWindowHid') || '0',
+        fontColor: getCacheItem('fontColor') || '#000',
+        fontLineHeight: getCacheItem('fontLineHeight') || '30',
+        bgColor: getCacheItem('bgColor') || '#fff',
+        fontSize: getCacheItem('fontSize') || '16',
+        clickPage: getCacheItem('clickPage') || '1',
+        showProgress: getCacheItem('showProgress') || '0',
+        isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
+        transparentMode: getCacheItem('transparentMode') || '0',
+        leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
     })
 
     const [state, setState, getState] = useAllState({
@@ -70,7 +70,7 @@ function App() {
         currentBookChapterName: "",
         currentBookChapterContent: [],
         loadIngBookList: false,
-        showTitle: window.localStorage.getItem("标题开关") !== 'false',
+        showTitle: getCacheItem("标题开关") !== 'false',
         settingVisible: false,
         fontColor: '#000',
         muluVisible: false,
@@ -177,10 +177,10 @@ function App() {
             }
 
             // 刷新一下缓存
-            let item = window.localStorage.getItem("LastClickBook");
+            let item = getCacheItem("LastClickBook");
             if(item){
                 if(!strings){
-                    window.localStorage.setItem("LastClickBook","");
+                    setCacheItem("LastClickBook","");
                     return;
                 }
                 let strings1 = item.split(",");
@@ -190,7 +190,7 @@ function App() {
                         nweCacheList.push(et);
                     }
                 })
-                window.localStorage.setItem("LastClickBook",nweCacheList.join(","))
+                setCacheItem("LastClickBook",nweCacheList.join(","))
             }
         });
     }
@@ -255,7 +255,7 @@ function App() {
                 let firstChapter = isEmpty(chapterName) ? get(strings, "[0]", "") : chapterName;
                 GetChapterContentByChapterName(fileName, firstChapter).then(chapterContent => {
                     if (!hasError(chapterContent)) {
-                        window.localStorage.setItem(fileName, firstChapter)
+                        setCacheItem(fileName, firstChapter)
                         setState({
                             currentBookName: fileName,
                             currentBookChapterList: strings,
@@ -367,7 +367,7 @@ function App() {
         } else if (option.label === '标题开关') {
             let showTitle = getState().showTitle;
             let b = !showTitle;
-            window.localStorage.setItem("标题开关", b);
+            setCacheItem("标题开关", b);
             setState({
                 showTitle: b
             })
@@ -421,11 +421,24 @@ function App() {
         // green,
     });
 
+    function setCacheItem(item,value){
+
+        if(item){
+            window.localStorage.setItem(CACHE_PREFIX+item,value);
+        }
+    }
+
+    function getCacheItem(item){
+        if(item){
+            return window.localStorage.getItem(CACHE_PREFIX+item);
+        }
+    }
+
     function sortBookList() {
         let currentBookList = getState().currentBookList;
 
         if (!isEmpty(currentBookList)) {
-            let item = window.localStorage.getItem("LastClickBook") || "";
+            let item = getCacheItem("LastClickBook") || "";
             let first = [];
             let last = [];
             (item.split(",")).forEach(e => {
@@ -484,7 +497,7 @@ function App() {
                     style={{color: getSettingState().leaveWindowHid === '1' ? 'gray' : 'unset'}}
                     onClick={() => {
                         let qf = getSettingState().leaveWindowHid === '1' ? '0' : '1';
-                        window.localStorage.setItem("leaveWindowHid", qf)
+                        setCacheItem("leaveWindowHid", qf)
                         setSettingState({
                             leaveWindowHid: qf
                         })
@@ -496,7 +509,7 @@ function App() {
                     onClick={() => {
                         let qf = getSettingState().isAlwaysTop === '1' ? '0' : '1';
                         isAlwaysTop(qf)
-                        window.localStorage.setItem("isAlwaysTop", qf)
+                        setCacheItem("isAlwaysTop", qf)
                         setSettingState({
                             isAlwaysTop: qf
                         })
@@ -520,11 +533,11 @@ function App() {
     }
 
     function clickBookToFirst(tem) {
-        let item1 = window.localStorage.getItem("LastClickBook") || tem;
+        let item1 = getCacheItem("LastClickBook") || tem;
         if (item1) {
             item1 = [tem, ...((item1.replace(tem, "")).split(","))].filter(Boolean).join(",")
         }
-        window.localStorage.setItem("LastClickBook", item1);
+        setCacheItem("LastClickBook", item1);
     }
 
     return (
@@ -716,7 +729,7 @@ function App() {
                                         />
 
                                         <div className={"flex flex-row gap10 align-item-center"}>
-                                            <Statistic title="正在阅读" value={ (window.localStorage.getItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
+                                            <Statistic title="正在阅读" value={ (getCacheItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
                                             <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
                                         </div>
 
@@ -729,7 +742,7 @@ function App() {
                                                 .filter(Boolean)
                                                 .map((tem, index) => {
                                                     return <li className={classNames("book-list-ul-li", {
-                                                        "book-list-ul-li-active": (window.localStorage.getItem("LastClickBook") || "").split(",").indexOf(tem) === 0
+                                                        "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
                                                     })}
                                                                key={"book-list-ul-li" + index}
                                                                title={tem} onClick={() => {
@@ -746,7 +759,7 @@ function App() {
                                                                 }
 
                                                                 let s = tem.replace(".epub", ".txt");
-                                                                let item = window.localStorage.getItem(tem);
+                                                                let item = getCacheItem(tem);
                                                                 reloadBookList(() => {
                                                                     goChapterByName(s, item, () => {
                                                                         setState({
@@ -761,7 +774,7 @@ function App() {
 
                                                             })
                                                         } else {
-                                                            let item = window.localStorage.getItem(tem);
+                                                            let item = getCacheItem(tem);
                                                             goChapterByName(tem, item, () => {
                                                                 setState({
                                                                     loadingBook: false
@@ -954,7 +967,7 @@ function App() {
                                 >
                                     <InputNumber style={{width: 100}} defaultValue={Number(getSettingState().fontSize)}
                                                  onChange={(value) => {
-                                                     window.localStorage.setItem('fontLineHeight', value)
+                                                     setCacheItem('fontLineHeight', value)
                                                      setSettingState({
                                                          fontSize: value
                                                      })
@@ -974,14 +987,14 @@ function App() {
                                     <InputNumber style={{width: 100}}
                                                  defaultValue={Number(getSettingState().fontLineHeight)}
                                                  onChange={(value) => {
-                                                     window.localStorage.setItem('fontLineHeight', value)
+                                                     setCacheItem('fontLineHeight', value)
                                                      setSettingState({
                                                          fontLineHeight: value
                                                      })
                                                  }}/>
                                     {/*<Input style={{width:100}} value={getSettingState().fontLineHeight} onChange={(e)=>{*/}
                                     {/*    let value = e.target.value;*/}
-                                    {/*    window.localStorage.setItem('bgColor',hex)*/}
+                                    {/*    setCacheItem('bgColor',hex)*/}
                                     {/*    setSettingState({*/}
                                     {/*        bgColor: color.hex*/}
                                     {/*    })*/}
@@ -1002,7 +1015,7 @@ function App() {
                                             <SketchPicker
                                                 color={getSettingState().bgColor}
                                                 onChange={(color) => {
-                                                    window.localStorage.setItem('bgColor', color.hex)
+                                                    setCacheItem('bgColor', color.hex)
                                                     setSettingState({
                                                         bgColor: color.hex
                                                     })
@@ -1045,7 +1058,7 @@ function App() {
                                                 color={getSettingState().fontColor}
                                                 onChange={(color) => {
                                                     let hex = color.hex;
-                                                    window.localStorage.setItem('fontColor', hex)
+                                                    setCacheItem('fontColor', hex)
                                                     setSettingState({
                                                         fontColor: hex
                                                     })
@@ -1080,7 +1093,7 @@ function App() {
                                     <input style={{zIndex: 9000, width: 30, height: 30}} type={'checkbox'}
                                            checked={getSettingState().clickPage === '1'} onChange={e => {
                                         let string = e.target.checked === true ? "1" : "0";
-                                        window.localStorage.setItem('clickPage', string)
+                                        setCacheItem('clickPage', string)
                                         setSettingState({
                                             clickPage: string
                                         })
@@ -1092,7 +1105,7 @@ function App() {
                                 >
                                     <Switch checked={getSettingState().showProgress === '1'} onChange={(value) => {
                                         let string = value === true ? "1" : "0";
-                                        window.localStorage.setItem('showProgress', string)
+                                        setCacheItem('showProgress', string)
                                         setSettingState({
                                             showProgress: string
                                         })
@@ -1110,7 +1123,7 @@ function App() {
                                 >
                                     <Switch checked={getSettingState().isAlwaysTop === '1'} onChange={(value) => {
                                         let string = value === true ? "1" : "0";
-                                        window.localStorage.setItem('isAlwaysTop', string)
+                                        setCacheItem('isAlwaysTop', string)
                                         setSettingState({
                                             isAlwaysTop: string
                                         })
@@ -1132,7 +1145,7 @@ function App() {
                                 >
                                     <Switch checked={getSettingState().leaveWindowHid === '1'} onChange={(value) => {
                                         let string = value === true ? "1" : "0";
-                                        window.localStorage.setItem('leaveWindowHid', string)
+                                        setCacheItem('leaveWindowHid', string)
                                         setSettingState({
                                             leaveWindowHid: string
                                         })
@@ -1155,12 +1168,12 @@ function App() {
                                 >
                                     <Switch checked={getSettingState().transparentMode === '1'} onChange={(value) => {
                                         let string = value === true ? "1" : "0";
-                                        window.localStorage.setItem('transparentMode', string)
+                                        setCacheItem('transparentMode', string)
                                         setSettingState({
                                             transparentMode: string
                                         })
                                         if (string === '1') {
-                                            window.localStorage.setItem('fontColor', '#fff')
+                                            setCacheItem('fontColor', '#fff')
                                             setSettingState({
                                                 fontColor: "#fff"
                                             })
@@ -1170,15 +1183,15 @@ function App() {
 
                                 <Form.Item label={null}>
                                     <Button type="primary" onClick={() => {
-                                        window.localStorage.setItem('fontColor', '#000')
-                                        window.localStorage.setItem('fontLineHeight', '30')
-                                        window.localStorage.setItem('bgColor', '#fff')
-                                        window.localStorage.setItem('fontSize', '16')
-                                        window.localStorage.setItem('clickPage', "1")
-                                        window.localStorage.setItem('showProgress', "0")
-                                        window.localStorage.setItem('isAlwaysTop', "1")
-                                        window.localStorage.setItem('transparentMode', "0")
-                                        window.localStorage.setItem('leaveWindowHid', "0")
+                                        setCacheItem('fontColor', '#000')
+                                        setCacheItem('fontLineHeight', '30')
+                                        setCacheItem('bgColor', '#fff')
+                                        setCacheItem('fontSize', '16')
+                                        setCacheItem('clickPage', "1")
+                                        setCacheItem('showProgress', "0")
+                                        setCacheItem('isAlwaysTop', "1")
+                                        setCacheItem('transparentMode', "0")
+                                        setCacheItem('leaveWindowHid', "0")
                                         setSettingState({
                                             fontColor: "#000",
                                             fontLineHeight: "30",
@@ -1191,7 +1204,7 @@ function App() {
                                             leaveWindowHid: "0",
                                         })
                                         setDisplay(true)
-                                        isAlwaysTop(window.localStorage.getItem('isAlwaysTop'));
+                                        isAlwaysTop(getCacheItem('isAlwaysTop'));
                                     }}>
                                         恢复默认
                                     </Button>
@@ -1449,14 +1462,18 @@ function App() {
                                     cancelText:"取消",
                                     content:"清空缓存会丢失所有文本的阅读记录",
                                     onOk:()=>{
-                                        window.localStorage.clear()
+                                        for (let i = 0; i < window.localStorage.length; i++) {
+                                            let s = window.localStorage.key(i);
+                                            if(s && s.startsWith(CACHE_PREFIX)){
+                                                window.localStorage.removeItem(s);
+                                            }
+                                        }
                                         WindowReloadApp();
                                     }
                                 })
-
                             }}>清空所有缓存</Button></span>
                             <span><Button size={"small"} onClick={function (){
-                                window.localStorage.setItem("LastClickBook","")
+                                setCacheItem("LastClickBook","")
                                 WindowReloadApp();
                             }}>清除阅读记录</Button></span>
                         </div>
