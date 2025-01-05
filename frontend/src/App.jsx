@@ -217,8 +217,12 @@ function App() {
     }
 
     function pageDown() {
+        let clientHeight1 = pageContentRef.current.clientHeight;
+        if (getState().showTitle && getSettingState().transparentMode !== '1') {
+            clientHeight1 = clientHeight1-30;
+        }
         pageContentRef.current.scrollBy({
-            top: pageContentRef.current.clientHeight,
+            top: clientHeight1,
             behavior: 'instant' // 平滑滚动，可根据需要设置
         });
     }
@@ -242,8 +246,12 @@ function App() {
     }
 
     function pageUp() {
+        let clientHeight1 = pageContentRef.current.clientHeight;
+        if (getState().showTitle && getSettingState().transparentMode !== '1') {
+            clientHeight1 = clientHeight1-30;
+        }
         pageContentRef.current.scrollBy({
-            top: -pageContentRef.current.clientHeight,
+            top: -clientHeight1,
             behavior: 'instant' // 平滑滚动，可根据需要设置
         });
     }
@@ -846,7 +854,8 @@ function App() {
                         visibility: !display ? 'hidden' : 'visible',
                         backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
 
-                    }} ref={pageContentRef}
+                    }}
+                         ref={pageContentRef}
                          onContextMenu={e => {
                              e.preventDefault();
                          }}
