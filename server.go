@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"wd-reader/go/BookUtils"
+	"wd-reader/go/book"
 	"wd-reader/go/constant"
 )
 
@@ -35,7 +35,7 @@ func (a *Server) startup(ctx context.Context) {
 	//	fmt.Fprintf(w, "Hello, World!")
 	//}
 
-	dir := BookUtils.GetAppPath()
+	dir := book.GetAppPath()
 	join := filepath.Join(dir, constant.BOOK_PATH)
 	fmt.Println("资源目录", join)
 	//fileServer := http.FileServer(http.Dir(join))
@@ -68,7 +68,7 @@ func (a *Server) startup(ctx context.Context) {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		if ext == ".txt" {
 			// 解决乱码的问题
-			charset := BookUtils.GetFileCharset(filePath)
+			charset := book.GetFileCharset(filePath)
 			w.Header().Set("Content-Type", "text/plain; charset="+charset)
 		}
 

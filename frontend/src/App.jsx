@@ -744,7 +744,7 @@ function App() {
                                                     return <li className={classNames("book-list-ul-li", {
                                                         "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
                                                     })}
-                                                               key={"book-list-ul-li" + index}
+                                                               key={"EpubBook-list-ul-li" + index}
                                                                title={tem} onClick={() => {
 
                                                         clickBookToFirst(tem);
@@ -885,6 +885,31 @@ function App() {
                                         return null;
                                     })
                                 }
+
+                                {
+                                    getState().showTitle && getSettingState().transparentMode === '1' && (
+                                        <div className={"flex flex-row-nowrap justify-b"} style={{
+                                            color: getSettingState().fontColor,
+                                            backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
+                                        }}>
+                                            <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
+                                                e.stopPropagation();
+                                                lastChpater();
+                                            }}>上一章</a>
+                                            <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
+                                                e.stopPropagation();
+                                                nextChpater();
+                                            }}>下一章</a>
+                                            <span
+                                                className={'book-content-div-footer-btn-txt cursor-point'}
+                                                title={getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
+                                                style={{width: "120px", overflow: 'hidden'}}>
+                                        {getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
+                                    </span>
+                                        </div>
+                                    )
+                                }
+
                             </div>
                         </div>
 
@@ -1238,7 +1263,7 @@ function App() {
                     top: 0,
                     backgroundColor: '#fff'
                 }}>
-                    <Input.Search onSearch={(_value) => {
+                    <Input.Search allowClear={true} onSearch={(_value) => {
                         let currentBookChapterList = getState().currentBookChapterList;
                         let lastSearchMulu = getState().lastSearchMulu;
                         let lastSearchMuluName = getState().lastSearchMuluName;
@@ -1324,6 +1349,10 @@ function App() {
                                                    lastSearchMulu:-1,
                                                    lastSearchMuluName:"",
                                                })
+                                               let current = pageContentRef.current;
+                                               if(current){
+                                                   current.scrollTop = 0
+                                               }
                                            }}
                                 >
                                     {ie}

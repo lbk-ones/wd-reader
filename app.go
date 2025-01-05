@@ -6,7 +6,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
 	"path/filepath"
-	"wd-reader/go/BookUtils"
+	"strings"
+	"wd-reader/go/book"
+	"wd-reader/go/book/epub/EpubBook"
 	"wd-reader/go/constant"
 )
 
@@ -62,12 +64,12 @@ func (a *App) OpenFileDialog() string {
 
 // GetAppPath 获取目前程序运行目录
 func (a *App) GetAppPath() string {
-	return BookUtils.GetAppPath()
+	return book.GetAppPath()
 }
 
 // GetBooksPath 获取books的目录
 func (a *App) GetBooksPath() string {
-	return filepath.Join(BookUtils.GetAppPath(), constant.BOOK_PATH)
+	return filepath.Join(book.GetAppPath(), constant.BOOK_PATH)
 }
 
 // GetVersion 获取版本
@@ -81,45 +83,57 @@ func (a *App) GetServerUrl() string {
 
 // ParseEpubToTxt 解析epub文件
 func (a *App) ParseEpubToTxt(filename string) string {
-	return BookUtils.ParseEpubToTxt(filename)
+	book.CheckBooksPath()
+	path := book.GetAppPath()
+	bookPath := filepath.Join(path, constant.BOOK_PATH, filename)
+	txtOutputPath := strings.Replace(bookPath, ".epub", ".txt", -1)
+	epub, err := EpubBook.ParseEpub(bookPath, txtOutputPath)
+	if err != nil {
+		return book.WrapperException(err)
+	}
+	err = epub.WriteEpub()
+	if err != nil {
+		return book.WrapperException(err)
+	}
+	return "解析成功"
 }
 
 // DeleteEpubFile 删除文件
 func (a *App) DeleteEpubFile(filename string) string {
-	dir := BookUtils.GetAppPath()
+	dir := book.GetAppPath()
 	join := filepath.Join(dir, constant.BOOK_PATH, filename)
 	err := os.Remove(join)
 	if err != nil {
-		return BookUtils.WrapperException(err)
+		return book.WrapperException(err)
 	}
 	return "ok"
 }
 
 // GetBookList 获取文件列表
 func (a *App) GetBookList() string {
-	return BookUtils.GetBookListExtract()
+	return book.GetBookListExtract()
 }
 
 // GetChapterListByFileName 传入文件名称获取文件章节或者卷列表
 func (a *App) GetChapterListByFileName(_fileName string) string {
-	return BookUtils.GetChapterListByFileNameExtract(_fileName)
+	return book.GetChapterListByFileNameExtract(_fileName)
 }
 
 // GetChapterContentByChapterName 根据传入文件名和章节名称来获取这一章节的内容
 func (a *App) GetChapterContentByChapterName(_fileName string, chapterName string) string {
-	return BookUtils.GetChapterContentByChpaterNameExtract(_fileName, chapterName)
+	return book.GetChapterContentByChpaterNameExtract(_fileName, chapterName)
 }
 
 // AddFile 添加文件
 func (*App) AddFile(name []string) string {
 	var str string
-	str = BookUtils.TransferFileFromFileSys(name)
+	str = book.TransferFileFromFileSys(name)
 	return str
 }
 
 // DeleteFile 删除文件
 func (*App) DeleteFile(name string) string {
 	var str string
-	str = BookUtils.DeleteFile(name)
+	str = book.DeleteFile(name)
 	return str
 }

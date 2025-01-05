@@ -5,7 +5,6 @@ go 1.21
 toolchain go1.21.5
 
 require (
-	github.com/AllenDang/w32 v0.0.0-20180428130237-ad0a36d80adc
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/wailsapp/wails/v2 v2.9.2
 	golang.org/x/net v0.25.0
