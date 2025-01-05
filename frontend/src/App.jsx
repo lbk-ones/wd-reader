@@ -8,9 +8,13 @@ import {
     Form,
     Input,
     InputNumber,
-    message, Modal, notification,
-    Popover, Space,
-    Spin, Statistic,
+    message,
+    Modal,
+    notification,
+    Popover,
+    Space,
+    Spin,
+    Statistic,
     Switch,
     theme,
     Tooltip
@@ -19,10 +23,14 @@ import {presetPalettes} from '@ant-design/colors';
 import {filter, find, findIndex, get, isEmpty, trim} from 'lodash-es'
 import classNames from "classnames"
 import {
+    AddFile,
     GetBookList,
+    GetBooksPath,
     GetChapterListByFileName,
-    GetServerUrl, GetVersion,
-    OpenFileDialog, ParseEpubToTxt, GetBooksPath, AddFile
+    GetServerUrl,
+    GetVersion,
+    OpenFileDialog,
+    ParseEpubToTxt
 } from "../wailsjs/go/main/App";
 import {DeleteEpubFile, GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
 import useAllState from "./components/lib/hooks/UseAllState.jsx";
@@ -30,20 +38,29 @@ import ContextMenu from "./components/ContextMenu.jsx";
 import {SketchPicker} from "react-color";
 import {
     BrowserOpenURL,
-    OnFileDrop, OnFileDropOff,
+    OnFileDrop,
+    OnFileDropOff,
     Quit,
     WindowMinimise,
     WindowReloadApp,
     WindowSetAlwaysOnTop
 } from "../wailsjs/runtime/runtime.js";
 import {
-    CloseOutlined, DatabaseOutlined, DisconnectOutlined,
-    ExclamationCircleOutlined, LineOutlined,
-    MinusOutlined, PlusOutlined,
+    CloseOutlined,
+    DatabaseOutlined,
+    DisconnectOutlined,
+    ExclamationCircleOutlined,
+    LineOutlined,
+    MinusOutlined,
+    PlusOutlined,
     PushpinOutlined,
-    RedoOutlined, SettingOutlined
+    RedoOutlined,
+    SearchOutlined,
+    SettingOutlined
 } from "@ant-design/icons";
+
 const CACHE_PREFIX = "Wd-"
+const CACHE_SCROLL_TOP = "scroll-top"
 function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
@@ -85,6 +102,7 @@ function App() {
         sysSettingVisible:false,
         lastSearchMulu:-1,
         lastSearchMuluName:"",
+        gotoMuluIndexSearchVisible:false
     })
 
 
@@ -150,11 +168,34 @@ function App() {
 
         },true)
 
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'PageDown' || event.key === 'PageUp') {
+                event.preventDefault();
+            }
+        });
+
         return ()=>{
             OnFileDropOff()
         }
     }, [])
 
+    function getContentTop(){
+        return pageContentRef.current?.scrollTop
+    }
+    let timer = null;
+    function recordTop(){
+        if(pageContentRef.current){
+            let currentBookName = getState().currentBookName;
+            if(currentBookName){
+                let scrollTop = getContentTop()
+                setCacheItem(CACHE_SCROLL_TOP+currentBookName,scrollTop)
+                window.clearTimeout(timer)
+                timer = setTimeout(function (){
+                    window.requestAnimationFrame(recordTop)
+                },1000)
+            }
+        }
+    }
     function reloadBookList(cb = null) {
         setState({
             loadingBook: true
@@ -216,15 +257,29 @@ function App() {
         return convertedData.filter(item => item.initials.indexOf(query)>=0);
     }
 
-    function pageDown() {
+    function getContentClientHeight(){
         let clientHeight1 = pageContentRef.current.clientHeight;
         if (getState().showTitle && getSettingState().transparentMode !== '1') {
             clientHeight1 = clientHeight1-30;
         }
+
+        return clientHeight1
+    }
+
+    function pageDown() {
+        let clientHeight1 = getContentClientHeight()
         pageContentRef.current.scrollBy({
             top: clientHeight1,
             behavior: 'instant' // 平滑滚动，可根据需要设置
         });
+    }
+
+    function checkLastPage() {
+        let domR = pageContentRef.current;
+        const scrollHeight = domR.scrollHeight;
+        const clientHeight = domR.clientHeight;
+        const scrollTop = domR.scrollTop;
+        return scrollTop + clientHeight >= scrollHeight;
     }
 
     function hasError(res, displayError = true) {
@@ -311,12 +366,20 @@ function App() {
                 } else {
                     let lastChpaterIndex = index - 1;
                     if (lastChpaterIndex >= 0) {
+                        setState({
+                            loadingBook:true
+                        })
                         let currentBookChapterListElement = currentBookChapterList[lastChpaterIndex];
                         let currentBookName = getState().currentBookName;
-                        goChapterByName(currentBookName, currentBookChapterListElement);
+                        goChapterByName(currentBookName, currentBookChapterListElement,()=>{
+                            let current = pageContentRef.current;
+                            current.scrollTop = 0
+                            setState({
+                                loadingBook:false
+                            })
+                        });
                         toCurrentChapterNameInList()
-                        let current = pageContentRef.current;
-                        current.scrollTop = 0
+
                     }
                 }
 
@@ -331,20 +394,28 @@ function App() {
             if (!isEmpty(currentBookChapterName)) {
                 let index = findIndex(currentBookChapterList, e => e === currentBookChapterName);
                 if (index === currentBookChapterList.length - 1) {
-                    // alert("已经是最后一章了")
+                    message.warning("It's already the last chapter")
                 } else {
                     let lastChpaterIndex = index + 1;
                     let currentBookChapterListElement = currentBookChapterList[lastChpaterIndex];
                     let currentBookName = getState().currentBookName;
-                    goChapterByName(currentBookName, currentBookChapterListElement);
+                    setState({
+                        loadingBook:true
+                    })
+                    goChapterByName(currentBookName, currentBookChapterListElement,()=>{
+                        let current = pageContentRef.current;
+                        current.scrollTop = 0
+                        setState({
+                            loadingBook:false
+                        })
+                    });
                     toCurrentChapterNameInList()
                     // if (topRef.current) {
                     //     topRef.current.scrollIntoView({
                     //         behavior:"instant"
                     //     })
                     // }
-                    let current = pageContentRef.current;
-                    current.scrollTop = 0
+
                 }
 
             }
@@ -361,6 +432,7 @@ function App() {
                     currentBookChapterContent: [],
                     currentBookChapterList: [],
                     muluVisible: false,
+                    gotoMuluIndexSearchVisible:false,
                     lastSearchMulu:-1,
                     lastSearchMuluName:"",
                     settingVisible: false
@@ -491,6 +563,7 @@ function App() {
                                                       currentBookChapterContent: [],
                                                       currentBookChapterList: [],
                                                       muluVisible: false,
+                                                      gotoMuluIndexSearchVisible:false,
                                                       lastSearchMulu:-1,
                                                       lastSearchMuluName:"",
                                                       settingVisible: false
@@ -546,6 +619,20 @@ function App() {
             item1 = [tem, ...((item1.replace(tem, "")).split(","))].filter(Boolean).join(",")
         }
         setCacheItem("LastClickBook", item1);
+    }
+
+    function beginRecordTop(tem){
+        let cacheItem = getCacheItem(CACHE_SCROLL_TOP+tem) || "0";
+        window.clearTimeout(timer);
+        setTimeout(function (){
+            let current = pageContentRef.current;
+            if(current){
+                current.scrollTop = parseInt(cacheItem)
+                window.requestAnimationFrame(recordTop)
+            }else{
+                beginRecordTop(tem);
+            }
+        },100)
     }
 
     return (
@@ -777,6 +864,8 @@ function App() {
                                                                             // hasError(tem)
                                                                             console.log(res)
                                                                         })
+
+                                                                        beginRecordTop(tem)
                                                                     });
                                                                 })
 
@@ -784,11 +873,19 @@ function App() {
                                                         } else {
                                                             let item = getCacheItem(tem);
                                                             goChapterByName(tem, item, () => {
+                                                                beginRecordTop(tem)
+
                                                                 setState({
                                                                     loadingBook: false
                                                                 })
                                                             });
                                                         }
+
+
+
+
+
+
                                                     }}>{tem}</li>
                                                 })
                                         }
@@ -863,6 +960,11 @@ function App() {
                              // e.stopPropagation();
                              if (getSettingState().clickPage === '1') {
                                  pageDown();
+                             }
+                         }}
+                         onDoubleClick={()=>{
+                             if (checkLastPage()) {
+                                 nextChpater();
                              }
                          }}
                     >
@@ -1255,17 +1357,54 @@ function App() {
                 visibility: (display && getState().muluVisible && getState().currentBookChapterName) ? "visible" : "hidden",
                 opacity: (display && getState().muluVisible && getState().currentBookChapterName) ? 1 : 0,
             }}>
-                            <span className={'mulu-modal-close'} onClick={() => {
-                                setState({
-                                    muluVisible: false,
-                                    lastSearchMulu: -1,
-                                    lastSearchMuluName: "",
-                                })
-                            }}>
-                                <span style={{fontSize: 16}}>
+                            <span className={'mulu-modal-close'} >
+                                <div style={{fontSize: 16}} className={"flex align-item-center"}>
+                                    <span>
                                     {`${findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1}/${getState().currentBookChapterList.length}`}
-                                </span>
-                                <span className={'mulu-modal-close-x'}>×</span>
+                                    </span>
+
+                                    {
+                                        getState().gotoMuluIndexSearchVisible === true && (
+                                            <InputNumber min={1} style={{width:'70%'}} onPressEnter={(e)=>{
+
+                                                let value = e.target.value;
+
+                                                let element = document.querySelector(`[data-key="mulu-index-${value-1}"]`);
+                                                if (!isEmpty(element)) {
+                                                    element.scrollIntoView({
+                                                        behavior: "instant"
+                                                    })
+                                                }else{
+                                                    message.error("no chapter")
+                                                }
+                                            }}/>
+                                        )
+                                    }
+
+                                    {
+                                        getState().gotoMuluIndexSearchVisible === false && (
+                                            <SearchOutlined style={{
+                                                color:"blue",
+                                                fontWeight:"bold"
+                                            }} onClick={()=>{
+                                                setState({
+                                                    gotoMuluIndexSearchVisible:true
+                                                })
+                                            }}/>
+                                        )
+                                    }
+
+
+                                </div>
+
+                                <span className={'mulu-modal-close-x'} onClick={() => {
+                                    setState({
+                                        muluVisible: false,
+                                        lastSearchMulu: -1,
+                                        lastSearchMuluName: "",
+                                        gotoMuluIndexSearchVisible:false
+                                    })
+                                }}>×</span>
                             </span>
                 <div className={"flex"} style={{
                     position: 'sticky',
@@ -1352,16 +1491,23 @@ function App() {
                                            className={classNames('mulu-modal-center-ul-li', {"mulu-modal-center-ul-li-active": ie === getState().currentBookChapterName})}
                                            onClick={(e) => {
                                                e.stopPropagation();
-                                               goChapterByName(getState().currentBookName, ie)
                                                setState({
-                                                   muluVisible: false,
-                                                   lastSearchMulu:-1,
-                                                   lastSearchMuluName:"",
+                                                   loadingBook:true
                                                })
-                                               let current = pageContentRef.current;
-                                               if(current){
-                                                   current.scrollTop = 0
-                                               }
+                                               goChapterByName(getState().currentBookName, ie,()=>{
+                                                   setState({
+                                                       loadingBook:false,
+                                                       muluVisible: false,
+                                                       gotoMuluIndexSearchVisible:false,
+                                                       lastSearchMulu:-1,
+                                                       lastSearchMuluName:"",
+                                                   })
+                                                   let current = pageContentRef.current;
+                                                   if(current){
+                                                       current.scrollTop = 0
+                                                   }
+                                               })
+
                                            }}
                                 >
                                     {ie}

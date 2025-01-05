@@ -10,6 +10,7 @@ const root = createRoot(container)
 
 message.config({
     maxCount: 1,
+    duration:0.4
 });
 
 root.render(
