@@ -121,10 +121,10 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 		var index int = 0
 		for scanner.Scan() {
 			text := scanner.Text()
-			prefix := strings.HasPrefix(text, "  ")
-			if prefix {
-				continue
-			}
+			//prefix := strings.HasPrefix(text, "  ")
+			//if prefix {
+			//	continue
+			//}
 			line := strings.TrimSpace(text)
 			if line == "" {
 				continue

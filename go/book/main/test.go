@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"wd-reader/go/book"
-
 	//"fmt"
 	//"path"
 	"regexp"
@@ -54,9 +52,9 @@ func main() {
 	//	//fmt.Println()
 	//}
 	//}
-	findString := constant.RegChapter.FindString("第T15章 番外特别章（2）")
+	findString := constant.RegChapter.FindString("1")
 	fmt.Println(findString)
 
-	extract := book.GetChapterListByFileNameExtract("很纯很暧昧.txt")
-	fmt.Println(extract)
+	//extract := book.GetChapterListByFileNameExtract("很纯很暧昧.txt")
+	//fmt.Println(extract)
 }
