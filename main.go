@@ -35,8 +35,9 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		AlwaysOnTop: true,
-		Frameless:   true,
+		AlwaysOnTop:   true,
+		Frameless:     true,
+		DisableResize: true,
 		Windows: &windows.Options{
 			WebviewIsTransparent:              true,
 			WindowIsTranslucent:               true,

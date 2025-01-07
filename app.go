@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -136,4 +138,23 @@ func (*App) DeleteFile(name string) string {
 	var str string
 	str = book.DeleteFile(name)
 	return str
+}
+
+// GetScOne 诗词获取
+func (a *App) GetScOne() string {
+	resp, err := http.Get("https://v1.hitokoto.cn?c=i")
+	if err != nil {
+		return ""
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(resp.Body)
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+	return string(all)
 }

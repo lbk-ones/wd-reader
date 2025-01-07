@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
 import {
@@ -85,6 +85,7 @@ function App() {
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
         leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
+        appTitle:getCacheItem('AppTitle') || '偷得浮生半日闲'
     })
 
     const [state, setState, getState] = useAllState({
@@ -511,82 +512,6 @@ function App() {
         // green,
     });
 
-    function getMenuSuffixBtn(type = "0") {
-
-        return (
-            <>
-                {
-                    type === '1' && (
-                        <SettingOutlined title={"设置！"}
-                                         onClick={() => {
-                                             setState({
-                                                 settingVisible: true
-                                             })
-                                         }}/>
-                    )
-                }
-
-                {
-                    type === '1' && (
-                        <DatabaseOutlined title={"返回书架！"}
-                                          onClick={() => {
-                                              reloadBookList(() => {
-                                                  setState({
-                                                      currentBookChapterName: '',
-                                                      currentBookName: '',
-                                                      currentBookChapterContent: [],
-                                                      currentBookChapterList: [],
-                                                      muluVisible: false,
-                                                      gotoMuluIndexSearchVisible: false,
-                                                      lastSearchMulu: -1,
-                                                      lastSearchMuluName: "",
-                                                      settingVisible: false
-                                                  })
-
-                                              })
-                                          }}/>
-                    )
-                }
-                <DisconnectOutlined
-                    title={"隐藏自己！"}
-                    style={{color: getSettingState().leaveWindowHid === '1' ? 'gray' : 'unset'}}
-                    onClick={() => {
-                        let qf = getSettingState().leaveWindowHid === '1' ? '0' : '1';
-                        setCacheItem("leaveWindowHid", qf)
-                        setSettingState({
-                            leaveWindowHid: qf
-                        })
-                    }}
-                />
-                <PushpinOutlined
-                    title={"窗口置顶"}
-                    style={{color: getSettingState().isAlwaysTop === '1' ? 'gray' : 'unset'}}
-                    onClick={() => {
-                        let qf = getSettingState().isAlwaysTop === '1' ? '0' : '1';
-                        isAlwaysTop(qf)
-                        setCacheItem("isAlwaysTop", qf)
-                        setSettingState({
-                            isAlwaysTop: qf
-                        })
-                    }}/>
-                {
-                    type !== '1' && (
-                        <RedoOutlined title={"刷新"} onClick={() => {
-                            WindowReloadApp()
-                        }}/>
-                    )
-                }
-                <MinusOutlined onClick={() => {
-                    WindowMinimise();
-                }}/>
-                <CloseOutlined onClick={() => {
-                    Quit();
-                }}/>
-            </>
-
-        )
-    }
-
     function clickBookToFirst(tem) {
         let item1 = getCacheItem("LastClickBook") || tem;
         if (item1) {
@@ -706,12 +631,10 @@ function App() {
             <Header
                 display={display}
                 state={getState()}
-                title={"上班偷看小说神器"}
-                menuSuffixBtn={getMenuSuffixBtn("1")}
-                onClick={(e) => {
-                    e.stopPropagation()
-                }}
-                menuSuffixBtn1={getMenuSuffixBtn()}
+                setState={setState}
+                settingstate={getSettingState()}
+                title={getSettingState().appTitle}
+                reloadBookList={useCallback(reloadBookList,[])}
             />
 
             {/*index book list*/}
@@ -722,6 +645,7 @@ function App() {
                 goChapterByName={useMemoizedFn(goChapterByName)}
                 beginRecordTop={useMemoizedFn(beginRecordTop)}
                 display={display}
+                hasError={useMemoizedFn(hasError)}
                 clickBookToFirst={useMemoizedFn(clickBookToFirst)}
                 clickBookPlus={() => {
                     OpenFileDialog().then(r => {
@@ -1090,9 +1014,20 @@ function App() {
                         open={getState().sysSettingVisible}
                     >
                         <div className={"flex flex-column gap10"}>
+
+                            <span>自定义标题：<Input placeHolder={"自定义应用标题"} value={getSettingState().appTitle} onChange={(e)=>{
+                                let value = e.target.value;
+
+                                setCacheItem("AppTitle",value)
+                                setSettingState({
+                                    appTitle:value
+                                })
+
+                            }}/></span>
                             <span>工作目录: {state.booksPath}</span>
                             <span>地址: {window.location.href}</span>
                             <span>缓存: {window.localStorage.length}</span>
+
                             <span><Button size={"small"} onClick={function () {
                                 Modal.confirm({
                                     title: "警告！",

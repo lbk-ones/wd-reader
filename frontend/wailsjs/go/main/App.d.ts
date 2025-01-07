@@ -17,6 +17,8 @@ export function GetChapterContentByChapterName(arg1:string,arg2:string):Promise<
 
 export function GetChapterListByFileName(arg1:string):Promise<string>;
 
+export function GetScOne():Promise<string>;
+
 export function GetServerUrl():Promise<string>;
 
 export function GetVersion():Promise<string>;

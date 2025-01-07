@@ -214,19 +214,19 @@ func TransferFileFromFileSys(name []string) string {
 
 	var resJsonMap = make(map[string]string)
 
+	path := GetAppPath()
+	bookToPath := filepath.Join(path, constant.BOOK_PATH)
 	var httpUrl []string
 	var fileUrl []string
 	for _, na := range name {
 		if strings.HasPrefix(na, "http") {
 			httpUrl = append(httpUrl, na)
-		} else if !strings.HasPrefix(na, "http") && (strings.HasSuffix(na, ".txt") || strings.HasSuffix(na, ".epub")) {
+		} else if !strings.HasPrefix(na, "http") && (strings.HasSuffix(na, ".txt") || strings.HasSuffix(na, ".epub")) && !strings.HasPrefix(na, bookToPath) {
 			fileUrl = append(fileUrl, na)
 		} else {
 			resJsonMap[na] = "路径不合法"
 		}
 	}
-
-	bookToPath := filepath.Join(GetAppPath(), constant.BOOK_PATH)
 
 	if len(httpUrl) > 0 {
 		for _, ht := range httpUrl {

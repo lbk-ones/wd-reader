@@ -1,11 +1,12 @@
 import {isEmpty} from "lodash-es";
-import {PlusOutlined, SettingOutlined} from "@ant-design/icons";
+import {DeleteOutlined, PlusOutlined, SettingOutlined} from "@ant-design/icons";
 import ContextMenu from "../ContextMenu";
 import {Input, message, Statistic} from "antd";
 import * as PropTypes from "prop-types";
 import {getCacheItem, setCacheItem} from "../Utils";
 import classNames from "classnames";
-import {DeleteEpubFile, ParseEpubToTxt} from "../../../wailsjs/go/main/App.js";
+import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../wailsjs/go/main/App";
+import {useEffect, useState} from "react";
 
 const TIP = [
     "没有人比我更懂你的需求😀",
@@ -24,6 +25,25 @@ const TIP = [
 function BookList(props) {
 
     const state = props.state;
+
+    const [sc, setSc] = useState("")
+
+    useEffect(function (){
+        console.log("初始化")
+        GetScOne().then(res=>{
+            console.log('res--->',res)
+            if(res){
+                try {
+                    let parse = JSON.parse(res);
+                    setSc(parse.hitokoto || TIP[parseInt(Math.random() * (TIP.length - 1))])
+                }catch (e){
+
+                }
+            }else{
+                setSc(res || TIP[parseInt(Math.random() * (TIP.length - 1))])
+            }
+        })
+    },[])
 
     function sortBookList() {
         let currentBookList = state.currentBookList;
@@ -99,13 +119,12 @@ function BookList(props) {
                                     sortBookList()
                                         .filter(Boolean)
                                         .map((tem, index) => {
+                                            let tem2 = tem?.replace(".txt","");
                                             return <li
-                                                className={classNames("book-list-ul-li", {
-                                                    "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
-                                                })}
-                                                key={"EpubBook-list-ul-li" + index}
-                                                title={tem}
-                                                onClick={() => {
+                                                className={classNames("book-list-ul-li flex flex-row-nowrap justify-b w-100")}
+                                                key={"book-list-ul-li" + index}
+                                                title={tem2}
+                                                onDoubleClick={() => {
                                                     props.clickBookToFirst(tem);
                                                     props.setState({
                                                         loadingBook: true
@@ -146,7 +165,31 @@ function BookList(props) {
                                                     }
 
 
-                                                }}>{tem}</li>
+                                                }}>
+                                                <div style={{width:'90%'}} className={classNames("flex-auto over-hidden shrink-1 text-overflow-dot", {
+                                                    "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
+                                                })}>
+                                                {tem2}
+                                                </div>
+                                                <div  style={{
+                                                    // flexBasis:"20px",
+                                                    flexShrink:"0",
+                                                    width:'auto',
+                                                    paddingRight:2
+                                                }}>
+                                                    <DeleteOutlined style={{color:'darkred'}} onClick={(e)=>{
+                                                        e.stopPropagation()
+
+                                                        DeleteFile(tem).then(res=>{
+                                                            if (!props.hasError(res)) {
+                                                                message.info("删除成功！")
+                                                                props.reloadBookList()
+                                                            }
+                                                        })
+
+                                                    }} />
+                                                </div>
+                                            </li>
                                         })
                                 }
                             </div>
@@ -163,9 +206,7 @@ function BookList(props) {
                             borderTop: "1px solid rgba(204, 204, 204, 0.32)",
                         }}>
                                     <span>
-                                    {
-                                        TIP[parseInt(Math.random() * (TIP.length - 1))]
-                                    }
+                                    {sc}
                                     </span>
                             <SettingOutlined
                                 style={{
@@ -201,6 +242,7 @@ BookList.propTypes = {
     reloadBookList: PropTypes.func,
     goChapterByName: PropTypes.func,
     beginRecordTop: PropTypes.func,
+    hasError: PropTypes.func,
     setState: PropTypes.func,
 };
 

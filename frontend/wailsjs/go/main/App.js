@@ -34,6 +34,10 @@ export function GetChapterListByFileName(arg1) {
   return window['go']['main']['App']['GetChapterListByFileName'](arg1);
 }
 
+export function GetScOne() {
+  return window['go']['main']['App']['GetScOne']();
+}
+
 export function GetServerUrl() {
   return window['go']['main']['App']['GetServerUrl']();
 }

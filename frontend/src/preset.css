@@ -6,6 +6,9 @@
 .flex-auto {
     flex: auto;
 }
+.flex1 {
+    flex: 1;
+}
 
 .flex-row {
     flex-flow: row wrap;
@@ -23,6 +26,12 @@
     flex-flow: column wrap;
 }
 
+.gap2 {
+    gap: 2px;
+}
+.gap3 {
+    gap: 3px;
+}
 .gap5 {
     gap: 5px;
 }
@@ -92,6 +101,12 @@
     font-weight: bolder;
 }
 
+.font-s16{
+    font-size: 16px;
+}
+.font-s20{
+    font-size: 20px;
+}
 .w-full {
     width: 100vw;
 }
@@ -234,4 +249,7 @@
 
 .over-y-auto {
     overflow-y: auto;
+}
+.over-hidden {
+    overflow: hidden;
 }
