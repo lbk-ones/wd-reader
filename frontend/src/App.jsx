@@ -1,6 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
 import pinyin from 'pinyin'
-import CsSVg from "./assets/images/cs.svg"
 import './App.css';
 import {
     Button,
@@ -33,8 +32,8 @@ import {
     ParseEpubToTxt
 } from "../wailsjs/go/main/App";
 import {DeleteEpubFile, GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
-import useAllState from "./components/lib/hooks/UseAllState.jsx";
-import ContextMenu from "./components/ContextMenu.jsx";
+import useAllState from "./components/lib/hooks/UseAllState";
+import ContextMenu from "./components/ContextMenu";
 import {SketchPicker} from "react-color";
 import {
     BrowserOpenURL,
@@ -58,9 +57,16 @@ import {
     SearchOutlined,
     SettingOutlined
 } from "@ant-design/icons";
+import Header from "./components/bus/Header";
+import BookList from "./components/bus/BookList";
+import {CACHE_PREFIX, getCacheItem, setCacheItem} from "./components/Utils";
+import useMemoizedFn from "ahooks/es/useMemoizedFn";
+import MuluList from "./components/bus/MuluList.jsx";
+import ContentSetting from "./components/bus/ContentSetting.jsx";
 
-const CACHE_PREFIX = "Wd-"
+
 const CACHE_SCROLL_TOP = "scroll-top"
+
 
 function App() {
     const [display, setDisplay] = useState(true)
@@ -505,42 +511,6 @@ function App() {
         // green,
     });
 
-    function setCacheItem(item, value) {
-
-        if (item) {
-            window.localStorage.setItem(CACHE_PREFIX + item, value);
-        }
-    }
-
-    function getCacheItem(item) {
-        if (item) {
-            return window.localStorage.getItem(CACHE_PREFIX + item);
-        }
-    }
-
-    function sortBookList() {
-        let currentBookList = getState().currentBookList;
-
-        if (!isEmpty(currentBookList)) {
-            let item = getCacheItem("LastClickBook") || "";
-            let first = [];
-            let last = [];
-            (item.split(",")).forEach(e => {
-                if (currentBookList.indexOf(e) >= 0) {
-                    first.push(e);
-                }
-            })
-            currentBookList.forEach(e => {
-                if (first.indexOf(e) < 0) {
-                    last.push(e);
-                }
-            })
-            return first.concat(last);
-        }
-
-        return currentBookList;
-    }
-
     function getMenuSuffixBtn(type = "0") {
 
         return (
@@ -639,6 +609,70 @@ function App() {
         }, 100)
     }
 
+    const muluSearch = useMemoizedFn((_value) => {
+        let currentBookChapterList = getState().currentBookChapterList;
+        let lastSearchMulu = getState().lastSearchMulu;
+        let lastSearchMuluName = getState().lastSearchMuluName;
+        let value = trim(_value);
+        if (isEmpty(value)) {
+            message.info("please input search content")
+            return;
+        }
+        let searchByInitials1 = searchByInitials(value.toLowerCase(), currentBookChapterList);
+        let pickList = [];
+        if (!isEmpty(searchByInitials1)) {
+            pickList = pickList.concat(searchByInitials1.map(e => e.name)).filter(Boolean)
+        } else {
+            let filter1 = filter(currentBookChapterList, e => e.indexOf(value) >= 0);
+            pickList = pickList.concat(filter1).filter(Boolean);
+        }
+        let lastSearchMuluNameW = null;
+        if (!isEmpty(pickList)) {
+            lastSearchMuluNameW = pickList[0]
+            let nextElementIndex = -1;
+            let lastNotEnded = true;
+            // change search content
+            if (!pickList.includes(lastSearchMuluName)) {
+                lastNotEnded = false
+            }
+            if (lastSearchMulu !== -1 && lastNotEnded) {
+                let lastSearchName = pickList[lastSearchMulu];
+                let pickListElement1 = pickList[lastSearchMulu + 1];
+                // have next
+                if (pickListElement1) {
+                    // find next
+                    let findIndex2 = findIndex(currentBookChapterList, e => e === pickListElement1);
+                    if (findIndex2 >= 0) {
+                        nextElementIndex = findIndex2;
+                    }
+                } else {
+                    //no next
+                    nextElementIndex = findIndex(currentBookChapterList, e => e === lastSearchName);
+                }
+            } else {
+                nextElementIndex = findIndex(currentBookChapterList, e => e === lastSearchMuluNameW);
+            }
+            if (nextElementIndex > 0) {
+                let element = document.querySelector(`[data-key="mulu-index-${nextElementIndex}"]`);
+                if (!isEmpty(element)) {
+                    element.scrollIntoView({
+                        behavior: "instant"
+                    })
+                    setState({
+                        lastSearchMulu: lastSearchMulu + 1,
+                        lastSearchMuluName: currentBookChapterList.find((ite, inde) => inde === nextElementIndex),
+                    })
+                }
+            }
+        } else {
+            setState({
+                lastSearchMulu: -1,
+                lastSearchMuluName: '',
+            })
+            message.info("not match " + value)
+        }
+    });
+
     return (
         <div id="App"
              style={{
@@ -654,9 +688,6 @@ function App() {
                      return {}
                  })
              }}
-            // className={classNames({
-            //     "track-transparent": !!getState().currentBookChapterName
-            // })}
              onMouseOver={() => {
                  let leaveWindowHid = getSettingState().leaveWindowHid;
                  if (leaveWindowHid === '1') {
@@ -671,268 +702,74 @@ function App() {
              }}
 
         >
-            {/*<Spin spinning={getState().loadingBook} tip={"加载中。。"}>*/}
-            {
-                display && (getState().showTitle || isEmpty(getState().currentBookName)) && (
-                    <div className={"title"}>
 
-                        {
-                            !isEmpty(getState().currentBookName) && (
-                                <div className={"title-div font-bold"}
-                                     style={{"--wails-draggable": 'drag', display: 'flex', flex: 1}}
-                                     title={getState().currentBookName.replace(".txt", "")}>
-                                    &nbsp;<img src={CsSVg} alt=""/>&nbsp;
-                                    {
-                                        `${getState().currentBookName.replace(".txt", "")}`
-                                    }
-                                </div>
-                            )
+            <Header
+                display={display}
+                state={getState()}
+                title={"上班偷看小说神器"}
+                menuSuffixBtn={getMenuSuffixBtn("1")}
+                onClick={(e) => {
+                    e.stopPropagation()
+                }}
+                menuSuffixBtn1={getMenuSuffixBtn()}
+            />
+
+            {/*index book list*/}
+            <BookList
+                state={state}
+                setState={setState}
+                reloadBookList={useMemoizedFn(reloadBookList)}
+                goChapterByName={useMemoizedFn(goChapterByName)}
+                beginRecordTop={useMemoizedFn(beginRecordTop)}
+                display={display}
+                clickBookToFirst={useMemoizedFn(clickBookToFirst)}
+                clickBookPlus={() => {
+                    OpenFileDialog().then(r => {
+                        if (r) {
+                            AddFleAndHandlerRes([r]);
                         }
-
-                        {
-                            !isEmpty(getState().currentBookName) && (
-                                <div className={"title-div font-bold mr-5"}
-                                     style={{justifyContent: 'flex-end', gap: 3, fontSize: 20}}
-                                     title={getState().currentBookChapterName}>
-
-                                    {
-                                        getMenuSuffixBtn("1")
-                                    }
-                                </div>
-                            )
+                    })
+                }}
+                onSelect={function (option) {
+                    if (option.label === '去下载') {
+                        setState({
+                            downloadFromUrlVisible: true,
+                            downloadFromUrlList: [null]
+                        })
+                    }
+                }}
+                onSearch={(_value, e) => {
+                    let value = trim(_value)
+                    reloadBookList(() => {
+                        if (!value) {
+                            return
                         }
-
-                        {
-                            isEmpty(getState().currentBookName) && (
-                                <div className={"title-div"} style={{
-                                    fontWeight: 'bold',
-                                    flex: 1
-                                }}>
-                                    <div style={{
-                                        width: '100%',
-                                        color: 'darkred',
-                                        display: 'flex',
-                                        flexShrink: 0,
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
-                                    }}>
-                                        <div style={{
-                                            "--wails-draggable": 'drag',
-                                            display: 'flex',
-                                            flex: 'auto',
-                                            alignItems: 'center',
-                                            gap: '2px'
-                                        }}>
-                                            <img src={CsSVg} alt=""/>
-                                            <span>上班偷看小说神器</span>
-                                            <span>{getState().version || ''}</span>
-                                        </div>
-
-                                        <div style={{display: "flex", flexFlow: 'row nowrap', gap: 3, fontSize: 20}}
-                                             onClick={(e) => {
-                                                 e.stopPropagation()
-                                             }}>
-                                            {
-                                                getMenuSuffixBtn()
-                                            }
-                                        </div>
-
-                                    </div>
-                                </div>
-                            )
+                        let searchByInitials1 = searchByInitials(value.toLowerCase(), getState().currentBookList);
+                        let searchSuccess = false;
+                        if (!isEmpty(searchByInitials1)) {
+                            searchSuccess = true;
+                            searchByInitials1.forEach(et => {
+                                clickBookToFirst(et.name)
+                            })
+                        } else {
+                            let filter1 = filter(getState().currentBookList, e => e.indexOf(value) >= 0);
+                            searchSuccess = !isEmpty(filter1);
+                            filter1.forEach(e => {
+                                clickBookToFirst(e)
+                            })
                         }
+                        if (searchSuccess) {
+                            message.success("查询到列表，已经置顶")
+                        } else {
+                            message.success("未查询到列表")
+                        }
+                    })
 
-                    </div>
-                )
-            }
-            {
-                isEmpty(state.currentBookChapterName) && display && isEmpty(getState().errorInfo) && (function () {
-                    // if (!getState().loadIngBookList && isEmpty(getState().currentBookList)) {
-                    //
-                    //     return (
-                    //         <div className={"flex-center"} style={{
-                    //             fontSize: 18,
-                    //             padding: 20,
-                    //             color: 'darkred'
-                    //         }}><span
-                    //             className={"shrink-1"}>未读取到文件，文件目录为:{getState().booksPath}</span>
-                    //         </div>
-                    //     );
-                    // }
-                    return (
-                        <div className="book-list">
-                            <ul className={"book-list-ul flex flex-column-nowrap"}>
-                                <div className="book-list-top-box">
-                                    <div className={"add-book"} title={"添加文件，右键更多功能"} style={{
-                                        "--wails-drop-target": "drop"
-                                    }} onClick={() => {
-                                        OpenFileDialog().then(r => {
-                                            if (r) {
-                                                AddFleAndHandlerRes([r]);
-                                            }
-                                        })
-                                    }}>
-                                        <PlusOutlined/>
-
-                                        <ContextMenu
-                                            fontSize={16}
-                                            options={
-                                                [{label: 'URL下载'},
-                                                    {label: '去下载'}]}
-                                            onSelect={function (option) {
-                                                if (option.label === 'URL下载') {
-                                                    setState({
-                                                        downloadFromUrlVisible: true,
-                                                        downloadFromUrlList: [null]
-                                                    })
-                                                } else if (option.label === '去下载') {
-                                                    BrowserOpenURL("https://zh.opendelta.org/")
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                    <div className={"search-box"}>
-                                        <Input.Search allowClear={true} placeholder={"搜索"} style={{
-                                            width: '100%',
-                                            // borderBottom: "1px solid #ccc",
-                                            borderRadius: 'none'
-                                        }}
-                                                      onSearch={(_value, e) => {
-                                                          let value = trim(_value)
-                                                          reloadBookList(() => {
-                                                              if (!value) {
-                                                                  return
-                                                              }
-                                                              let searchByInitials1 = searchByInitials(value.toLowerCase(), getState().currentBookList);
-                                                              let searchSuccess = false;
-                                                              if (!isEmpty(searchByInitials1)) {
-                                                                  searchSuccess = true;
-                                                                  searchByInitials1.forEach(et => {
-                                                                      clickBookToFirst(et.name)
-                                                                  })
-                                                              } else {
-                                                                  let filter1 = filter(getState().currentBookList, e => e.indexOf(value) >= 0);
-                                                                  searchSuccess = !isEmpty(filter1);
-                                                                  filter1.forEach(e => {
-                                                                      clickBookToFirst(e)
-                                                                  })
-                                                              }
-                                                              if (searchSuccess) {
-                                                                  message.success("查询到列表，已经置顶")
-                                                              } else {
-                                                                  message.success("未查询到列表")
-                                                              }
-                                                          })
-
-                                                      }}
-                                        />
-
-                                        <div className={"flex flex-row gap10 align-item-center"}>
-                                            <Statistic title="正在阅读"
-                                                       value={(getCacheItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
-                                            <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
-                                        </div>
-
-                                    </div>
-                                </div>
-                                <div className={"flex-auto"}>
-                                    <div className={"w-100 h-100 over-y-auto"}>
-                                        {
-                                            sortBookList()
-                                                .filter(Boolean)
-                                                .map((tem, index) => {
-                                                    return <li className={classNames("book-list-ul-li", {
-                                                        "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
-                                                    })}
-                                                               key={"EpubBook-list-ul-li" + index}
-                                                               title={tem} onClick={() => {
-
-                                                        clickBookToFirst(tem);
-                                                        setState({
-                                                            loadingBook: true
-                                                        })
-                                                        if (tem.endsWith("epub")) {
-
-                                                            ParseEpubToTxt(tem).then(res => {
-                                                                if (res.startsWith("错误信息:")) {
-                                                                    message.error(res)
-                                                                }
-
-                                                                let s = tem.replace(".epub", ".txt");
-                                                                let item = getCacheItem(tem);
-                                                                reloadBookList(() => {
-                                                                    goChapterByName(s, item, () => {
-                                                                        setState({
-                                                                            loadingBook: false
-                                                                        })
-                                                                        DeleteEpubFile(tem).then(res => {
-                                                                            // hasError(tem)
-                                                                            console.log(res)
-                                                                        })
-
-                                                                        beginRecordTop(tem)
-                                                                    });
-                                                                })
-
-                                                            })
-                                                        } else {
-                                                            let item = getCacheItem(tem);
-                                                            goChapterByName(tem, item, () => {
-                                                                beginRecordTop(tem)
-
-                                                                setState({
-                                                                    loadingBook: false
-                                                                })
-                                                            });
-                                                        }
+                }}
+            />
 
 
-                                                    }}>{tem}</li>
-                                                })
-                                        }
-                                    </div>
-
-                                </div>
-
-                                <li className={'book-list-ul-li flex align-item-center no-shrink'} style={{
-                                    width: '100%',
-                                    justifyContent: 'space-between',
-                                    position: 'sticky',
-                                    bottom: 0,
-                                    backgroundColor: '#fff',
-                                    color: "darkred",
-                                    borderTop: '1px solid rgba(204, 204, 204, 0.32)',
-                                    // borderBottom: '1px solid #ccc',
-                                }}>
-                                    <span>
-                                    {
-                                        ["没有人比我更懂你的需求😀", "加油吧打工人💪", "打工人，轻松一下😊", "Life Is A Fucking Move!😞", "什么时候才能不为了一日三餐奔波啊✿"][parseInt(Math.random() * 4)]
-                                    }
-                                    </span>
-                                    <SettingOutlined
-                                        style={{
-                                            fontSize: '20px',
-                                            paddingRight: '5px'
-                                        }}
-                                        title={"设置！"}
-                                        onClick={() => {
-                                            setState({
-                                                sysSettingVisible: true
-                                            })
-                                        }}
-                                    />
-
-                                </li>
-                            </ul>
-
-                        </div>
-
-                    )
-                })()
-            }
-
-
-            {/*内容页面*/}
+            {/*content page*/}
             {
                 !isEmpty(state.currentBookChapterName) && !getState().currentBookName.endsWith(".epub") && (
                     <div className={"book-content-div"} style={{
@@ -1055,470 +892,71 @@ function App() {
                 )
             }
 
-            {/*设置 -- 弹窗*/}
-            {
-                display && getState().settingVisible && (
-                    <div className="setting-modal">
-                            <span className={'setting-modal-close'} onClick={() => {
-                                setState({
-                                    settingVisible: false
-                                })
-                            }}>
-                                ×
-                            </span>
-                        <div className={"setting-modal-center"} onClick={(e) => {
-                            e.stopPropagation();
-                        }}>
+            {/*content setting*/}
+            <ContentSetting
+                state={getState()}
+                setState={setState}
+                settingState={getSettingState()}
+                display={display}
+                isAlwaysTop={isAlwaysTop}
+                setDisplay={setDisplay}
+                setSettingState={setSettingState}
 
+            />
 
-                            <Form
-                                layout={"horizontal"}
-                                name="basic"
-                                labelCol={{
-                                    span: 9,
-                                    xs: 9,
-                                    sm: 9
-                                }}
-                                wrapperCol={{
-                                    span: 15,
-                                    xs: 15,
-                                    sm: 15,
-                                }}
-                                initialValues={{
-                                    layout: "horizontal",
-                                }}
-                                // onFinish={onFinish}
-                                // onFinishFailed={onFinishFailed}
-                                autoComplete="off"
-                            >
-                                <Form.Item
-                                    label="字体大小"
-                                    name="字体大小"
-                                    layout="horizontal"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <InputNumber style={{width: 100}} defaultValue={Number(getSettingState().fontSize)}
-                                                 onChange={(value) => {
-                                                     setCacheItem('fontLineHeight', value)
-                                                     setSettingState({
-                                                         fontSize: value
-                                                     })
-                                                 }}/>
-                                </Form.Item>
-
-                                <Form.Item
-                                    label="间距"
-                                    name="间距"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <InputNumber style={{width: 100}}
-                                                 defaultValue={Number(getSettingState().fontLineHeight)}
-                                                 onChange={(value) => {
-                                                     setCacheItem('fontLineHeight', value)
-                                                     setSettingState({
-                                                         fontLineHeight: value
-                                                     })
-                                                 }}/>
-                                    {/*<Input style={{width:100}} value={getSettingState().fontLineHeight} onChange={(e)=>{*/}
-                                    {/*    let value = e.target.value;*/}
-                                    {/*    setCacheItem('bgColor',hex)*/}
-                                    {/*    setSettingState({*/}
-                                    {/*        bgColor: color.hex*/}
-                                    {/*    })*/}
-                                    {/*}}/>*/}
-                                </Form.Item>
-                                <Form.Item
-                                    label="背景色"
-                                    name="背景色"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <Popover zIndex={112} content={() => {
-                                        return (
-                                            <SketchPicker
-                                                color={getSettingState().bgColor}
-                                                onChange={(color) => {
-                                                    setCacheItem('bgColor', color.hex)
-                                                    setSettingState({
-                                                        bgColor: color.hex
-                                                    })
-                                                }}
-                                                styles={{
-                                                    // picker: {
-                                                    //     width: '', // 调整宽度
-                                                    //     height: '50%' // 调整高度
-                                                    // }
-                                                    // saturation:'50%'
-                                                }}
-                                            />
-                                        )
-                                    }} trigger="click" title="颜色选择">
-
-                                        <div
-                                            style={{
-                                                width: '20px',
-                                                height: '20px',
-                                                // margin: '20px',
-                                                backgroundColor: getSettingState().bgColor
-                                            }}
-                                        />
-
-                                    </Popover>
-                                </Form.Item>
-                                <Form.Item
-                                    label="字体颜色"
-                                    name="字体颜色"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <Popover zIndex={112} content={() => {
-                                        return (
-                                            <SketchPicker
-                                                color={getSettingState().fontColor}
-                                                onChange={(color) => {
-                                                    let hex = color.hex;
-                                                    setCacheItem('fontColor', hex)
-                                                    setSettingState({
-                                                        fontColor: hex
-                                                    })
-                                                }}
-                                                styles={{
-                                                    // picker: {
-                                                    //     width: '', // 调整宽度
-                                                    //     height: '50%' // 调整高度
-                                                    // }
-                                                    // saturation:'50%'
-                                                }}
-                                            />
-                                        )
-                                    }} trigger="click" title="颜色选择">
-
-                                        <div
-                                            style={{
-                                                width: '20px',
-                                                height: '20px',
-                                                // margin: '20px',
-                                                backgroundColor: getSettingState().fontColor
-                                            }}
-                                        />
-
-                                    </Popover>
-
-                                </Form.Item>
-                                <Form.Item
-                                    label="点击翻页"
-                                    name="clickPage"
-                                >
-                                    <input style={{zIndex: 9000, width: 30, height: 30}} type={'checkbox'}
-                                           checked={getSettingState().clickPage === '1'} onChange={e => {
-                                        let string = e.target.checked === true ? "1" : "0";
-                                        setCacheItem('clickPage', string)
-                                        setSettingState({
-                                            clickPage: string
-                                        })
-                                    }}/>
-                                </Form.Item>
-                                <Form.Item
-                                    label="显示进度"
-                                    name="显示进度"
-                                >
-                                    <Switch checked={getSettingState().showProgress === '1'} onChange={(value) => {
-                                        let string = value === true ? "1" : "0";
-                                        setCacheItem('showProgress', string)
-                                        setSettingState({
-                                            showProgress: string
-                                        })
-                                    }}/>
-                                </Form.Item>
-                                <Form.Item
-                                    label="窗口置顶"
-                                    name="窗口置顶"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <Switch checked={getSettingState().isAlwaysTop === '1'} onChange={(value) => {
-                                        let string = value === true ? "1" : "0";
-                                        setCacheItem('isAlwaysTop', string)
-                                        setSettingState({
-                                            isAlwaysTop: string
-                                        })
-                                        isAlwaysTop(string)
-                                    }}/>
-                                </Form.Item>
-                                <Form.Item
-                                    label={<div>窗口隐藏 <Tooltip placement="left"
-                                                                  title={"鼠标移入的时候才显示，移除变透明"}>
-                                        <ExclamationCircleOutlined/>
-                                    </Tooltip></div>}
-                                    name="窗口隐藏"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <Switch checked={getSettingState().leaveWindowHid === '1'} onChange={(value) => {
-                                        let string = value === true ? "1" : "0";
-                                        setCacheItem('leaveWindowHid', string)
-                                        setSettingState({
-                                            leaveWindowHid: string
-                                        })
-                                        if (string === "0") {
-                                            setDisplay(true)
-                                        }
-                                    }}/>
-                                </Form.Item>
-                                <Form.Item
-                                    label={<div>透明模式 <Tooltip placement="left" title={"透明模式会把字体变为白色"}>
-                                        <ExclamationCircleOutlined/>
-                                    </Tooltip></div>}
-                                    name="透明模式"
-                                    rules={[
-                                        {
-                                            required: false,
-                                            message: 'Please input your username!',
-                                        },
-                                    ]}
-                                >
-                                    <Switch checked={getSettingState().transparentMode === '1'} onChange={(value) => {
-                                        let string = value === true ? "1" : "0";
-                                        setCacheItem('transparentMode', string)
-                                        setSettingState({
-                                            transparentMode: string
-                                        })
-                                        if (string === '1') {
-                                            setCacheItem('fontColor', '#fff')
-                                            setSettingState({
-                                                fontColor: "#fff"
-                                            })
-                                        }
-                                    }}/>
-                                </Form.Item>
-
-                                <Form.Item label={null}>
-                                    <Button type="primary" onClick={() => {
-                                        setCacheItem('fontColor', '#000')
-                                        setCacheItem('fontLineHeight', '30')
-                                        setCacheItem('bgColor', '#fff')
-                                        setCacheItem('fontSize', '16')
-                                        setCacheItem('clickPage', "1")
-                                        setCacheItem('showProgress', "0")
-                                        setCacheItem('isAlwaysTop', "1")
-                                        setCacheItem('transparentMode', "0")
-                                        setCacheItem('leaveWindowHid', "0")
-                                        setSettingState({
-                                            fontColor: "#000",
-                                            fontLineHeight: "30",
-                                            bgColor: "#fff",
-                                            fontSize: "16",
-                                            clickPage: "1",
-                                            showProgress: "0",
-                                            isAlwaysTop: "1",
-                                            transparentMode: "0",
-                                            leaveWindowHid: "0",
-                                        })
-                                        setDisplay(true)
-                                        isAlwaysTop(getCacheItem('isAlwaysTop'));
-                                    }}>
-                                        恢复默认
-                                    </Button>
-                                </Form.Item>
-                            </Form>
-
-                        </div>
-                    </div>
-                )
-            }
-
-            {/*目录 -- 弹窗*/}
-            <div className="mulu-modal" style={{
-                visibility: (display && getState().muluVisible && getState().currentBookChapterName) ? "visible" : "hidden",
-                opacity: (display && getState().muluVisible && getState().currentBookChapterName) ? 1 : 0,
-            }}>
-                            <span className={'mulu-modal-close'}>
-                                <div style={{fontSize: 16}} className={"flex align-item-center"}>
-                                    <span>
-                                    {`${findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1}/${getState().currentBookChapterList.length}`}
-                                    </span>
-
-                                    {
-                                        getState().gotoMuluIndexSearchVisible === true && (
-                                            <InputNumber min={1} style={{width: '70%'}} onPressEnter={(e) => {
-
-                                                let value = e.target.value;
-
-                                                let element = document.querySelector(`[data-key="mulu-index-${value - 1}"]`);
-                                                if (!isEmpty(element)) {
-                                                    element.scrollIntoView({
-                                                        behavior: "instant"
-                                                    })
-                                                } else {
-                                                    message.error("no chapter")
-                                                }
-                                            }}/>
-                                        )
-                                    }
-
-                                    {
-                                        getState().gotoMuluIndexSearchVisible === false && (
-                                            <SearchOutlined style={{
-                                                color: "blue",
-                                                fontWeight: "bold"
-                                            }} onClick={() => {
-                                                setState({
-                                                    gotoMuluIndexSearchVisible: true
-                                                })
-                                            }}/>
-                                        )
-                                    }
-
-
-                                </div>
-
-                                <span className={'mulu-modal-close-x'} onClick={() => {
-                                    setState({
-                                        muluVisible: false,
-                                        lastSearchMulu: -1,
-                                        lastSearchMuluName: "",
-                                        gotoMuluIndexSearchVisible: false
-                                    })
-                                }}>×</span>
-                            </span>
-                <div className={"flex"} style={{
-                    position: 'sticky',
-                    top: 0,
-                    backgroundColor: '#fff'
-                }}>
-                    <Input.Search allowClear={true} onSearch={(_value) => {
-                        let currentBookChapterList = getState().currentBookChapterList;
-                        let lastSearchMulu = getState().lastSearchMulu;
-                        let lastSearchMuluName = getState().lastSearchMuluName;
-                        let value = trim(_value);
-                        if (isEmpty(value)) {
-                            message.info("please input search content")
-                            return;
+            {/*catlog modal*/}
+            <MuluList
+                display={display}
+                currentBookChapterList={state.currentBookChapterList}
+                muluVisible={state.muluVisible}
+                currentBookChapterName={state.currentBookChapterName}
+                gotoMuluIndexSearchVisible={state.gotoMuluIndexSearchVisible}
+                onPressEnter={useMemoizedFn((e) => {
+                    let value = e.target.value;
+                    let element = document.querySelector(`[data-key="mulu-index-${value - 1}"]`);
+                    if (!isEmpty(element)) {
+                        element.scrollIntoView({
+                            behavior: "instant"
+                        })
+                    } else {
+                        message.error("no chapter")
+                    }
+                })}
+                onClickSearch={useMemoizedFn(() => {
+                    setState({
+                        gotoMuluIndexSearchVisible: true
+                    })
+                })}
+                closeDrawer={useMemoizedFn(() => {
+                    setState({
+                        muluVisible: false,
+                        lastSearchMulu: -1,
+                        lastSearchMuluName: "",
+                        gotoMuluIndexSearchVisible: false
+                    })
+                })}
+                onSearch={muluSearch}
+                clickMulu={useMemoizedFn((ie, index) => {
+                    setState({
+                        loadingBook: true
+                    })
+                    goChapterByName(getState().currentBookName, ie, () => {
+                        setState({
+                            loadingBook: false,
+                            muluVisible: false,
+                            gotoMuluIndexSearchVisible: false,
+                            lastSearchMulu: -1,
+                            lastSearchMuluName: "",
+                        })
+                        let current = pageContentRef.current;
+                        if (current) {
+                            current.scrollTop = 0
                         }
-                        let searchByInitials1 = searchByInitials(value.toLowerCase(), currentBookChapterList);
-                        let pickList = [];
-                        if (!isEmpty(searchByInitials1)) {
-                            pickList = pickList.concat(searchByInitials1.map(e => e.name)).filter(Boolean)
-                        } else {
-                            let filter1 = filter(currentBookChapterList, e => e.indexOf(value) >= 0);
-                            pickList = pickList.concat(filter1).filter(Boolean);
-                        }
-                        let lastSearchMuluNameW = null;
-                        if (!isEmpty(pickList)) {
-                            lastSearchMuluNameW = pickList[0]
-                            let nextElementIndex = -1;
-                            let lastNotEnded = true;
-                            // change search content
-                            if (!pickList.includes(lastSearchMuluName)) {
-                                lastNotEnded = false
-                            }
-                            if (lastSearchMulu !== -1 && lastNotEnded) {
-                                let lastSearchName = pickList[lastSearchMulu];
-                                let pickListElement1 = pickList[lastSearchMulu + 1];
-                                // have next
-                                if (pickListElement1) {
-                                    // find next
-                                    let findIndex2 = findIndex(currentBookChapterList, e => e === pickListElement1);
-                                    if (findIndex2 >= 0) {
-                                        nextElementIndex = findIndex2;
-                                    }
-                                } else {
-                                    //no next
-                                    nextElementIndex = findIndex(currentBookChapterList, e => e === lastSearchName);
-                                }
-                            } else {
-                                nextElementIndex = findIndex(currentBookChapterList, e => e === lastSearchMuluNameW);
-                            }
-                            if (nextElementIndex > 0) {
-                                let element = document.querySelector(`[data-key="mulu-index-${nextElementIndex}"]`);
-                                if (!isEmpty(element)) {
-                                    element.scrollIntoView({
-                                        behavior: "instant"
-                                    })
-                                    setState({
-                                        lastSearchMulu: lastSearchMulu + 1,
-                                        lastSearchMuluName: currentBookChapterList.find((ite, inde) => inde === nextElementIndex),
-                                    })
-                                }
-                            }
-                        } else {
-                            setState({
-                                lastSearchMulu: -1,
-                                lastSearchMuluName: '',
-                            })
-                            message.info("not match " + value)
-                        }
-
-                    }} style={{flex: '2'}} placeholder={"搜索"}/>
-                </div>
-                <div className={"mulu-modal-center"} onClick={(e) => {
-                    e.stopPropagation();
-                }}>
+                    })
+                })}
+            />
 
 
-                    <ul className={'mulu-modal-center-ul'}>
-                        {
-                            getState().currentBookChapterList.map((ie, index) => {
-                                return <li key={"mulu-modal-center-ul-li" + index}
-                                           title={ie}
-                                           data-key={'mulu-index-' + index}
-                                           data-name={ie}
-                                           className={classNames('mulu-modal-center-ul-li', {"mulu-modal-center-ul-li-active": ie === getState().currentBookChapterName})}
-                                           onClick={(e) => {
-                                               e.stopPropagation();
-                                               setState({
-                                                   loadingBook: true
-                                               })
-                                               goChapterByName(getState().currentBookName, ie, () => {
-                                                   setState({
-                                                       loadingBook: false,
-                                                       muluVisible: false,
-                                                       gotoMuluIndexSearchVisible: false,
-                                                       lastSearchMulu: -1,
-                                                       lastSearchMuluName: "",
-                                                   })
-                                                   let current = pageContentRef.current;
-                                                   if (current) {
-                                                       current.scrollTop = 0
-                                                   }
-                                               })
-
-                                           }}
-                                >
-                                    {ie}
-                                </li>
-
-                            })
-                        }
-                    </ul>
-                </div>
-            </div>
             <Spin spinning={getState().loadingBook} tip={getState().loadingBookTip} fullscreen/>
 
             {
@@ -1618,6 +1056,21 @@ function App() {
                     }
                 </div>
 
+
+                <p className={"mt-20 flex flex-row gap5"}>
+                    <Button title={"zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网"} onClick={() => {
+                        BrowserOpenURL("https://zh.opendelta.org/")
+                    }}>Z-Lib</Button>
+                    <Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {
+                        BrowserOpenURL("https://zxcsol.com/")
+                    }}>知轩藏书</Button>
+                    <Button title={"80电子书"} onClick={() => {
+                        BrowserOpenURL("https://www.80637.com/")
+                    }}>80电子书</Button>
+                    <Button title={"顶点小说"} onClick={() => {
+                        BrowserOpenURL("https://www.najjdd.com/")
+                    }}>顶点小说</Button>
+                </p>
 
             </Drawer>
 

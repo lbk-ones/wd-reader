@@ -1,3 +1,4 @@
+'use client';
 import React from 'react'
 import {createRoot} from 'react-dom/client'
 import './style.css'
@@ -10,7 +11,7 @@ const root = createRoot(container)
 
 message.config({
     maxCount: 1,
-    duration:0.4
+    duration: 0.4
 });
 
 root.render(
