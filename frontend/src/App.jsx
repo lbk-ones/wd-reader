@@ -61,6 +61,7 @@ import {
 
 const CACHE_PREFIX = "Wd-"
 const CACHE_SCROLL_TOP = "scroll-top"
+
 function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
@@ -81,7 +82,7 @@ function App() {
     })
 
     const [state, setState, getState] = useAllState({
-        currentBookList:[],
+        currentBookList: [],
         currentBookName: "",
         currentBookChapterList: [],
         currentBookChapterName: "",
@@ -97,38 +98,38 @@ function App() {
         errorInfo: '',
         version: '',
         booksPath: '',
-        downloadFromUrlVisible:false,
-        downloadFromUrlList:[null],
-        sysSettingVisible:false,
-        lastSearchMulu:-1,
-        lastSearchMuluName:"",
-        gotoMuluIndexSearchVisible:false
+        downloadFromUrlVisible: false,
+        downloadFromUrlList: [null],
+        sysSettingVisible: false,
+        lastSearchMulu: -1,
+        lastSearchMuluName: "",
+        gotoMuluIndexSearchVisible: false
     })
 
 
-    function handlerAddFileRes(res,list){
-        if(!hasError(res)){
-            try{
+    function handlerAddFileRes(res, list) {
+        if (!hasError(res)) {
+            try {
                 let parse = JSON.parse(res);
                 let entries = Object.entries(parse);
                 let errorLength = entries.length;
                 let allLength = list.length;
-                entries.forEach((value, index, array) =>{
+                entries.forEach((value, index, array) => {
                     let key = value[0];
                     let Value = value[1];
                     api.info({
                         message: key,
                         description: `${Value}`,
-                        placement:"bottomRight"
+                        placement: "bottomRight"
                     });
                 })
                 setState({
-                    loadingBook:true,
-                    loadingBookTip:"加载中。。",
+                    loadingBook: true,
+                    loadingBookTip: "加载中。。",
                 })
                 reloadBookList();
-                message.info("共成功:"+(allLength-errorLength)+"份文件")
-            }catch (e){
+                message.info("共成功:" + (allLength - errorLength) + "份文件")
+            } catch (e) {
 
             }
         }
@@ -136,8 +137,8 @@ function App() {
 
     function AddFleAndHandlerRes(paths) {
         setState({
-            loadingBook:true,
-            loadingBookTip:"解析中。。",
+            loadingBook: true,
+            loadingBookTip: "解析中。。",
         })
         AddFile(paths).then(res => {
             handlerAddFileRes(res, paths);
@@ -163,39 +164,42 @@ function App() {
                 serverUrl: res
             })
         })
-        OnFileDrop(function (x,y,paths){
+        OnFileDrop(function (x, y, paths) {
             AddFleAndHandlerRes(paths);
 
-        },true)
+        }, true)
 
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (event.key === 'PageDown' || event.key === 'PageUp') {
                 event.preventDefault();
             }
         });
 
-        return ()=>{
+        return () => {
             OnFileDropOff()
         }
     }, [])
 
-    function getContentTop(){
+    function getContentTop() {
         return pageContentRef.current?.scrollTop
     }
+
     let timer = null;
-    function recordTop(){
-        if(pageContentRef.current){
+
+    function recordTop() {
+        if (pageContentRef.current) {
             let currentBookName = getState().currentBookName;
-            if(currentBookName){
+            if (currentBookName) {
                 let scrollTop = getContentTop()
-                setCacheItem(CACHE_SCROLL_TOP+currentBookName,scrollTop)
+                setCacheItem(CACHE_SCROLL_TOP + currentBookName, scrollTop)
                 window.clearTimeout(timer)
-                timer = setTimeout(function (){
+                timer = setTimeout(function () {
                     window.requestAnimationFrame(recordTop)
-                },1000)
+                }, 1000)
             }
         }
     }
+
     function reloadBookList(cb = null) {
         setState({
             loadingBook: true
@@ -211,27 +215,27 @@ function App() {
 
 
                 cb && cb()
-            }else{
+            } else {
                 setState({
-                    loadingBook:false
+                    loadingBook: false
                 })
             }
 
             // 刷新一下缓存
             let item = getCacheItem("LastClickBook");
-            if(item){
-                if(!strings){
-                    setCacheItem("LastClickBook","");
+            if (item) {
+                if (!strings) {
+                    setCacheItem("LastClickBook", "");
                     return;
                 }
                 let strings1 = item.split(",");
                 let nweCacheList = [];
-                strings1.forEach(et=>{
-                    if(find(strings,e=> e === et)){
+                strings1.forEach(et => {
+                    if (find(strings, e => e === et)) {
                         nweCacheList.push(et);
                     }
                 })
-                setCacheItem("LastClickBook",nweCacheList.join(","))
+                setCacheItem("LastClickBook", nweCacheList.join(","))
             }
         });
     }
@@ -254,13 +258,13 @@ function App() {
 
     function searchByInitials(query, data) {
         const convertedData = convertToInitials(data);
-        return convertedData.filter(item => item.initials.indexOf(query)>=0);
+        return convertedData.filter(item => item.initials.indexOf(query) >= 0);
     }
 
-    function getContentClientHeight(){
+    function getContentClientHeight() {
         let clientHeight1 = pageContentRef.current.clientHeight;
         if (getState().showTitle && getSettingState().transparentMode !== '1') {
-            clientHeight1 = clientHeight1-30;
+            clientHeight1 = clientHeight1 - 30;
         }
 
         return clientHeight1
@@ -279,7 +283,7 @@ function App() {
         const scrollHeight = domR.scrollHeight;
         const clientHeight = domR.clientHeight;
         const scrollTop = domR.scrollTop;
-        return scrollTop + clientHeight >= scrollHeight;
+        return Math.ceil(scrollTop + clientHeight) >= scrollHeight;
     }
 
     function hasError(res, displayError = true) {
@@ -293,7 +297,7 @@ function App() {
             api.info({
                 message: `提示`,
                 description: `${res}`,
-                placement:"bottomRight"
+                placement: "bottomRight"
             });
             return true;
         }
@@ -303,7 +307,7 @@ function App() {
     function pageUp() {
         let clientHeight1 = pageContentRef.current.clientHeight;
         if (getState().showTitle && getSettingState().transparentMode !== '1') {
-            clientHeight1 = clientHeight1-30;
+            clientHeight1 = clientHeight1 - 30;
         }
         pageContentRef.current.scrollBy({
             top: -clientHeight1,
@@ -367,15 +371,15 @@ function App() {
                     let lastChpaterIndex = index - 1;
                     if (lastChpaterIndex >= 0) {
                         setState({
-                            loadingBook:true
+                            loadingBook: true
                         })
                         let currentBookChapterListElement = currentBookChapterList[lastChpaterIndex];
                         let currentBookName = getState().currentBookName;
-                        goChapterByName(currentBookName, currentBookChapterListElement,()=>{
+                        goChapterByName(currentBookName, currentBookChapterListElement, () => {
                             let current = pageContentRef.current;
                             current.scrollTop = 0
                             setState({
-                                loadingBook:false
+                                loadingBook: false
                             })
                         });
                         toCurrentChapterNameInList()
@@ -400,13 +404,13 @@ function App() {
                     let currentBookChapterListElement = currentBookChapterList[lastChpaterIndex];
                     let currentBookName = getState().currentBookName;
                     setState({
-                        loadingBook:true
+                        loadingBook: true
                     })
-                    goChapterByName(currentBookName, currentBookChapterListElement,()=>{
+                    goChapterByName(currentBookName, currentBookChapterListElement, () => {
                         let current = pageContentRef.current;
                         current.scrollTop = 0
                         setState({
-                            loadingBook:false
+                            loadingBook: false
                         })
                     });
                     toCurrentChapterNameInList()
@@ -432,9 +436,9 @@ function App() {
                     currentBookChapterContent: [],
                     currentBookChapterList: [],
                     muluVisible: false,
-                    gotoMuluIndexSearchVisible:false,
-                    lastSearchMulu:-1,
-                    lastSearchMuluName:"",
+                    gotoMuluIndexSearchVisible: false,
+                    lastSearchMulu: -1,
+                    lastSearchMuluName: "",
                     settingVisible: false
                 })
 
@@ -501,16 +505,16 @@ function App() {
         // green,
     });
 
-    function setCacheItem(item,value){
+    function setCacheItem(item, value) {
 
-        if(item){
-            window.localStorage.setItem(CACHE_PREFIX+item,value);
+        if (item) {
+            window.localStorage.setItem(CACHE_PREFIX + item, value);
         }
     }
 
-    function getCacheItem(item){
-        if(item){
-            return window.localStorage.getItem(CACHE_PREFIX+item);
+    function getCacheItem(item) {
+        if (item) {
+            return window.localStorage.getItem(CACHE_PREFIX + item);
         }
     }
 
@@ -563,9 +567,9 @@ function App() {
                                                       currentBookChapterContent: [],
                                                       currentBookChapterList: [],
                                                       muluVisible: false,
-                                                      gotoMuluIndexSearchVisible:false,
-                                                      lastSearchMulu:-1,
-                                                      lastSearchMuluName:"",
+                                                      gotoMuluIndexSearchVisible: false,
+                                                      lastSearchMulu: -1,
+                                                      lastSearchMuluName: "",
                                                       settingVisible: false
                                                   })
 
@@ -621,18 +625,18 @@ function App() {
         setCacheItem("LastClickBook", item1);
     }
 
-    function beginRecordTop(tem){
-        let cacheItem = getCacheItem(CACHE_SCROLL_TOP+tem) || "0";
+    function beginRecordTop(tem) {
+        let cacheItem = getCacheItem(CACHE_SCROLL_TOP + tem) || "0";
         window.clearTimeout(timer);
-        setTimeout(function (){
+        setTimeout(function () {
             let current = pageContentRef.current;
-            if(current){
+            if (current) {
                 current.scrollTop = parseInt(cacheItem)
                 window.requestAnimationFrame(recordTop)
-            }else{
+            } else {
                 beginRecordTop(tem);
             }
-        },100)
+        }, 100)
     }
 
     return (
@@ -760,10 +764,10 @@ function App() {
                             <ul className={"book-list-ul flex flex-column-nowrap"}>
                                 <div className="book-list-top-box">
                                     <div className={"add-book"} title={"添加文件，右键更多功能"} style={{
-                                        "--wails-drop-target":"drop"
-                                    }} onClick={()=>{
+                                        "--wails-drop-target": "drop"
+                                    }} onClick={() => {
                                         OpenFileDialog().then(r => {
-                                            if(r){
+                                            if (r) {
                                                 AddFleAndHandlerRes([r]);
                                             }
                                         })
@@ -774,14 +778,14 @@ function App() {
                                             fontSize={16}
                                             options={
                                                 [{label: 'URL下载'},
-                                                {label: '去下载'}]}
-                                            onSelect={function (option){
-                                                if(option.label === 'URL下载') {
+                                                    {label: '去下载'}]}
+                                            onSelect={function (option) {
+                                                if (option.label === 'URL下载') {
                                                     setState({
-                                                        downloadFromUrlVisible:true,
-                                                        downloadFromUrlList:[null]
+                                                        downloadFromUrlVisible: true,
+                                                        downloadFromUrlList: [null]
                                                     })
-                                                }else if(option.label === '去下载'){
+                                                } else if (option.label === '去下载') {
                                                     BrowserOpenURL("https://zh.opendelta.org/")
                                                 }
                                             }}
@@ -793,38 +797,39 @@ function App() {
                                             // borderBottom: "1px solid #ccc",
                                             borderRadius: 'none'
                                         }}
-                                               onSearch={(_value,e)=>{
-                                                   let value = trim(_value)
-                                                   reloadBookList(()=>{
-                                                       if(!value){
-                                                          return
-                                                       }
-                                                       let searchByInitials1 = searchByInitials(value.toLowerCase(),getState().currentBookList);
-                                                       let searchSuccess = false;
-                                                       if(!isEmpty(searchByInitials1)) {
-                                                           searchSuccess  = true;
-                                                           searchByInitials1.forEach(et=>{
-                                                               clickBookToFirst(et.name)
-                                                           })
-                                                       }else {
-                                                           let filter1 = filter(getState().currentBookList, e=>e.indexOf(value)>=0);
-                                                           searchSuccess = !isEmpty(filter1);
-                                                           filter1.forEach(e=>{
-                                                               clickBookToFirst(e)
-                                                           })
-                                                       }
-                                                       if(searchSuccess){
-                                                           message.success("查询到列表，已经置顶")
-                                                       }else{
-                                                           message.success("未查询到列表")
-                                                       }
-                                                   })
+                                                      onSearch={(_value, e) => {
+                                                          let value = trim(_value)
+                                                          reloadBookList(() => {
+                                                              if (!value) {
+                                                                  return
+                                                              }
+                                                              let searchByInitials1 = searchByInitials(value.toLowerCase(), getState().currentBookList);
+                                                              let searchSuccess = false;
+                                                              if (!isEmpty(searchByInitials1)) {
+                                                                  searchSuccess = true;
+                                                                  searchByInitials1.forEach(et => {
+                                                                      clickBookToFirst(et.name)
+                                                                  })
+                                                              } else {
+                                                                  let filter1 = filter(getState().currentBookList, e => e.indexOf(value) >= 0);
+                                                                  searchSuccess = !isEmpty(filter1);
+                                                                  filter1.forEach(e => {
+                                                                      clickBookToFirst(e)
+                                                                  })
+                                                              }
+                                                              if (searchSuccess) {
+                                                                  message.success("查询到列表，已经置顶")
+                                                              } else {
+                                                                  message.success("未查询到列表")
+                                                              }
+                                                          })
 
-                                               }}
+                                                      }}
                                         />
 
                                         <div className={"flex flex-row gap10 align-item-center"}>
-                                            <Statistic title="正在阅读" value={ (getCacheItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
+                                            <Statistic title="正在阅读"
+                                                       value={(getCacheItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
                                             <Statistic title="拥有图书" value={getState().currentBookList.length + "本"}/>
                                         </div>
 
@@ -882,10 +887,6 @@ function App() {
                                                         }
 
 
-
-
-
-
                                                     }}>{tem}</li>
                                                 })
                                         }
@@ -894,8 +895,8 @@ function App() {
                                 </div>
 
                                 <li className={'book-list-ul-li flex align-item-center no-shrink'} style={{
-                                    width:'100%',
-                                    justifyContent:'space-between',
+                                    width: '100%',
+                                    justifyContent: 'space-between',
                                     position: 'sticky',
                                     bottom: 0,
                                     backgroundColor: '#fff',
@@ -909,16 +910,16 @@ function App() {
                                     }
                                     </span>
                                     <SettingOutlined
-                                         style={{
-                                            fontSize:'20px',
-                                            paddingRight:'5px'
-                                         }}
-                                         title={"设置！"}
-                                         onClick={() => {
-                                             setState({
-                                                 sysSettingVisible: true
-                                             })
-                                         }}
+                                        style={{
+                                            fontSize: '20px',
+                                            paddingRight: '5px'
+                                        }}
+                                        title={"设置！"}
+                                        onClick={() => {
+                                            setState({
+                                                sysSettingVisible: true
+                                            })
+                                        }}
                                     />
 
                                 </li>
@@ -962,7 +963,7 @@ function App() {
                                  pageDown();
                              }
                          }}
-                         onDoubleClick={()=>{
+                         onDoubleClick={() => {
                              if (checkLastPage()) {
                                  nextChpater();
                              }
@@ -984,11 +985,11 @@ function App() {
 
                                         if (res && res.trim()) {
                                             if (index === 0 && res !== getState().currentBookChapterName) {
-                                                return <p key={"mulu-li"+index} className={"mb-5"}>
+                                                return <p key={"mulu-li" + index} className={"mb-5"}>
                                                     {res.trim()}
                                                 </p>
                                             } else if (index > 0) {
-                                                return <p key={"mulu-li"+index} className={"mb-5"}>
+                                                return <p key={"mulu-li" + index} className={"mb-5"}>
                                                     {res.trim()}
                                                 </p>
                                             }
@@ -998,7 +999,7 @@ function App() {
                                 }
 
                                 {
-                                    getState().showTitle && getSettingState().transparentMode === '1' && (
+                                    getSettingState().transparentMode === '1' && (
                                         <div className={"flex flex-row-nowrap justify-b"} style={{
                                             color: getSettingState().fontColor,
                                             backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
@@ -1357,7 +1358,7 @@ function App() {
                 visibility: (display && getState().muluVisible && getState().currentBookChapterName) ? "visible" : "hidden",
                 opacity: (display && getState().muluVisible && getState().currentBookChapterName) ? 1 : 0,
             }}>
-                            <span className={'mulu-modal-close'} >
+                            <span className={'mulu-modal-close'}>
                                 <div style={{fontSize: 16}} className={"flex align-item-center"}>
                                     <span>
                                     {`${findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1}/${getState().currentBookChapterList.length}`}
@@ -1365,16 +1366,16 @@ function App() {
 
                                     {
                                         getState().gotoMuluIndexSearchVisible === true && (
-                                            <InputNumber min={1} style={{width:'70%'}} onPressEnter={(e)=>{
+                                            <InputNumber min={1} style={{width: '70%'}} onPressEnter={(e) => {
 
                                                 let value = e.target.value;
 
-                                                let element = document.querySelector(`[data-key="mulu-index-${value-1}"]`);
+                                                let element = document.querySelector(`[data-key="mulu-index-${value - 1}"]`);
                                                 if (!isEmpty(element)) {
                                                     element.scrollIntoView({
                                                         behavior: "instant"
                                                     })
-                                                }else{
+                                                } else {
                                                     message.error("no chapter")
                                                 }
                                             }}/>
@@ -1384,11 +1385,11 @@ function App() {
                                     {
                                         getState().gotoMuluIndexSearchVisible === false && (
                                             <SearchOutlined style={{
-                                                color:"blue",
-                                                fontWeight:"bold"
-                                            }} onClick={()=>{
+                                                color: "blue",
+                                                fontWeight: "bold"
+                                            }} onClick={() => {
                                                 setState({
-                                                    gotoMuluIndexSearchVisible:true
+                                                    gotoMuluIndexSearchVisible: true
                                                 })
                                             }}/>
                                         )
@@ -1402,7 +1403,7 @@ function App() {
                                         muluVisible: false,
                                         lastSearchMulu: -1,
                                         lastSearchMuluName: "",
-                                        gotoMuluIndexSearchVisible:false
+                                        gotoMuluIndexSearchVisible: false
                                     })
                                 }}>×</span>
                             </span>
@@ -1462,16 +1463,16 @@ function App() {
                                     })
                                     setState({
                                         lastSearchMulu: lastSearchMulu + 1,
-                                        lastSearchMuluName: currentBookChapterList.find((ite,inde)=>inde === nextElementIndex),
+                                        lastSearchMuluName: currentBookChapterList.find((ite, inde) => inde === nextElementIndex),
                                     })
                                 }
                             }
-                        }else {
+                        } else {
                             setState({
                                 lastSearchMulu: -1,
                                 lastSearchMuluName: '',
                             })
-                            message.info("not match "+value)
+                            message.info("not match " + value)
                         }
 
                     }} style={{flex: '2'}} placeholder={"搜索"}/>
@@ -1492,18 +1493,18 @@ function App() {
                                            onClick={(e) => {
                                                e.stopPropagation();
                                                setState({
-                                                   loadingBook:true
+                                                   loadingBook: true
                                                })
-                                               goChapterByName(getState().currentBookName, ie,()=>{
+                                               goChapterByName(getState().currentBookName, ie, () => {
                                                    setState({
-                                                       loadingBook:false,
+                                                       loadingBook: false,
                                                        muluVisible: false,
-                                                       gotoMuluIndexSearchVisible:false,
-                                                       lastSearchMulu:-1,
-                                                       lastSearchMuluName:"",
+                                                       gotoMuluIndexSearchVisible: false,
+                                                       lastSearchMulu: -1,
+                                                       lastSearchMuluName: "",
                                                    })
                                                    let current = pageContentRef.current;
-                                                   if(current){
+                                                   if (current) {
                                                        current.scrollTop = 0
                                                    }
                                                })
@@ -1602,16 +1603,17 @@ function App() {
                 <div className="flex flex-column-nowrap gap5">
                     {
                         getState().downloadFromUrlList.map((ite, index) => {
-                            return <Input key={"downloadFromUrlList-"+index} style={{width:'100%'}} onChange={(e)=>{
-                                let value = e.target.value;
-                                let s = window.decodeURI(value);
-                                let s1 = window.encodeURI(s);
-                                let downloadFromUrlList = getState().downloadFromUrlList;
-                                downloadFromUrlList[index] = s1
-                                setState({
-                                    downloadFromUrlList
-                                })
-                            }} placeHolder={"请输入地址"}/>
+                            return <Input key={"downloadFromUrlList-" + index} style={{width: '100%'}}
+                                          onChange={(e) => {
+                                              let value = e.target.value;
+                                              let s = window.decodeURI(value);
+                                              let s1 = window.encodeURI(s);
+                                              let downloadFromUrlList = getState().downloadFromUrlList;
+                                              downloadFromUrlList[index] = s1
+                                              setState({
+                                                  downloadFromUrlList
+                                              })
+                                          }} placeHolder={"请输入地址"}/>
                         })
                     }
                 </div>
@@ -1627,9 +1629,9 @@ function App() {
                         title="系统设置"
                         placement={"bottom"}
                         // width={500}
-                        onClose={function (){
+                        onClose={function () {
                             setState({
-                                sysSettingVisible:false
+                                sysSettingVisible: false
                             })
                         }}
                         open={getState().sysSettingVisible}
@@ -1638,17 +1640,17 @@ function App() {
                             <span>工作目录: {state.booksPath}</span>
                             <span>地址: {window.location.href}</span>
                             <span>缓存: {window.localStorage.length}</span>
-                            <span><Button size={"small"} onClick={function (){
+                            <span><Button size={"small"} onClick={function () {
                                 Modal.confirm({
-                                    title:"警告！",
-                                    type:'warning',
-                                    okText:"我确定",
-                                    cancelText:"取消",
-                                    content:"清空缓存会丢失所有文本的阅读记录",
-                                    onOk:()=>{
+                                    title: "警告！",
+                                    type: 'warning',
+                                    okText: "我确定",
+                                    cancelText: "取消",
+                                    content: "清空缓存会丢失所有文本的阅读记录",
+                                    onOk: () => {
                                         for (let i = 0; i < window.localStorage.length; i++) {
                                             let s = window.localStorage.key(i);
-                                            if(s && s.startsWith(CACHE_PREFIX)){
+                                            if (s && s.startsWith(CACHE_PREFIX)) {
                                                 window.localStorage.removeItem(s);
                                             }
                                         }
@@ -1656,8 +1658,8 @@ function App() {
                                     }
                                 })
                             }}>清空所有缓存</Button></span>
-                            <span><Button size={"small"} onClick={function (){
-                                setCacheItem("LastClickBook","")
+                            <span><Button size={"small"} onClick={function () {
+                                setCacheItem("LastClickBook", "")
                                 WindowReloadApp();
                             }}>清除阅读记录</Button></span>
                         </div>
