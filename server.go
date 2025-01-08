@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"wd-reader/go/book"
 	"wd-reader/go/constant"
+	"wd-reader/go/log"
 )
 
 const (
@@ -100,6 +101,7 @@ func (a *Server) startup(ctx context.Context) {
 		err := http.ListenAndServe(HttpPort, nil)
 		fmt.Println("资源服务启动成功 url：", "http://localhost:10050")
 		if err != nil {
+			log.GetLogger().Info("文件服务启动异常" + err.Error())
 			fmt.Println("Error starting HTTP server:", err)
 		}
 	}()

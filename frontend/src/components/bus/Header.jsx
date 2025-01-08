@@ -28,6 +28,7 @@ function Header(props) {
 
     const state = props.state;
     const setState = props.setState;
+    const isAlwaysTop = props.isAlwaysTop;
     const setSettingState = props.setSettingState;
     const settingstate = props.settingstate;
     const reloadBookList = props.reloadBookList;

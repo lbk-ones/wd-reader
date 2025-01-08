@@ -4,10 +4,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"wd-reader/go/constant"
+	"wd-reader/go/log"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -22,7 +24,9 @@ var version string
 var icon []byte
 
 func main() {
+	mylogger := log.InitLog()
 	fmt.Println(version)
+
 	// Create an instance of the app structure
 	app := NewApp()
 	server := NewServer()
@@ -37,7 +41,7 @@ func main() {
 		},
 		AlwaysOnTop:   true,
 		Frameless:     true,
-		DisableResize: true,
+		DisableResize: false,
 		Windows: &windows.Options{
 			WebviewIsTransparent:              true,
 			WindowIsTranslucent:               true,
@@ -52,6 +56,8 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
+		Logger:             mylogger,
+		LogLevelProduction: logger.INFO,
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop: true,
 		},
@@ -74,6 +80,6 @@ func main() {
 	})
 
 	if err != nil {
-		println("Error:", err.Error())
+		mylogger.Fatal(err.Error())
 	}
 }

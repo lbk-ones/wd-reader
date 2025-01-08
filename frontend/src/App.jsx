@@ -36,7 +36,7 @@ import useAllState from "./components/lib/hooks/UseAllState";
 import ContextMenu from "./components/ContextMenu";
 import {SketchPicker} from "react-color";
 import {
-    BrowserOpenURL,
+    BrowserOpenURL, LogError,
     OnFileDrop,
     OnFileDropOff,
     Quit,
@@ -151,8 +151,17 @@ function App() {
             handlerAddFileRes(res, paths);
         })
     }
-
+    function handlerError (e){
+        LogError(e.error.stack)
+        console.log('出现异常',e.error.stack)
+    }
+    function unhandledrejection (e){
+        LogError("unhandledrejection:"+e.reason)
+    }
     useEffect(function () {
+        // error log collect
+        window.addEventListener("error",handlerError)
+        window.addEventListener('unhandledrejection',unhandledrejection)
         GetVersion().then(res => {
             setState({
                 version: res
@@ -183,6 +192,8 @@ function App() {
         });
 
         return () => {
+            window.removeEventListener("error",handlerError)
+            window.removeEventListener("unhandledrejection",unhandledrejection)
             OnFileDropOff()
         }
     }, [])
@@ -632,7 +643,9 @@ function App() {
                 display={display}
                 state={getState()}
                 setState={setState}
+                isAlwaysTop={useCallback(isAlwaysTop,[])}
                 settingstate={getSettingState()}
+                setSettingState={setSettingState}
                 title={getSettingState().appTitle}
                 reloadBookList={useCallback(reloadBookList,[])}
             />

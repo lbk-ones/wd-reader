@@ -28,6 +28,8 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	runtime.LogInfo(ctx, "当前应用版本"+version)
 }
 
 // Greet returns a greeting for the given name
