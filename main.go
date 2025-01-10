@@ -86,7 +86,7 @@ func main() {
 		},
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
 			runtime.LogInfo(ctx, "app will close")
-			return true
+			return false
 		},
 		Bind: []interface{}{
 			app,
