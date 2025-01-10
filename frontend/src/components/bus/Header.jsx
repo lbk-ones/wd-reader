@@ -23,7 +23,6 @@ import * as PropTypes from "prop-types";
 import {message} from "antd";
 
 
-
 function Header(props) {
 
     const state = props.state;
@@ -106,20 +105,19 @@ function Header(props) {
                 <MinusOutlined onClick={() => {
                     WindowMinimise();
                 }}/>
-                <BorderOutlined onClick={()=>{
+                <BorderOutlined onClick={() => {
 
-                    WindowGetSize().then(res=>{
-                        console.log('res',res)
-                        if(res.w === 400 && res.h === 600){
-                            WindowSetSize(960,540)
-                        }else{
-                            WindowSetSize(400,600)
+                    WindowGetSize().then(res => {
+                        console.log('res', res)
+                        if (res.w === 400 && res.h === 600) {
+                            WindowSetSize(960, 540)
+                        } else {
+                            WindowSetSize(400, 600)
                         }
-                        setTimeout(()=>{
+                        setTimeout(() => {
                             WindowCenter()
-                        },100)
+                        }, 100)
                     });
-
 
 
                 }}/>
@@ -135,14 +133,14 @@ function Header(props) {
 
 
         {/*index page*/}
-        {   isEmpty(state.currentBookName) && (
+        {isEmpty(state.currentBookName) && (
             <div className={"title-div font-bold flex1"}>
                 <div className={"w-100 flex no-shrink justify-b align-item-center"} style={{
                     color: "darkred"
                 }}>
                     <div className={"flex flex-auto align-item-center gap2"} style={{
                         "--wails-draggable": "drag"
-                    }} onDoubleClick={(e)=>{
+                    }} onDoubleClick={(e) => {
                         e.stopPropagation()
                         WindowToggleMaximise()
                     }}>
@@ -152,7 +150,7 @@ function Header(props) {
                     </div>
 
                     <div className={"flex flex-row-nowrap gap3 font-s20"}
-                         onClick={(e)=>{
+                         onClick={(e) => {
                              e.stopPropagation()
                          }}>
                         {
@@ -171,7 +169,7 @@ function Header(props) {
                 <div className={"title-div font-bold"}
                      style={{"--wails-draggable": "drag", display: "flex", flex: 1}}
                      title={state.currentBookName.replace(".txt", "")}
-                     onDoubleClick={(e)=>{
+                     onDoubleClick={(e) => {
                          e.stopPropagation()
                          WindowToggleMaximise()
                      }}
@@ -195,11 +193,9 @@ function Header(props) {
         }
 
 
-
     </div>)
 
 }
-
 
 
 Header.propTypes = {

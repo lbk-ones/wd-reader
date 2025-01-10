@@ -85,7 +85,7 @@ function App() {
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
         leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
-        appTitle:getCacheItem('AppTitle') || '偷得浮生半日闲'
+        appTitle: getCacheItem('AppTitle') || '偷得浮生半日闲'
     })
 
     const [state, setState, getState] = useAllState({
@@ -151,17 +151,19 @@ function App() {
             handlerAddFileRes(res, paths);
         })
     }
-    function handlerError (e){
+
+    function handlerError(e) {
         LogError(e.error.stack)
-        console.log('出现异常',e.error.stack)
     }
-    function unhandledrejection (e){
-        LogError("unhandledrejection:"+e.reason)
+
+    function unhandledrejection(e) {
+        LogError("unhandledrejection:" + e.reason)
     }
+
     useEffect(function () {
         // error log collect
-        window.addEventListener("error",handlerError)
-        window.addEventListener('unhandledrejection',unhandledrejection)
+        window.addEventListener("error", handlerError)
+        window.addEventListener('unhandledrejection', unhandledrejection)
         GetVersion().then(res => {
             setState({
                 version: res
@@ -192,8 +194,8 @@ function App() {
         });
 
         return () => {
-            window.removeEventListener("error",handlerError)
-            window.removeEventListener("unhandledrejection",unhandledrejection)
+            window.removeEventListener("error", handlerError)
+            window.removeEventListener("unhandledrejection", unhandledrejection)
             OnFileDropOff()
         }
     }, [])
@@ -643,11 +645,11 @@ function App() {
                 display={display}
                 state={getState()}
                 setState={setState}
-                isAlwaysTop={useCallback(isAlwaysTop,[])}
+                isAlwaysTop={useCallback(isAlwaysTop, [])}
                 settingstate={getSettingState()}
                 setSettingState={setSettingState}
                 title={getSettingState().appTitle}
-                reloadBookList={useCallback(reloadBookList,[])}
+                reloadBookList={useCallback(reloadBookList, [])}
             />
 
             {/*index book list*/}
@@ -1028,15 +1030,16 @@ function App() {
                     >
                         <div className={"flex flex-column gap10"}>
 
-                            <span>自定义标题：<Input placeHolder={"自定义应用标题"} value={getSettingState().appTitle} onChange={(e)=>{
-                                let value = e.target.value;
+                            <span>自定义标题：<Input placeHolder={"自定义应用标题"} value={getSettingState().appTitle}
+                                                    onChange={(e) => {
+                                                        let value = e.target.value;
 
-                                setCacheItem("AppTitle",value)
-                                setSettingState({
-                                    appTitle:value
-                                })
+                                                        setCacheItem("AppTitle", value)
+                                                        setSettingState({
+                                                            appTitle: value
+                                                        })
 
-                            }}/></span>
+                                                    }}/></span>
                             <span>工作目录: {state.booksPath}</span>
                             <span>地址: {window.location.href}</span>
                             <span>缓存: {window.localStorage.length}</span>

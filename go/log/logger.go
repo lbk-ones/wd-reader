@@ -29,14 +29,14 @@ func GetLogger() *logrus.Logger {
 
 		// 创建日志切割器
 		logWriter := &lumberjack.Logger{
-			Filename:   "log/log.log",
+			Filename:   "log/wd-log.log",
 			MaxSize:    20,   // 单个日志文件最大大小（MB）
 			MaxBackups: 3,    // 保留旧文件的最大数量
 			MaxAge:     7,    // 保留旧文件的最大天数
 			Compress:   true, // 压缩旧文件
 		}
 
-		writer := io.MultiWriter(os.Stdout, logWriter)
+		writer := io.MultiWriter(logWriter, os.Stdout)
 
 		// 设置日志输出为文件
 		logger.SetOutput(writer)
