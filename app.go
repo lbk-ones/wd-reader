@@ -50,7 +50,7 @@ func (a *App) OpenFileDialog() string {
 		Filters: []runtime.FileFilter{
 			{
 				DisplayName: "*.txt;*.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
-				Pattern:     "*.txt;e.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
+				Pattern:     "*.txt;*.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
 			},
 		},
 		ShowHiddenFiles:            false,
