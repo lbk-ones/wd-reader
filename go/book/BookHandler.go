@@ -8,12 +8,16 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
+	"io"
 	url2 "net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"wd-reader/go/book/epub/EpubBook"
 	"wd-reader/go/constant"
+	"wd-reader/go/log"
+	"wd-reader/go/server"
+	"wd-reader/go/utils"
 )
 
 // GetDecoder 根据编码方式获取解码器 单独处理国标
@@ -212,23 +216,32 @@ func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string)
 // TransferFileFromFileSys  下载文件
 func TransferFileFromFileSys(name []string) string {
 
+	log.Logger.Info("begin add file to app...")
 	var resJsonMap = make(map[string]string)
 
 	path := GetAppPath()
 	bookToPath := filepath.Join(path, constant.BOOK_PATH)
+	log.Logger.Info("book path is ", bookToPath)
 	var httpUrl []string
 	var fileUrl []string
+	var otherUrl []string
+	array := []string{".mobi", ".azw3", ".azw", ".docx", ".doc", ".pdf", ".html", ".htmlz"}
+	log.Logger.Info("exclude txt,epub  only allow other suffix ", strings.Join(array, ","))
 	for _, na := range name {
 		if strings.HasPrefix(na, "http") {
 			httpUrl = append(httpUrl, na)
 		} else if !strings.HasPrefix(na, "http") && (strings.HasSuffix(na, ".txt") || strings.HasSuffix(na, ".epub")) && !strings.HasPrefix(na, bookToPath) {
 			fileUrl = append(fileUrl, na)
+		} else if utils.ContainsSuffix(array, na) {
+			log.Logger.Info("detect file type " + filepath.Ext(na))
+			otherUrl = append(otherUrl, na)
 		} else {
 			resJsonMap[na] = "路径不合法"
 		}
 	}
 
 	if len(httpUrl) > 0 {
+		log.Logger.Info("httpUrl length is ", len(httpUrl))
 		for _, ht := range httpUrl {
 			base := filepath.Base(ht)
 			join := filepath.Join(bookToPath, base)
@@ -238,6 +251,7 @@ func TransferFileFromFileSys(name []string) string {
 	}
 
 	if len(fileUrl) > 0 {
+		log.Logger.Info("fileUrl length is ", len(fileUrl))
 		for _, ht := range fileUrl {
 			base := filepath.Base(ht)
 			ext := filepath.Ext(ht)
@@ -268,6 +282,14 @@ func TransferFileFromFileSys(name []string) string {
 		}
 	}
 
+	// parse other file
+	if len(otherUrl) > 0 {
+		log.Logger.Info("begin handler other file")
+		log.Logger.Info("otherUrl length is ", len(otherUrl))
+		file := parseOtherFile(otherUrl, resJsonMap)
+		log.Logger.Info("end handler other file" + file)
+	}
+
 	//if len(fileUrl) == 0 && len(httpUrl) == 0 {
 	//	for _, na := range name {
 	//		resJsonMap[na] = "路径不合法"
@@ -283,9 +305,87 @@ func TransferFileFromFileSys(name []string) string {
 
 // DeleteFile 删除文件
 func DeleteFile(name string) string {
-
-	err := os.Remove(filepath.Join(GetAppPath(), constant.BOOK_PATH, name))
+	join := filepath.Join(GetAppPath(), constant.BOOK_PATH, name)
+	log.Logger.Info("delete file " + join)
+	err := os.Remove(join)
 
 	return WrapperException(err)
+
+}
+
+// 解析其他类型文件
+func parseOtherFile(name []string, resJsonMap map[string]string) string {
+	path := GetAppPath()
+	bookToPath := filepath.Join(path, constant.BOOK_PATH)
+	var updList []string
+	for _, fn := range name {
+		if !(strings.HasSuffix(fn, ".epub") && strings.HasSuffix(fn, ".txt")) {
+			updList = append(updList, fn)
+		}
+	}
+	nameVsDownUrlMap := make(map[string]string)
+	// online parse not epub file
+	var epubList []string
+	for _, fname := range updList {
+		filename := filepath.Base(fname)
+		param := make(map[string]string)
+		param["filename"] = filename
+		open, err := os.Open(fname)
+		if err != nil {
+			resJsonMap[fname] = WrapperExceptionStr(fmt.Sprintln(err))
+			continue
+		}
+		all, err := io.ReadAll(open)
+		if err != nil {
+			resJsonMap[fname] = WrapperExceptionStr(fmt.Sprintln(err))
+			continue
+		}
+		stream, err := server.PostOctetStream(param, all)
+		if err != nil {
+			str := WrapperExceptionStr(fmt.Sprintln(err))
+			log.Logger.Info("download error:" + str)
+			resJsonMap[fname] = str
+			continue
+		}
+		if stream.Success == true {
+			url := stream.Data.FileUrl
+			s := stream.Data.DownloadUrl + url
+			s3, _ := url2.QueryUnescape(s)
+			// download
+			DownLoadFile(s3, resJsonMap)
+			if resJsonMap[s3] == "" {
+				join := filepath.Join(bookToPath, filepath.Base(s3))
+				nameVsDownUrlMap[join] = fname
+				epubList = append(epubList, join)
+			}
+		}
+	}
+
+	// parse epub
+	if len(epubList) > 0 {
+		for _, newName := range epubList {
+			originName := nameVsDownUrlMap[newName]
+			base := filepath.Base(originName)
+			originExt := filepath.Ext(originName)
+			join := filepath.Join(bookToPath, base)
+			joinOutputPath := strings.Replace(join, originExt, ".txt", -1)
+			epub, err := EpubBook.ParseEpub(newName, joinOutputPath)
+			if err != nil {
+				resJsonMap[newName] = fmt.Sprint(err)
+			}
+			err = epub.WriteEpub()
+			if err != nil {
+				resJsonMap[originName] = fmt.Sprint(err)
+				continue
+			}
+			// delete new epub file
+			DeleteFile(filepath.Base(newName))
+		}
+	} else {
+		marshal, _ := json.Marshal(resJsonMap)
+		return WrapperExceptionStr(string(marshal))
+	}
+
+	return "ok"
 
 }

@@ -10,9 +10,13 @@ import (
 )
 
 var (
-	logger *logrus.Logger
+	Logger *logrus.Logger
 	once   = sync.Once{}
 )
+
+func init() {
+	GetLogger()
+}
 
 type MyLogrus struct {
 	logger *logrus.Logger
@@ -22,10 +26,10 @@ type MyLogrus struct {
 func GetLogger() *logrus.Logger {
 	once.Do(func() {
 		// 创建一个新的 logrus 实例
-		logger = logrus.New()
+		Logger = logrus.New()
 
 		// 设置日志级别
-		logger.SetLevel(logrus.InfoLevel)
+		Logger.SetLevel(logrus.InfoLevel)
 
 		// 创建日志切割器
 		logWriter := &lumberjack.Logger{
@@ -39,7 +43,7 @@ func GetLogger() *logrus.Logger {
 		writer := io.MultiWriter(logWriter, os.Stdout)
 
 		// 设置日志输出为文件
-		logger.SetOutput(writer)
+		Logger.SetOutput(writer)
 
 		// 自定义日志格式
 		logFormatter := &logrus.TextFormatter{
@@ -55,13 +59,13 @@ func GetLogger() *logrus.Logger {
 				logrus.FieldKeyLevel: "severity",
 			},
 		}
-		logger.SetFormatter(logFormatter)
+		Logger.SetFormatter(logFormatter)
 	})
 
-	return logger
+	return Logger
 }
 
-// InitLog init logger
+// InitLog init Logger
 func InitLog() *MyLogrus {
 	return &MyLogrus{logger: GetLogger()}
 }

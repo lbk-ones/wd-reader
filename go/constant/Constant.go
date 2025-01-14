@@ -6,6 +6,8 @@ const (
 	BOOK_PATH    = "books"
 	APP_NAME     = "WdReader"
 	ERROR_PREFIX = "错误信息:"
+	//WD_SERVER    = "http://localhost:9090"
+	WD_SERVER = "http://129.226.150.139:10000"
 )
 
 var (

@@ -145,7 +145,7 @@ function App() {
     function AddFleAndHandlerRes(paths) {
         setState({
             loadingBook: true,
-            loadingBookTip: "解析中。。",
+            loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增",
         })
         AddFile(paths).then(res => {
             handlerAddFileRes(res, paths);
@@ -751,7 +751,7 @@ function App() {
                                 {
                                     !isEmpty(getState().currentBookChapterName)
                                     && (
-                                        <p className={"mb-10 font-bold"}>
+                                        <p className={"mb-5 font-bold"}>
                                             {getState().currentBookChapterName || ''}
                                         </p>
                                     )

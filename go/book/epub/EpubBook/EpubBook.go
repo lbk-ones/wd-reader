@@ -11,9 +11,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	_type "wd-reader/go/book/epub/type"
 	"wd-reader/go/constant"
+	"wd-reader/go/log"
 	"wd-reader/go/utils"
 )
 
@@ -39,6 +41,7 @@ type EpubBook struct {
 
 // ParseEpub 解析Epub文件
 func ParseEpub(path string, outOutPath string) (*EpubBook, error) {
+	log.Logger.Info("begin parse epub")
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil, err
@@ -66,11 +69,17 @@ func ParseEpub(path string, outOutPath string) (*EpubBook, error) {
 	}
 
 	b2.Title = getTitle(b2)
+	log.Logger.Info("book title " + b2.Title)
 	b2.Author = getAuthor(b2)
+	log.Logger.Info("book author " + b2.Author)
 	b2.Description = html.UnescapeString(b2.Opf.Metadata.Description)
+	log.Logger.Info("book description " + b2.Description)
 	b2.Date = html.UnescapeString(b2.Opf.Metadata.Date.Value)
+	log.Logger.Info("book date " + b2.Date)
 	b2.Publisher = html.UnescapeString(b2.Opf.Metadata.Publisher)
+	log.Logger.Info("book publisher " + b2.Publisher)
 	b2.Language = html.UnescapeString(b2.Opf.Metadata.Language)
+	log.Logger.Info("book language " + b2.Language)
 
 	// parse catlog list
 	parseCatLog(b2)
@@ -119,6 +128,7 @@ func checkCatLog(b2 *EpubBook) error {
 func (b *EpubBook) WriteEpub() error {
 
 	if b.OutputPath != "" {
+		log.Logger.Info("begin write epub parse result...")
 		create, err := os.Create(b.OutputPath)
 		if err != nil {
 			return err
@@ -126,9 +136,9 @@ func (b *EpubBook) WriteEpub() error {
 
 		fileName := b.Title
 		_, _ = create.WriteString("0、文本元信息\n\n")
-		_, _ = create.WriteString("Title       :" + fileName + "\n")
+		_, _ = create.WriteString("|Title       :" + fileName + "\n")
 		author := b.Author
-		_, _ = create.WriteString("Author      :" + author + "\n")
+		_, _ = create.WriteString("|Author      :" + author + "\n")
 		description := (func() string {
 			if b.Description == "" {
 				return "无"
@@ -136,13 +146,13 @@ func (b *EpubBook) WriteEpub() error {
 				return b.Description
 			}
 		})()
-		_, _ = create.WriteString("Description :" + description + "\n")
+		_, _ = create.WriteString("|Description :" + description + "\n")
 		Date := b.Date
-		_, _ = create.WriteString("Date        :" + Date + "\n")
+		_, _ = create.WriteString("|Date        :" + Date + "\n")
 		Language := b.Language
-		_, _ = create.WriteString("Language    :" + Language + "\n")
+		_, _ = create.WriteString("|Language    :" + Language + "\n")
 		Publisher := b.Publisher
-		_, _ = create.WriteString("Publisher   :" + Publisher + "\n")
+		_, _ = create.WriteString("|Publisher   :" + Publisher + "\n")
 
 		_, _ = create.WriteString("\n")
 		for _, line := range b.Sections {
@@ -158,6 +168,8 @@ func (b *EpubBook) WriteEpub() error {
 				fmt.Println(err)
 			}
 		}(create)
+		log.Logger.Info("write to ", b.OutputPath)
+
 	}
 	return nil
 }
@@ -170,6 +182,7 @@ func extractFileNames(input string) string {
 
 // direct parse opf file
 func parseChaptersV2(b2 *EpubBook) {
+	log.Logger.Info("begin parse chapter contents")
 	itemRefs := utils.NewArrayListElements[_type.ItemRef](b2.Opf.Spine.ItemRefs)
 	manifestItems := utils.NewArrayListElements[_type.Item](b2.Opf.Manifest.Items)
 	catLogs := utils.NewArrayListElements[CatLog](b2.CatLogs)
@@ -274,7 +287,7 @@ func parseChaptersV2(b2 *EpubBook) {
 		return true
 	})
 	b2.Sections = sections
-
+	log.Logger.Info("all chapter length is " + strconv.Itoa(len(b2.Sections)))
 }
 
 // Deprecated
@@ -374,7 +387,7 @@ func parseChaptersV1(b2 *EpubBook) {
 
 func parseCatLog(b2 *EpubBook) {
 
-	fmt.Println("----------开始解析目录--------------")
+	log.Logger.Info("begin parse epub catalog")
 	ncx := b2.Ncx
 	points := ncx.NavMap.NavPoints
 	listMulu := utils.NewArrayList[CatLog]()
@@ -411,7 +424,7 @@ func parseCatLog(b2 *EpubBook) {
 		}
 	}
 	b2.CatLogs = listMulu.GetElements()
-	fmt.Println("----------目录解析完毕--------------")
+	log.Logger.Info("end parse epub catalog,all catalog is " + strconv.FormatInt(int64(len(b2.CatLogs)), 10))
 }
 
 func getAuthor(b2 *EpubBook) string {

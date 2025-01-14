@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 	"wd-reader/go/constant"
+	"wd-reader/go/log"
 )
 
 // DownLoadFile 下载文件
@@ -65,7 +66,7 @@ func DownLoadFile(url string, reMap map[string]string) {
 		return
 	}
 
-	fmt.Println("File downloaded successfully.")
+	log.Logger.Info("file downloaded successfully.", url)
 }
 
 // urlstr is Unescape

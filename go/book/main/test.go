@@ -1,14 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
-	"path"
-	"strings"
-
 	"regexp"
+	"wd-reader/go/book"
 	//"wd-reader/go/book/epub/EpubBook"
 )
 
@@ -73,29 +67,31 @@ func main() {
 	//findString := constant.RegChapter.FindString("1")
 	//fmt.Println(findString)
 
-	var w []string
-	for c := 'a'; c <= 'l'; c++ {
-		fmt.Println("开始", string(c))
-		join := path.Join("D:\\GolandProjects\\wd-reader\\sentences", fmt.Sprintf("%c.json", c))
-		open, _ := os.Open(join)
-		all, _ := io.ReadAll(open)
-		var hitokotos []Hitokoto
-		err := json.Unmarshal(all, &hitokotos)
-		if err != nil {
-			fmt.Println(err)
-		}
-		for _, item := range hitokotos {
-			hitokoto := item.Hitokoto
-			if len(hitokoto) < 50 {
-				w = append(w, hitokoto)
-			}
-		}
-	}
-
-	create, _ := os.Create("D:\\GolandProjects\\wd-reader\\sentences\\sum.txt")
-	create.WriteString(strings.Join(w, "\n"))
+	//var w []string
+	//for c := 'a'; c <= 'l'; c++ {
+	//	fmt.Println("开始", string(c))
+	//	join := path.Join("D:\\GolandProjects\\wd-reader\\sentences", fmt.Sprintf("%c.json", c))
+	//	open, _ := os.Open(join)
+	//	all, _ := io.ReadAll(open)
+	//	var hitokotos []Hitokoto
+	//	err := json.Unmarshal(all, &hitokotos)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	}
+	//	for _, item := range hitokotos {
+	//		hitokoto := item.Hitokoto
+	//		if len(hitokoto) < 50 {
+	//			w = append(w, hitokoto)
+	//		}
+	//	}
+	//}
+	//
+	//create, _ := os.Create("D:\\GolandProjects\\wd-reader\\sentences\\sum.txt")
+	//create.WriteString(strings.Join(w, "\n"))
 
 	//fmt.Println(string(all))
 	//extract := book.GetChapterListByFileNameExtract("很纯很暧昧.txt")
 	//fmt.Println(extract)
+
+	book.TransferFileFromFileSys([]string{"C:\\Users\\win 10\\Downloads\\白夜行 (东野圭吾 (Higashino Keigo)) (Z-Library).azw3"})
 }

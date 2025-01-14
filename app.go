@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"io"
@@ -12,6 +13,8 @@ import (
 	"wd-reader/go/book"
 	"wd-reader/go/book/epub/EpubBook"
 	"wd-reader/go/constant"
+	"wd-reader/go/log"
+	"wd-reader/go/server"
 )
 
 // App struct
@@ -38,6 +41,7 @@ func (a *App) Greet(name string) string {
 // OpenFileDialog Deprecated 目前这个好像有BUG用不起来 就很烦
 func (a *App) OpenFileDialog() string {
 
+	// ".mobi", ".azw3", ".azw", ".docx", ".doc", ".pdf", ".html", ".htmlz"
 	fmt.Println("开始调用")
 	dialog, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title:            "文件选择",
@@ -45,11 +49,8 @@ func (a *App) OpenFileDialog() string {
 		DefaultFilename:  "",
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "*.txt",
-				Pattern:     "*.txt",
-			}, {
-				DisplayName: "*.epub",
-				Pattern:     "*.epub",
+				DisplayName: "*.txt;*.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
+				Pattern:     "*.txt;e.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
 			},
 		},
 		ShowHiddenFiles:            false,
@@ -142,8 +143,9 @@ func (*App) DeleteFile(name string) string {
 
 // GetScOne 诗词获取
 func (a *App) GetScOne() string {
-	resp, err := http.Get("https://v1.hitokoto.cn?c=i")
+	resp, err := http.Get(constant.WD_SERVER + "/wd/getSc")
 	if err != nil {
+		log.Logger.Errorf("getscone error,%v", err)
 		return ""
 	}
 	defer func(Body io.ReadCloser) {
@@ -152,9 +154,23 @@ func (a *App) GetScOne() string {
 			fmt.Println(err)
 		}
 	}(resp.Body)
+	var data server.Data
 	all, err := io.ReadAll(resp.Body)
+
 	if err != nil {
+		log.Logger.Errorf("getscone io error,%v", err)
 		return ""
 	}
-	return string(all)
+
+	_ = json.Unmarshal(all, &data)
+	if data.Success == false {
+		marshal, _ := json.Marshal(data)
+		log.Logger.Error("line get error ", string(marshal))
+		return ""
+	}
+
+	m := make(map[string]string)
+	m["hitokoto"] = data.Data
+	marshal, _ := json.Marshal(m)
+	return string(marshal)
 }

@@ -72,7 +72,7 @@ func main() {
 		},
 		//BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
 		OnDomReady: func(ctx context.Context) {
-			runtime.LogInfo(ctx, "app dom ready")
+			//runtime.LogInfo(ctx, "app dom ready")
 		},
 		OnStartup: func(ctx context.Context) {
 			ctxStatic = ctx
