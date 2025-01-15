@@ -40,7 +40,6 @@ func (a *App) Greet(name string) string {
 
 // OpenFileDialog Deprecated 目前这个好像有BUG用不起来 就很烦
 func (a *App) OpenFileDialog() string {
-
 	// ".mobi", ".azw3", ".azw", ".docx", ".doc", ".pdf", ".html", ".htmlz"
 	fmt.Println("开始调用")
 	dialog, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{

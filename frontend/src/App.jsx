@@ -1009,6 +1009,10 @@ function App() {
                     <Button title={"顶点小说"} onClick={() => {
                         BrowserOpenURL("https://www.najjdd.com/")
                     }}>顶点小说</Button>
+
+                    <Button title={"epubor-converter"} onClick={() => {
+                        BrowserOpenURL("https://s3.amazonaws.com/download.epubor.com.bk/epubor-converter.exe")
+                    }}>电子书格式转换器下载</Button>
                 </p>
 
             </Drawer>

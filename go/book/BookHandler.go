@@ -13,11 +13,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"wd-reader/go/book/epub/EpubBook"
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
 	"wd-reader/go/server"
 	"wd-reader/go/utils"
+)
+
+var (
+	mu sync.Mutex
 )
 
 // GetDecoder 根据编码方式获取解码器 单独处理国标
@@ -80,6 +85,7 @@ func GetScanner(fileName string, file *os.File) *bufio.Scanner {
 
 // GetBookListExtract 获取书的列表
 func GetBookListExtract() string {
+
 	CheckBooksPath()
 	path := GetAppPath()
 	bookPath := filepath.Join(path, constant.BOOK_PATH)
@@ -92,8 +98,10 @@ func GetBookListExtract() string {
 		name := file.Name()
 
 		if strings.HasSuffix(name, ".txt") || strings.HasSuffix(name, ".epub") {
+			mu.Lock()
 			// 只处理 txt 和 epub
 			strs = append(strs, name)
+			mu.Unlock()
 		}
 	}
 	return strings.Join(strs, "\n")
@@ -104,7 +112,7 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 	path := GetAppPath()
 	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
 	if strings.HasSuffix(fileName, ".txt") {
-		strs := make([]string, 0)
+		var strs = make([]string, 0)
 		// 判断文件是否存在
 		_, err := os.Stat(fileName)
 		if os.IsNotExist(err) {
@@ -139,7 +147,9 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 				replaceNonSpace := strings.ReplaceAll(line, " ", "")
 				if _, exists := unique[replaceNonSpace]; !exists {
 					unique[replaceNonSpace] = struct{}{}
+					mu.Lock()
 					strs = append(strs, line)
+					mu.Unlock()
 				}
 			}
 		}
@@ -150,6 +160,7 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 
 // GetChapterContentByChpaterNameExtract  获取章节内容
 func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string) string {
+
 	path := GetAppPath()
 	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
 	_, err := os.Stat(fileName)
@@ -204,7 +215,9 @@ func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string)
 				//	break
 				//}
 			}
+			mu.Lock()
 			strs = append(strs, line)
+			mu.Unlock()
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -228,6 +241,8 @@ func TransferFileFromFileSys(name []string) string {
 	array := []string{".mobi", ".azw3", ".azw", ".docx", ".doc", ".pdf", ".html", ".htmlz"}
 	log.Logger.Info("exclude txt,epub  only allow other suffix ", strings.Join(array, ","))
 	for _, na := range name {
+
+		mu.Lock()
 		if strings.HasPrefix(na, "http") {
 			httpUrl = append(httpUrl, na)
 		} else if !strings.HasPrefix(na, "http") && (strings.HasSuffix(na, ".txt") || strings.HasSuffix(na, ".epub")) && !strings.HasPrefix(na, bookToPath) {
@@ -238,6 +253,7 @@ func TransferFileFromFileSys(name []string) string {
 		} else {
 			resJsonMap[na] = "路径不合法"
 		}
+		mu.Unlock()
 	}
 
 	if len(httpUrl) > 0 {
@@ -315,12 +331,15 @@ func DeleteFile(name string) string {
 
 // 解析其他类型文件
 func parseOtherFile(name []string, resJsonMap map[string]string) string {
+
 	path := GetAppPath()
 	bookToPath := filepath.Join(path, constant.BOOK_PATH)
 	var updList []string
 	for _, fn := range name {
 		if !(strings.HasSuffix(fn, ".epub") && strings.HasSuffix(fn, ".txt")) {
+			mu.Lock()
 			updList = append(updList, fn)
+			mu.Unlock()
 		}
 	}
 	nameVsDownUrlMap := make(map[string]string)
@@ -356,9 +375,12 @@ func parseOtherFile(name []string, resJsonMap map[string]string) string {
 			if resJsonMap[s3] == "" {
 				join := filepath.Join(bookToPath, filepath.Base(s3))
 				nameVsDownUrlMap[join] = fname
+				mu.Lock()
 				epubList = append(epubList, join)
+				mu.Unlock()
 			}
 		}
+
 	}
 
 	// parse epub
@@ -385,7 +407,6 @@ func parseOtherFile(name []string, resJsonMap map[string]string) string {
 		marshal, _ := json.Marshal(resJsonMap)
 		return WrapperExceptionStr(string(marshal))
 	}
-
 	return "ok"
 
 }

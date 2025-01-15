@@ -30,7 +30,7 @@ func main() {
 	// recover
 	defer func() {
 		if r := recover(); r != nil {
-			//fmt.Println("Recovered from panic:", r)
+			fmt.Println("panic error ", r)
 			_, err := runtime.MessageDialog(ctxStatic, runtime.MessageDialogOptions{
 				Type:          runtime.ErrorDialog,
 				Title:         "Error",
@@ -51,7 +51,7 @@ func main() {
 
 	// Create an instance of the app structure
 	app := NewApp()
-	server := NewServer()
+	//server := NewServer()
 
 	// Create application with options
 	err := wails.Run(&options.App{
@@ -77,7 +77,7 @@ func main() {
 		OnStartup: func(ctx context.Context) {
 			ctxStatic = ctx
 			app.startup(ctx)
-			server.startup(ctx)
+			//server.startup(ctx)
 			runtime.LogInfo(ctx, "current app version :"+version)
 			runtime.LogInfo(ctx, "app started")
 		},
