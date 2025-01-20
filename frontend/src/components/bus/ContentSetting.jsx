@@ -277,7 +277,7 @@ function ContentSetting(props) {
                         <Button type="primary" onClick={() => {
                             setCacheItem('fontColor', '#000')
                             setCacheItem('fontLineHeight', '30')
-                            setCacheItem('bgColor', '#fff')
+                            setCacheItem('bgColor', '#E8E3D7')
                             setCacheItem('fontSize', '16')
                             setCacheItem('clickPage', "1")
                             setCacheItem('showProgress', "0")
@@ -287,7 +287,7 @@ function ContentSetting(props) {
                             setSettingState({
                                 fontColor: "#000",
                                 fontLineHeight: "30",
-                                bgColor: "#fff",
+                                bgColor: "#E8E3D7",
                                 fontSize: "16",
                                 clickPage: "1",
                                 showProgress: "0",

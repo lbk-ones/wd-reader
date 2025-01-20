@@ -63,6 +63,7 @@ import {CACHE_PREFIX, getCacheItem, setCacheItem} from "./components/Utils";
 import useMemoizedFn from "ahooks/es/useMemoizedFn";
 import MuluList from "./components/bus/MuluList.jsx";
 import ContentSetting from "./components/bus/ContentSetting.jsx";
+import Content from "./components/bus/Content.jsx";
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
@@ -71,14 +72,13 @@ const CACHE_SCROLL_TOP = "scroll-top"
 function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
-    let topRef = useRef(null);
 
     const [api, contextHolder] = notification.useNotification();
 
     const [settingState, setSettingState, getSettingState] = useAllState({
         fontColor: getCacheItem('fontColor') || '#000',
         fontLineHeight: getCacheItem('fontLineHeight') || '30',
-        bgColor: getCacheItem('bgColor') || '#fff',
+        bgColor: getCacheItem('bgColor') || '#E8E3D7',
         fontSize: getCacheItem('fontSize') || '16',
         clickPage: getCacheItem('clickPage') || '1',
         showProgress: getCacheItem('showProgress') || '0',
@@ -434,11 +434,6 @@ function App() {
                         })
                     });
                     toCurrentChapterNameInList()
-                    // if (topRef.current) {
-                    //     topRef.current.scrollIntoView({
-                    //         behavior:"instant"
-                    //     })
-                    // }
 
                 }
 
@@ -709,127 +704,36 @@ function App() {
 
 
             {/*content page*/}
-            {
-                !isEmpty(state.currentBookChapterName) && !getState().currentBookName.endsWith(".epub") && (
-                    <div className={"book-content-div"} style={{
-                        lineHeight: Number(getSettingState().fontLineHeight) + "px",
-                        padding: "0 10px",
-                        // width: 'inherit',
-                        // height: 'inherit',
-                        boxSizing: 'border-box',
-                        textAlign: 'left',
-                        textIndent: '2em',
-                        display: 'flex',
-                        flexFlow: 'column nowrap',
-                        flex: 'auto',
-                        overflow: 'auto',
-                        color: getSettingState().fontColor,
-                        fontSize: Number(getSettingState().fontSize) + "px",
-                        visibility: !display ? 'hidden' : 'visible',
-                        backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
-
-                    }}
-                         ref={pageContentRef}
-                         onContextMenu={e => {
-                             e.preventDefault();
-                         }}
-                         onClick={(e) => {
-                             // e.stopPropagation();
-                             if (getSettingState().clickPage === '1') {
-                                 pageDown();
-                             }
-                         }}
-                         onDoubleClick={() => {
-                             if (checkLastPage()) {
-                                 nextChpater();
-                             }
-                         }}
-                    >
-                        <div className={"flex flex-auto flex-column"}>
-                            <div className={"w-100 h-100"}>
-                                <div id={"book-content-div-top"} style={{width: '100%', height: '1px'}} ref={topRef}></div>
-                                {
-                                    !isEmpty(getState().currentBookChapterName)
-                                    && (
-                                        <p className={"mb-5 font-bold"}>
-                                            {getState().currentBookChapterName || ''}
-                                        </p>
-                                    )
-                                }
-                                {
-                                    getState().currentBookChapterContent.map((res, index) => {
-
-                                        if (res && res.trim()) {
-                                            if (index === 0 && res !== getState().currentBookChapterName) {
-                                                return <p key={"mulu-li" + index} className={"mb-5"}>
-                                                    {res.trim()}
-                                                </p>
-                                            } else if (index > 0) {
-                                                return <p key={"mulu-li" + index} className={"mb-5"}>
-                                                    {res.trim()}
-                                                </p>
-                                            }
-                                        }
-                                        return null;
-                                    })
-                                }
-
-                                {
-                                    getSettingState().transparentMode === '1' && (
-                                        <div className={"flex flex-row-nowrap justify-b"} style={{
-                                            color: getSettingState().fontColor,
-                                            backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
-                                        }}>
-                                            <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
-                                                e.stopPropagation();
-                                                lastChpater();
-                                            }}>上一章</a>
-                                            <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
-                                                e.stopPropagation();
-                                                nextChpater();
-                                            }}>下一章</a>
-                                            <span
-                                                className={'book-content-div-footer-btn-txt cursor-point'}
-                                                title={getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
-                                                style={{width: "120px", overflow: 'hidden'}}>
-                                        {getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
-                                    </span>
-                                        </div>
-                                    )
-                                }
-
-                            </div>
-                        </div>
-
-                        {
-                            getState().showTitle && getSettingState().transparentMode !== '1' && (
-                                <div className={"book-content-div-footer-btn"} style={{
-                                    color: getSettingState().fontColor,
-                                    backgroundColor: `${getSettingState().transparentMode !== '1' ? getSettingState().bgColor : 'rgba(0,0,0,0)'}`
-                                }}>
-                                    <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
-                                        e.stopPropagation();
-                                        lastChpater();
-                                    }}>上一章</a>
-                                    <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={(e) => {
-                                        e.stopPropagation();
-                                        nextChpater();
-                                    }}>下一章</a>
-                                    <span
-                                        className={'book-content-div-footer-btn-txt cursor-point'}
-                                        title={getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
-                                        style={{width: "120px", overflow: 'hidden'}}>
-                                        {getState().currentBookChapterList[findIndex(getState().currentBookChapterList, e => e === getState().currentBookChapterName) + 1] || "无"}
-                                    </span>
-                                </div>
-                            )
-                        }
-
-
-                        <ContextMenu options={options} onSelect={handleSelect}/>
-                    </div>
-                )
-            }
+            <Content
+                state={getState()}
+                settingState={getSettingState()}
+                display={display}
+                ref={pageContentRef}
+                onContextMenu={e => {
+                    e.preventDefault();
+                }}
+                onClick={(e) => {
+                    // e.stopPropagation();
+                    if (getSettingState().clickPage === '1') {
+                        pageDown();
+                    }
+                }}
+                onDoubleClick={() => {
+                    if (checkLastPage()) {
+                        nextChpater();
+                    }
+                }}
+                lastChapter={e=>{
+                    e.stopPropagation();
+                    lastChpater();
+                }}
+                nextChapter={e=>{
+                    e.stopPropagation();
+                    nextChpater();
+                }}
+                options={options}
+                onSelect={handleSelect}
+            />
 
             {/*content setting*/}
             <ContentSetting
