@@ -25,6 +25,7 @@ function ContentSetting(props) {
                                 setState({
                                     settingVisible: false
                                 })
+                                // props.calculateFontLines()
                             }}>
                                 ×
                             </span>
@@ -74,8 +75,8 @@ function ContentSetting(props) {
                     </Form.Item>
 
                     <Form.Item
-                        label="间距"
-                        name="间距"
+                        label="行间距"
+                        name="行间距"
                         rules={[
                             {
                                 required: false,
@@ -86,10 +87,11 @@ function ContentSetting(props) {
                         <InputNumber style={{width: 100}}
                                      defaultValue={Number(settingState.fontLineHeight)}
                                      onChange={(value) => {
-                                         setCacheItem('fontLineHeight', value)
-                                         setSettingState({
-                                             fontLineHeight: value
-                                         })
+                                         props.calculateFontLines(value)
+                                         // setCacheItem('fontLineHeight', value)
+                                         // setSettingState({
+                                         //     fontLineHeight: value
+                                         // })
                                      }}/>
                     </Form.Item>
                     <Form.Item
@@ -297,6 +299,9 @@ function ContentSetting(props) {
                             })
                             setDisplay(true)
                             isAlwaysTop(getCacheItem('isAlwaysTop'));
+                            setTimeout(()=>{
+                                props.calculateFontLines(30)
+                            },100)
                         }}>
                             恢复默认
                         </Button>
@@ -316,6 +321,7 @@ ContentSetting.propTypes = {
     settingState: PropTypes.any,
     display: PropTypes.any,
     isAlwaysTop: PropTypes.func,
+    calculateFontLines: PropTypes.func,
     setDisplay: PropTypes.func,
     setSettingState: PropTypes.func,
 };

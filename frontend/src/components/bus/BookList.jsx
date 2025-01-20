@@ -147,8 +147,9 @@ function BookList(props) {
                                                                         // hasError(tem)
                                                                         console.log(res)
                                                                     })
-
                                                                     props.beginRecordTop(tem)
+                                                                    
+                                                                    props.calculateFontLines()
                                                                 });
                                                             })
 
@@ -161,6 +162,7 @@ function BookList(props) {
                                                             props.setState({
                                                                 loadingBook: false
                                                             })
+                                                            props.calculateFontLines()
                                                         });
                                                     }
 
@@ -240,6 +242,7 @@ BookList.propTypes = {
     onSearch: PropTypes.func,
     clickBookToFirst: PropTypes.func,
     reloadBookList: PropTypes.func,
+    calculateFontLines: PropTypes.func,
     goChapterByName: PropTypes.func,
     beginRecordTop: PropTypes.func,
     hasError: PropTypes.func,

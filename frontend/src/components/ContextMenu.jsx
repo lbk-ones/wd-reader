@@ -42,7 +42,8 @@ const ContextMenu = ({options, onSelect,fontSize}) => {
                 borderRadius: '4px',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                 zIndex: 1000,
-                width: '100px'
+                width: '100px',
+                lineHeight:'25px' // 写死吧 不然会受外面的影响
             }}
         >
             {options.map((option, index) => (

@@ -23,19 +23,12 @@ function MuluList(props) {
     const currentBookChapterName = props.currentBookChapterName;
     const gotoMuluIndexSearchVisible = props.gotoMuluIndexSearchVisible;
 
-    // const latestCountRef = useLatest(currentBookChapterList);
-    // useEffect(() => {
-    //     setCurrentChapterList(cloneDeep(props.state.currentBookChapterList || []))
-    // }, [props.state.currentBookChapterList]);
-
-    console.log('更新目录')
-
-    useTrackedEffect(
-        (changes) => {
-            console.log('Index of changed dependencies: ', changes);
-        },
-        [...Object.keys(props)],
-    );
+    // useTrackedEffect(
+    //     (changes) => {
+    //         console.log('Index of changed dependencies: ', changes);
+    //     },
+    //     [...Object.keys(props)],
+    // );
 
     return (
         <div className="mulu-modal" style={{

@@ -19,7 +19,7 @@ import {
     Tooltip
 } from 'antd';
 import {presetPalettes} from '@ant-design/colors';
-import {filter, find, findIndex, get, isEmpty, trim} from 'lodash-es'
+import {filter, find, findIndex, get, isEmpty, throttle, trim} from 'lodash-es'
 import classNames from "classnames"
 import {
     AddFile,
@@ -72,12 +72,15 @@ const CACHE_SCROLL_TOP = "scroll-top"
 function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
+    let appRef = useRef(null);
 
     const [api, contextHolder] = notification.useNotification();
 
     const [settingState, setSettingState, getSettingState] = useAllState({
         fontColor: getCacheItem('fontColor') || '#000',
         fontLineHeight: getCacheItem('fontLineHeight') || '30',
+        blankLineHeight:0,// 舍弃高度
+        newContentHeight:0,// 总高度
         bgColor: getCacheItem('bgColor') || '#E8E3D7',
         fontSize: getCacheItem('fontSize') || '16',
         clickPage: getCacheItem('clickPage') || '1',
@@ -192,11 +195,15 @@ function App() {
                 event.preventDefault();
             }
         });
+        let calculateFontLinesAuto = throttle((e)=>{calculateFontLines()},300);
+
+        window.addEventListener("resize",calculateFontLinesAuto)
 
         return () => {
             window.removeEventListener("error", handlerError)
             window.removeEventListener("unhandledrejection", unhandledrejection)
             OnFileDropOff()
+            window.removeEventListener("resize",calculateFontLinesAuto)
         }
     }, [])
 
@@ -281,19 +288,22 @@ function App() {
         return convertedData.filter(item => item.initials.indexOf(query) >= 0);
     }
 
-    function getContentClientHeight() {
-        let clientHeight1 = pageContentRef.current.clientHeight;
-        if (getState().showTitle && getSettingState().transparentMode !== '1') {
-            clientHeight1 = clientHeight1 - 30;
-        }
-
-        return clientHeight1
-    }
+    // function getContentClientHeight() {
+    //     let clientHeight1 = pageContentRef.current.clientHeight;
+    //     if (getState().showTitle && getSettingState().transparentMode !== '1') {
+    //         clientHeight1 = clientHeight1 - 30;
+    //     }
+    //
+    //     return clientHeight1
+    // }
 
     function pageDown() {
-        let clientHeight1 = getContentClientHeight()
+        // let clientHeight1 = getContentClientHeight()
+        // const clientHeight = Math.floor(pageContentRef.current.clientHeight);
+        const newContentHeight = getSettingState().newContentHeight;
+
         pageContentRef.current.scrollBy({
-            top: clientHeight1,
+            top: newContentHeight,
             behavior: 'instant' // 平滑滚动，可根据需要设置
         });
     }
@@ -325,12 +335,13 @@ function App() {
     }
 
     function pageUp() {
-        let clientHeight1 = pageContentRef.current.clientHeight;
-        if (getState().showTitle && getSettingState().transparentMode !== '1') {
-            clientHeight1 = clientHeight1 - 30;
-        }
+        // let clientHeight1 = pageContentRef.current.clientHeight;
+        // if (getState().showTitle && getSettingState().transparentMode !== '1') {
+        //     clientHeight1 = clientHeight1 - 30;
+        // }
+        const newContentHeight = getSettingState().newContentHeight;
         pageContentRef.current.scrollBy({
-            top: -clientHeight1,
+            top: -newContentHeight,
             behavior: 'instant' // 平滑滚动，可根据需要设置
         });
     }
@@ -411,6 +422,53 @@ function App() {
         }
     }
 
+    function getBookContainerHeight(){
+        let ht = 0
+        ht+=state.showTitle?30:0
+        const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
+        ht+=showBottomBar?30:0
+        if(appRef.current){
+            return appRef.current.clientHeight - ht
+        }else{
+            return getBookContainerHeight()
+        }
+    }
+    /**
+     * 动态计算行高 以至于让文字自适应页面
+     * 废了点心思 基本实现文字自适应高度 不会再出现半截文字那种 当然 用鼠标滚轮肯定就另当别论了 如果重新调整行高之后需要从这一章节开始看
+     * @param lineHeight2 指定行高
+     */
+    function calculateFontLines(lineHeight2= "") {
+        const element = pageContentRef.current;
+        if(element){
+            let clientHeight = getBookContainerHeight();
+            let lineHeight = null;
+            if(lineHeight2){
+                lineHeight = lineHeight2
+            }else{
+                lineHeight = getSettingState().fontLineHeight;
+            }
+            // 计算行数 向下取整
+            let lines = Math.floor(clientHeight / lineHeight);
+            lines = lines === Infinity ? 1 : lines===0?1:lines
+            // 新行高 向下取整
+            let newLineHeight = Math.floor(clientHeight/lines);
+            let blankHeight = 0;
+            newLineHeight = newLineHeight === Infinity ? 30 : newLineHeight===0?30:newLineHeight
+
+            setSettingState({
+                fontLineHeight:newLineHeight, // 新的行高
+                blankLineHeight:blankHeight, // 之前的想法暂未用到
+                newContentHeight:newLineHeight*lines // 计算高度
+            })
+        }else{
+            console.log('not find element!')
+            setTimeout(()=>{
+                calculateFontLines(lineHeight2,true)
+            },100)
+        }
+    }
+
     function nextChpater() {
         let currentBookChapterList = getState().currentBookChapterList;
         if (!isEmpty(currentBookChapterList)) {
@@ -440,6 +498,8 @@ function App() {
             }
         }
     }
+
+
 
     const handleSelect = (option) => {
         if (option.label === '返回书架') {
@@ -494,12 +554,12 @@ function App() {
 
 
     const options = [
+        {label: '设置',},
         {label: '下一页'},
         {label: '上一页'},
         {label: '目录'},
         {label: '下一章'},
         {label: '上一章'},
-        {label: '设置',},
         {label: '返回书架'},
         {label: '标题开关'},
         {label: '最小化'},
@@ -608,6 +668,7 @@ function App() {
 
     return (
         <div id="App"
+             ref={appRef}
              style={{
                  border: display ? getState().currentBookChapterName ? "1px solid transparent" : "1px solid rgba(204, 204, 204, 0.32)" : "none",
                  backgroundColor: (display && isEmpty(getState().currentBookChapterName)) ? '#fff' : 'rgba(0,0,0,0)',
@@ -651,6 +712,7 @@ function App() {
             <BookList
                 state={state}
                 setState={setState}
+                calculateFontLines={useMemoizedFn(calculateFontLines)}
                 reloadBookList={useMemoizedFn(reloadBookList)}
                 goChapterByName={useMemoizedFn(goChapterByName)}
                 beginRecordTop={useMemoizedFn(beginRecordTop)}
@@ -705,6 +767,7 @@ function App() {
 
             {/*content page*/}
             <Content
+                getBookContainerHeight={useMemoizedFn(getBookContainerHeight)}
                 state={getState()}
                 settingState={getSettingState()}
                 display={display}
@@ -738,6 +801,7 @@ function App() {
             {/*content setting*/}
             <ContentSetting
                 state={getState()}
+                calculateFontLines={useMemoizedFn(calculateFontLines)}
                 setState={setState}
                 settingState={getSettingState()}
                 display={display}

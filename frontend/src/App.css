@@ -12,6 +12,11 @@
     user-select: none;
 }
 
+#root{
+    width: 100vw;
+    height: 100vh;
+}
+
 .book-list {
     width: 100%;
     height: calc(100% - 30px);
@@ -64,9 +69,10 @@
 
 .title {
     height: 30px;
-    position: sticky;
-    top: 0;
-    left: 0;
+    flex-basis: 30px;
+    /*position: sticky;*/
+    /*top: 0;*/
+    /*left: 0;*/
     width: 100%;
     background-color: #ccc;
     display: flex;
@@ -110,9 +116,9 @@
     justify-content: space-between;
     gap: 5px;
     align-items: center;
-    position: sticky;
-    bottom: 0;
-    z-index: 109;
+    /*position: sticky;*/
+    /*bottom: 0;*/
+    /*z-index: 109;*/
     height: 30px;
     font-size: 15px;
     line-height: 30px;

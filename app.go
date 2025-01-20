@@ -161,7 +161,11 @@ func (a *App) GetScOne() string {
 		return ""
 	}
 
-	_ = json.Unmarshal(all, &data)
+	err = json.Unmarshal(all, &data)
+	if err != nil {
+		log.Logger.Errorf("getscone json error,%v", err)
+		return ""
+	}
 	if data.Success == false {
 		marshal, _ := json.Marshal(data)
 		log.Logger.Error("line get error ", string(marshal))

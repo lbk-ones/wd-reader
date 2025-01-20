@@ -122,6 +122,9 @@
 .h-100 {
     height: 100%;
 }
+.h-auto {
+    height: auto;
+}
 
 .w-50 {
     width: 50%;
@@ -252,6 +255,9 @@
 
 .over-y-auto {
     overflow-y: auto;
+}
+.over-auto {
+    overflow: auto;
 }
 .over-hidden {
     overflow: hidden;

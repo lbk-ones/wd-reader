@@ -138,6 +138,7 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 			//	continue
 			//}
 			line := strings.TrimSpace(text)
+			//line := strings.ReplaceAll(text, " ", "")
 			if line == "" {
 				continue
 			}
@@ -145,12 +146,12 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 			findString := constant.RegChapter.FindString(line)
 			if findString != "" {
 				replaceNonSpace := strings.ReplaceAll(line, " ", "")
+				mu.Lock()
 				if _, exists := unique[replaceNonSpace]; !exists {
 					unique[replaceNonSpace] = struct{}{}
-					mu.Lock()
 					strs = append(strs, line)
-					mu.Unlock()
 				}
+				mu.Unlock()
 			}
 		}
 		return strings.Join(strs, "\n")
@@ -176,7 +177,7 @@ func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string)
 	}
 	defer file.Close()
 	scanner := GetScanner(fileName, file)
-	var strs []string
+	strs := make([]string, 0)
 	var start bool
 	lastLineNoAllSpace := strings.Replace(chapterName, " ", "", -1)
 	chapterNameNoSpace := strings.TrimSpace(chapterName)
