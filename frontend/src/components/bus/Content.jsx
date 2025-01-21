@@ -2,6 +2,7 @@ import {findIndex, isEmpty} from "lodash-es";
 import ContextMenu from "../ContextMenu.jsx";
 import * as PropTypes from "prop-types";
 import {forwardRef, useEffect} from "react";
+import {Progress} from "antd";
 
 const Content = (props,ref)=>{
     const state = props.state;
@@ -103,19 +104,64 @@ const Content = (props,ref)=>{
         {/*非透明模式下的下一章*/}
         {
             showBottomBar && (
-                <div className={"book-content-div-footer-btn"} style={{
+                <div className={"book-content-div-footer-btn position-relative"} style={{
                     color: settingState.fontColor,
+                    zIndex:30,
                     backgroundColor: `${settingState.transparentMode !== "1" ? settingState.bgColor : "rgba(0,0,0,0)"}`
                 }}>
-                    <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={props.lastChapter}>上一章</a>
-                    <a className={"text-indent0 h-100 cursor-point text-nowrap"} onClick={props.nextChapter}>下一章</a>
+                    <a className={"text-indent0 h-100 cursor-point no-shrink text-nowrap"} style={{
+                        flexBasis:120,
+                    }} onClick={props.lastChapter}>上一章</a>
+                    <a className={"text-indent0 h-100 cursor-point no-shrink text-nowrap"} style={{
+                        flexBasis:120,
+                    }} onClick={props.nextChapter}>下一章</a>
                     <span
-                        className={"book-content-div-footer-btn-txt cursor-point"}
+                        className={"book-content-div-footer-btn-txt cursor-point flex-auto text-over-dot"}
                         title={state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
-                        style={{width: "120px", overflow: "hidden"}}
                     >
-                                        {state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
-                                </span>
+                        {state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
+                    </span>
+                    {/*添加个进度条*/}
+                    {
+                        settingState.showProgress === '1' && (
+
+                        <div className={"position-absolute w-100"} style={{
+                            height:5,
+                            left:0,
+                            bottom:0,
+                            zIndex:20,
+                            lineHeight:0
+                        }}>
+                            <Progress
+                                style={{
+                                    width:'100%',
+                                    height:'100%',
+                                    lineHeight:0
+                                }}
+                                type={"line"}
+                                showInfo={false}
+                                percent={(function (){
+                                    let currentBookChapterList = state.currentBookChapterList;
+                                    let currentBookChapterName = state.currentBookChapterName;
+                                    let index = findIndex(currentBookChapterList, e => e === currentBookChapterName);
+                                    let length = currentBookChapterList.length;
+                                    if(length!==0){
+                                        let number = index/length;
+                                        number = (number === 0 || number === Infinity) ? 0.01 : number
+                                        return Math.ceil(number*100)
+                                    }else{
+                                        return 1
+                                    }
+                                })()}
+                                percentPosition={{ align: 'start', type: 'inner' }}
+                                size={["100%", 5]}
+                                strokeColor="#f60"
+                            />
+                        </div>
+                        )
+                    }
+
+
                 </div>
             )
         }
@@ -123,18 +169,18 @@ const Content = (props,ref)=>{
 }
 
 
-Content.propTypes = {
-    state: PropTypes.any,
-    settingState: PropTypes.any,
-    display: PropTypes.bool,
-    ref: PropTypes.any,
-    onContextMenu: PropTypes.func,
-    getBookContainerHeight: PropTypes.func,
-    onClick: PropTypes.func,
-    onDoubleClick: PropTypes.func,
-    lastChapter: PropTypes.func,
-    nextChapter: PropTypes.func,
-    options: PropTypes.any,
-    onSelect: PropTypes.func
-};
+// Content.propTypes = {
+//     state: PropTypes.any,
+//     settingState: PropTypes.any,
+//     display: PropTypes.bool,
+//     ref: PropTypes.any,
+//     onContextMenu: PropTypes.func,
+//     getBookContainerHeight: PropTypes.func,
+//     onClick: PropTypes.func,
+//     onDoubleClick: PropTypes.func,
+//     lastChapter: PropTypes.func,
+//     nextChapter: PropTypes.func,
+//     options: PropTypes.any,
+//     onSelect: PropTypes.func
+// };
 export default forwardRef(Content)

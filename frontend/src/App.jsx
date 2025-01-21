@@ -1,26 +1,9 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
-import {
-    Button,
-    Drawer,
-    Form,
-    Input,
-    InputNumber,
-    message,
-    Modal,
-    notification,
-    Popover,
-    Space,
-    Spin,
-    Statistic,
-    Switch,
-    theme,
-    Tooltip
-} from 'antd';
+import {Button, Drawer, Input, message, Modal, notification, Space, Spin, theme} from 'antd';
 import {presetPalettes} from '@ant-design/colors';
 import {filter, find, findIndex, get, isEmpty, throttle, trim} from 'lodash-es'
-import classNames from "classnames"
 import {
     AddFile,
     GetBookList,
@@ -28,15 +11,13 @@ import {
     GetChapterListByFileName,
     GetServerUrl,
     GetVersion,
-    OpenFileDialog,
-    ParseEpubToTxt
+    OpenFileDialog
 } from "../wailsjs/go/main/App";
-import {DeleteEpubFile, GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
+import {GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
 import useAllState from "./components/lib/hooks/UseAllState";
-import ContextMenu from "./components/ContextMenu";
-import {SketchPicker} from "react-color";
 import {
-    BrowserOpenURL, LogError,
+    BrowserOpenURL,
+    LogError,
     OnFileDrop,
     OnFileDropOff,
     Quit,
@@ -44,19 +25,7 @@ import {
     WindowReloadApp,
     WindowSetAlwaysOnTop
 } from "../wailsjs/runtime/runtime.js";
-import {
-    CloseOutlined,
-    DatabaseOutlined,
-    DisconnectOutlined,
-    ExclamationCircleOutlined,
-    LineOutlined,
-    MinusOutlined,
-    PlusOutlined,
-    PushpinOutlined,
-    RedoOutlined,
-    SearchOutlined,
-    SettingOutlined
-} from "@ant-design/icons";
+import {LineOutlined, PlusOutlined} from "@ant-design/icons";
 import Header from "./components/bus/Header";
 import BookList from "./components/bus/BookList";
 import {CACHE_PREFIX, getCacheItem, setCacheItem} from "./components/Utils";
@@ -84,7 +53,7 @@ function App() {
         bgColor: getCacheItem('bgColor') || '#E8E3D7',
         fontSize: getCacheItem('fontSize') || '16',
         clickPage: getCacheItem('clickPage') || '1',
-        showProgress: getCacheItem('showProgress') || '0',
+        showProgress: getCacheItem('showProgress') || '1',
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
         leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
@@ -424,6 +393,8 @@ function App() {
 
     function getBookContainerHeight(){
         let ht = 0
+        const state = getState();
+        const settingState = getSettingState();
         ht+=state.showTitle?30:0
         const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
         ht+=showBottomBar?30:0
@@ -437,36 +408,63 @@ function App() {
      * 动态计算行高 以至于让文字自适应页面
      * 废了点心思 基本实现文字自适应高度 不会再出现半截文字那种 当然 用鼠标滚轮肯定就另当别论了 如果重新调整行高之后需要从这一章节开始看
      * @param lineHeight2 指定行高
+     * @param fontSize2 指定文字大小
      */
-    function calculateFontLines(lineHeight2= "") {
-        const element = pageContentRef.current;
-        if(element){
-            let clientHeight = getBookContainerHeight();
-            let lineHeight = null;
-            if(lineHeight2){
-                lineHeight = lineHeight2
-            }else{
-                lineHeight = getSettingState().fontLineHeight;
-            }
-            // 计算行数 向下取整
-            let lines = Math.floor(clientHeight / lineHeight);
-            lines = lines === Infinity ? 1 : lines===0?1:lines
-            // 新行高 向下取整
-            let newLineHeight = Math.floor(clientHeight/lines);
-            let blankHeight = 0;
-            newLineHeight = newLineHeight === Infinity ? 30 : newLineHeight===0?30:newLineHeight
-
-            setSettingState({
-                fontLineHeight:newLineHeight, // 新的行高
-                blankLineHeight:blankHeight, // 之前的想法暂未用到
-                newContentHeight:newLineHeight*lines // 计算高度
-            })
-        }else{
-            console.log('not find element!')
-            setTimeout(()=>{
-                calculateFontLines(lineHeight2,true)
-            },100)
+    function calculateFontLines(lineHeight2= "",fontSize2= "") {
+        let clientHeight = getBookContainerHeight();
+        let lineHeight = getSettingState().fontLineHeight;
+        if(lineHeight2){
+            lineHeight = lineHeight2
         }
+
+        function getLines(lh) {
+            let lines = Math.floor(clientHeight / lh);
+            return lines === Infinity ? 1 : lines === 0 ? 1 : lines
+        }
+
+        // 计算行数 向下取整
+        let lines = getLines(lineHeight);
+        // 新行高 向下取整
+        let newLineHeight = Math.floor(clientHeight/lines);
+        let fontSize = getSettingState().fontSize;
+        if(fontSize2){
+            fontSize = fontSize2
+        }
+
+        let blankHeight = 0;
+        function getContentHeight() {
+            // 小于字体大小了之后最理想的行高
+            const fontSizeScale = fontSize + 4;
+            // 不能小于字体大小
+            newLineHeight = newLineHeight < fontSize ? fontSizeScale : newLineHeight
+
+            newLineHeight = newLineHeight === Infinity ? fontSizeScale : newLineHeight === 0 ? fontSizeScale : newLineHeight
+            return newLineHeight * lines;
+        }
+
+
+        let newContentHeight = getContentHeight();
+
+        // 高度溢出了 需要重新计算
+        if(newContentHeight>clientHeight){
+            while (newContentHeight>clientHeight){
+                if(newLineHeight>1 && fontSize>1){
+                    newLineHeight--;
+                    fontSize--;
+                    lines = getLines(newLineHeight);
+                    newContentHeight = getContentHeight();
+                }
+            }
+        }
+        
+        setSettingState({
+            fontLineHeight:newLineHeight, // 新的行高
+            fontSize:fontSize, // 新的行高
+            blankLineHeight:blankHeight, // 之前的想法暂未用到
+            newContentHeight:newContentHeight // 计算高度
+        })
+        setCacheItem('fontLineHeight', newLineHeight)
+        setCacheItem('fontSize', fontSize)
     }
 
     function nextChpater() {
@@ -500,6 +498,17 @@ function App() {
     }
 
 
+    function toggleTitle(){
+        let showTitle = getState().showTitle;
+        let b = !showTitle;
+        setCacheItem("标题开关", b);
+        setState({
+            showTitle: b
+        })
+        // 重新计算
+        calculateFontLines()
+    }
+
 
     const handleSelect = (option) => {
         if (option.label === '返回书架') {
@@ -524,12 +533,7 @@ function App() {
         } else if (option.label === '上一章') {
             lastChpater();
         } else if (option.label === '标题开关') {
-            let showTitle = getState().showTitle;
-            let b = !showTitle;
-            setCacheItem("标题开关", b);
-            setState({
-                showTitle: b
-            })
+            toggleTitle()
         } else if (option.label === '下一页') {
             pageDown();
         } else if (option.label === '上一页') {
@@ -554,6 +558,7 @@ function App() {
 
 
     const options = [
+        {label: '标题开关'},
         {label: '设置',},
         {label: '下一页'},
         {label: '上一页'},
@@ -561,7 +566,6 @@ function App() {
         {label: '下一章'},
         {label: '上一章'},
         {label: '返回书架'},
-        {label: '标题开关'},
         {label: '最小化'},
         {label: '退出系统'},
 
@@ -698,6 +702,7 @@ function App() {
         >
 
             <Header
+                toggleTitle={useCallback(toggleTitle,[])}
                 display={display}
                 state={getState()}
                 setState={setState}

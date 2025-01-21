@@ -65,12 +65,15 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <InputNumber style={{width: 100}} defaultValue={Number(settingState.fontSize)}
+                        <InputNumber style={{width: 100}}
+                                     defaultValue={Number(settingState.fontSize)}
+                                     value={Number(settingState.fontSize)}
                                      onChange={(value) => {
-                                         setCacheItem('fontLineHeight', value)
-                                         setSettingState({
-                                             fontSize: value
-                                         })
+                                         // setCacheItem('fontLineHeight', value)
+                                         // setSettingState({
+                                         //     fontSize: value
+                                         // })
+                                         props.calculateFontLines(null,value)
                                      }}/>
                     </Form.Item>
 
@@ -86,6 +89,7 @@ function ContentSetting(props) {
                     >
                         <InputNumber style={{width: 100}}
                                      defaultValue={Number(settingState.fontLineHeight)}
+                                     value={Number(settingState.fontLineHeight)}
                                      onChange={(value) => {
                                          props.calculateFontLines(value)
                                          // setCacheItem('fontLineHeight', value)
@@ -282,7 +286,7 @@ function ContentSetting(props) {
                             setCacheItem('bgColor', '#E8E3D7')
                             setCacheItem('fontSize', '16')
                             setCacheItem('clickPage', "1")
-                            setCacheItem('showProgress', "0")
+                            setCacheItem('showProgress', "1")
                             setCacheItem('isAlwaysTop', "1")
                             setCacheItem('transparentMode', "0")
                             setCacheItem('leaveWindowHid', "0")
@@ -292,7 +296,7 @@ function ContentSetting(props) {
                                 bgColor: "#E8E3D7",
                                 fontSize: "16",
                                 clickPage: "1",
-                                showProgress: "0",
+                                showProgress: "1",
                                 isAlwaysTop: "1",
                                 transparentMode: "0",
                                 leaveWindowHid: "0",

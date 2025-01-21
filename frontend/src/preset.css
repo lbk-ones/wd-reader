@@ -213,6 +213,12 @@
     overflow: hidden;
 }
 
+.text-over-dot {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
 .no-transition {
     transition: none !important;
 }
@@ -261,4 +267,11 @@
 }
 .over-hidden {
     overflow: hidden;
+}
+
+.position-relative{
+    position:relative;
+}
+.position-absolute{
+    position:absolute;
 }

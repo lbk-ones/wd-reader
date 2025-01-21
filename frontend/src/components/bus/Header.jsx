@@ -1,6 +1,7 @@
 import {isEmpty} from "lodash-es";
 import CsSVg from "../../assets/images/cs.svg";
 import {
+    BorderInnerOutlined,
     BorderOutlined,
     CloseOutlined,
     DatabaseOutlined,
@@ -41,6 +42,17 @@ function Header(props) {
 
         return (
             <>
+                {
+                    type === '1' && (
+                        <BorderInnerOutlined title={"隐藏标题栏！"}
+                                             style={{
+                                                 fontSize:25
+                                             }}
+                                             onClick={() => {
+                                                 props.toggleTitle()
+                                             }}/>
+                    )
+                }
                 {
                     type === '1' && (
                         <SettingOutlined title={"设置！"}
@@ -202,6 +214,7 @@ Header.propTypes = {
     display: PropTypes.bool,
     state: PropTypes.any,
     setState: PropTypes.func,
+    toggleTitle: PropTypes.func,
     settingstate: PropTypes.any,
     title: PropTypes.string,
     reloadBookList: PropTypes.func,

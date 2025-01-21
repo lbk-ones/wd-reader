@@ -114,7 +114,7 @@
 .book-content-div-footer-btn {
     display: flex;
     justify-content: space-between;
-    gap: 5px;
+    /*gap: 5px;*/
     align-items: center;
     /*position: sticky;*/
     /*bottom: 0;*/

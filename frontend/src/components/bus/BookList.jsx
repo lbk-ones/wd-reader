@@ -1,5 +1,5 @@
 import {isEmpty} from "lodash-es";
-import {DeleteOutlined, PlusOutlined, SettingOutlined} from "@ant-design/icons";
+import {DeleteOutlined, GithubOutlined, PlusOutlined, SettingOutlined} from "@ant-design/icons";
 import ContextMenu from "../ContextMenu";
 import {Input, message, Statistic} from "antd";
 import * as PropTypes from "prop-types";
@@ -7,6 +7,7 @@ import {getCacheItem, setCacheItem} from "../Utils";
 import classNames from "classnames";
 import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../wailsjs/go/main/App";
 import {useEffect, useState} from "react";
+import {BrowserOpenURL} from "../../../wailsjs/runtime/runtime.js";
 
 const TIP = [
     "没有人比我更懂你的需求😀",
@@ -148,7 +149,7 @@ function BookList(props) {
                                                                         console.log(res)
                                                                     })
                                                                     props.beginRecordTop(tem)
-                                                                    
+
                                                                     props.calculateFontLines()
                                                                 });
                                                             })
@@ -210,9 +211,19 @@ function BookList(props) {
                                     <span>
                                     {sc}
                                     </span>
+                            <span className={"flex gap5"}>
+                                <GithubOutlined
+                                    style={{
+                                        fontSize: "25px",
+                                        paddingRight: "5px"
+                                    }}
+                                    onClick={()=>{
+                                        BrowserOpenURL("https://github.com/lbk-ones/wd-reader")
+                                    }}
+                                />
                             <SettingOutlined
                                 style={{
-                                    fontSize: "20px",
+                                    fontSize: "25px",
                                     paddingRight: "5px"
                                 }}
                                 title={"设置！"}
@@ -222,6 +233,8 @@ function BookList(props) {
                                     })
                                 }}
                             />
+                            </span>
+
 
                         </li>
                     </ul>
