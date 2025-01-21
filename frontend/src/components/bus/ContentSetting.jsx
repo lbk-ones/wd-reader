@@ -3,9 +3,11 @@ import {getCacheItem, setCacheItem} from "../Utils.jsx";
 import {SketchPicker} from "react-color";
 import {ExclamationCircleOutlined} from "@ant-design/icons";
 import * as PropTypes from "prop-types";
+import {useState} from "react";
 
 function ContentSetting(props) {
 
+    const [line, setLine] = useState(3)
     let state = props.state;
     let display = props.display;
     let settingState = props.settingState;
@@ -13,6 +15,8 @@ function ContentSetting(props) {
     let setState = props.setState;
     let isAlwaysTop = props.isAlwaysTop;
     let setDisplay = props.setDisplay;
+    let miniSize = props.miniSize;
+    let toggleTitle = props.toggleTitle;
     let setSettingState = props.setSettingState;
 
     if (!(display && settingVisible)) {
@@ -40,12 +44,12 @@ function ContentSetting(props) {
                     labelCol={{
                         span: 9,
                         xs: 9,
-                        sm: 9
+                        sm: 4
                     }}
                     wrapperCol={{
                         span: 15,
                         xs: 15,
-                        sm: 15,
+                        sm: 20,
                     }}
                     initialValues={{
                         layout: "horizontal",
@@ -279,22 +283,84 @@ function ContentSetting(props) {
                         }}/>
                     </Form.Item>
 
-                    <Form.Item label={null}>
+                    <Form.Item
+                        label="标题开关"
+                        name="标题开关"
+                        rules={[
+                            {
+                                required: false,
+                                message: 'Please input your username!',
+                            },
+                        ]}
+                    >
+                        <Switch checked={state.showTitle === true} onChange={(value) => {
+                            toggleTitle()
+                        }}/>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="迷你化"
+                        name="迷你化"
+                        rules={[
+                            {
+                                required: false,
+                                message: 'Please input your username!',
+                            },
+                        ]}
+                    >
+                        <Switch onChange={(value) => {
+                                    setState({
+                                        settingVisible: false
+                                    })
+                                    miniSize(line)
+                                }}
+                        />
+                        &nbsp;&nbsp;&nbsp;
+                        行数：
+                        <InputNumber
+                            value={line}
+                            min={1}
+                            max={4}
+                            style={{
+                                width:'70px'
+                            }}
+                            onChange={(value) => {
+                                console.log('value-000>',value)
+                                setLine(value)
+                            }}
+                        />
+
+
+                    </Form.Item>
+
+                    <Form.Item
+                        label={"操作"}
+                        name="透明模式"
+                        rules={[
+                            {
+                                required: false,
+                                message: 'Please input your username!',
+                            },
+                        ]}
+                    >
                         <Button type="primary" onClick={() => {
+                            let lineHeight = 30
+                            let fontSize = 20
                             setCacheItem('fontColor', '#000')
-                            setCacheItem('fontLineHeight', '30')
+                            setCacheItem('fontLineHeight', lineHeight+"")
                             setCacheItem('bgColor', '#E8E3D7')
-                            setCacheItem('fontSize', '16')
+                            setCacheItem('fontSize', fontSize+"")
                             setCacheItem('clickPage', "1")
                             setCacheItem('showProgress', "1")
                             setCacheItem('isAlwaysTop', "1")
                             setCacheItem('transparentMode', "0")
                             setCacheItem('leaveWindowHid', "0")
+                            setLine(3)
                             setSettingState({
                                 fontColor: "#000",
-                                fontLineHeight: "30",
+                                fontLineHeight: lineHeight+"",
                                 bgColor: "#E8E3D7",
-                                fontSize: "16",
+                                fontSize: fontSize+"",
                                 clickPage: "1",
                                 showProgress: "1",
                                 isAlwaysTop: "1",
@@ -304,7 +370,7 @@ function ContentSetting(props) {
                             setDisplay(true)
                             isAlwaysTop(getCacheItem('isAlwaysTop'));
                             setTimeout(()=>{
-                                props.calculateFontLines(30)
+                                props.calculateFontLines(lineHeight)
                             },100)
                         }}>
                             恢复默认
@@ -325,6 +391,8 @@ ContentSetting.propTypes = {
     settingState: PropTypes.any,
     display: PropTypes.any,
     isAlwaysTop: PropTypes.func,
+    miniSize: PropTypes.func,
+    toggleTitle: PropTypes.func,
     calculateFontLines: PropTypes.func,
     setDisplay: PropTypes.func,
     setSettingState: PropTypes.func,

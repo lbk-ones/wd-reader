@@ -142,6 +142,11 @@ func (*App) DeleteFile(name string) string {
 
 // GetScOne 诗词获取
 func (a *App) GetScOne() string {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Logger.Error(err)
+		}
+	}()
 	resp, err := http.Get(constant.WD_SERVER + "/wd/getSc")
 	if err != nil {
 		log.Logger.Errorf("getscone error,%v", err)

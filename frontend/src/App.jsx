@@ -20,10 +20,10 @@ import {
     LogError,
     OnFileDrop,
     OnFileDropOff,
-    Quit,
+    Quit, WindowCenter,
     WindowMinimise,
     WindowReloadApp,
-    WindowSetAlwaysOnTop
+    WindowSetAlwaysOnTop, WindowSetSize
 } from "../wailsjs/runtime/runtime.js";
 import {LineOutlined, PlusOutlined} from "@ant-design/icons";
 import Header from "./components/bus/Header";
@@ -51,7 +51,7 @@ function App() {
         blankLineHeight:0,// 舍弃高度
         newContentHeight:0,// 总高度
         bgColor: getCacheItem('bgColor') || '#E8E3D7',
-        fontSize: getCacheItem('fontSize') || '16',
+        fontSize: getCacheItem('fontSize') || '20',
         clickPage: getCacheItem('clickPage') || '1',
         showProgress: getCacheItem('showProgress') || '1',
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
@@ -82,7 +82,8 @@ function App() {
         sysSettingVisible: false,
         lastSearchMulu: -1,
         lastSearchMuluName: "",
-        gotoMuluIndexSearchVisible: false
+        gotoMuluIndexSearchVisible: false,
+        oneLine:false
     })
 
 
@@ -271,6 +272,7 @@ function App() {
         // const clientHeight = Math.floor(pageContentRef.current.clientHeight);
         const newContentHeight = getSettingState().newContentHeight;
 
+
         pageContentRef.current.scrollBy({
             top: newContentHeight,
             behavior: 'instant' // 平滑滚动，可根据需要设置
@@ -392,16 +394,16 @@ function App() {
     }
 
     function getBookContainerHeight(){
-        let ht = 0
         const state = getState();
         const settingState = getSettingState();
+        let ht = 0
         ht+=state.showTitle?30:0
         const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
         ht+=showBottomBar?30:0
         if(appRef.current){
             return appRef.current.clientHeight - ht
         }else{
-            return getBookContainerHeight()
+            return getBookContainerHeight(height)
         }
     }
     /**
@@ -409,12 +411,19 @@ function App() {
      * 废了点心思 基本实现文字自适应高度 不会再出现半截文字那种 当然 用鼠标滚轮肯定就另当别论了 如果重新调整行高之后需要从这一章节开始看
      * @param lineHeight2 指定行高
      * @param fontSize2 指定文字大小
+     * @param fullScreen 是否全屏
+     * @param fullRow 几行
      */
-    function calculateFontLines(lineHeight2= "",fontSize2= "") {
+    function calculateFontLines(lineHeight2= "",fontSize2= "",fullScreen= 0,fullRow=0) {
         let clientHeight = getBookContainerHeight();
         let lineHeight = getSettingState().fontLineHeight;
         if(lineHeight2){
             lineHeight = lineHeight2
+        }
+
+        if(fullScreen){
+            clientHeight = fullScreen
+            lineHeight = fullScreen/fullRow
         }
 
         function getLines(lh) {
@@ -456,7 +465,6 @@ function App() {
                 }
             }
         }
-        
         setSettingState({
             fontLineHeight:newLineHeight, // 新的行高
             fontSize:fontSize, // 新的行高
@@ -505,8 +513,11 @@ function App() {
         setState({
             showTitle: b
         })
-        // 重新计算
-        calculateFontLines()
+        setTimeout(()=>{
+            // 重新计算
+            calculateFontLines()
+        },100)
+
     }
 
 
@@ -670,11 +681,31 @@ function App() {
         }
     });
 
+    function miniSize(rows){
+
+        setState({
+            oneLine:true, // 目前没用到这个字段
+            showTitle:false
+        })
+        setSettingState({
+            fontSize:20
+        })
+        // setCacheItem("fontSize",25)
+        WindowSetSize(600, 120)
+
+        setTimeout(()=>{
+            WindowCenter()
+            calculateFontLines("","",120,rows)
+        },100)
+
+
+    }
+
     return (
         <div id="App"
              ref={appRef}
              style={{
-                 border: display ? getState().currentBookChapterName ? "1px solid transparent" : "1px solid rgba(204, 204, 204, 0.32)" : "none",
+                 // border: display ? getState().currentBookChapterName ? "1px solid transparent" : "1px solid rgba(204, 204, 204, 0.32)" : "none",
                  backgroundColor: (display && isEmpty(getState().currentBookChapterName)) ? '#fff' : 'rgba(0,0,0,0)',
                  ...(function () {
                      if (!display) {
@@ -805,6 +836,8 @@ function App() {
 
             {/*content setting*/}
             <ContentSetting
+                miniSize={useCallback(miniSize,[])}
+                toggleTitle={useCallback(toggleTitle,[])}
                 state={getState()}
                 calculateFontLines={useMemoizedFn(calculateFontLines)}
                 setState={setState}

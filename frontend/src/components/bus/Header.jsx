@@ -120,7 +120,6 @@ function Header(props) {
                 <BorderOutlined onClick={() => {
 
                     WindowGetSize().then(res => {
-                        console.log('res', res)
                         if (res.w === 400 && res.h === 600) {
                             WindowSetSize(960, 540)
                         } else {
@@ -161,7 +160,7 @@ function Header(props) {
                         <span>{state.version || ""}</span>
                     </div>
 
-                    <div className={"flex flex-row-nowrap gap3 font-s20"}
+                    <div className={"flex flex-row-nowrap gap5 font-s20"}
                          onClick={(e) => {
                              e.stopPropagation()
                          }}>

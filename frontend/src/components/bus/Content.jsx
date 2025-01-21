@@ -144,6 +144,7 @@ const Content = (props,ref)=>{
                                     let currentBookChapterList = state.currentBookChapterList;
                                     let currentBookChapterName = state.currentBookChapterName;
                                     let index = findIndex(currentBookChapterList, e => e === currentBookChapterName);
+                                    index = index===0?0:index+1
                                     let length = currentBookChapterList.length;
                                     if(length!==0){
                                         let number = index/length;
