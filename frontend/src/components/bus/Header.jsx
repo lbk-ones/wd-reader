@@ -68,20 +68,7 @@ function Header(props) {
                     type === '1' && (
                         <DatabaseOutlined title={"返回书架！"}
                                           onClick={() => {
-                                              reloadBookList(() => {
-                                                  setState({
-                                                      currentBookChapterName: '',
-                                                      currentBookName: '',
-                                                      currentBookChapterContent: [],
-                                                      currentBookChapterList: [],
-                                                      muluVisible: false,
-                                                      gotoMuluIndexSearchVisible: false,
-                                                      lastSearchMulu: -1,
-                                                      lastSearchMuluName: "",
-                                                      settingVisible: false
-                                                  })
-
-                                              })
+                                              props.backBookList()
                                           }}/>
                     )
                 }
@@ -214,6 +201,7 @@ Header.propTypes = {
     state: PropTypes.any,
     setState: PropTypes.func,
     toggleTitle: PropTypes.func,
+    backBookList: PropTypes.func,
     settingstate: PropTypes.any,
     title: PropTypes.string,
     reloadBookList: PropTypes.func,

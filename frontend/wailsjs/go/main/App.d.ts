@@ -13,9 +13,9 @@ export function GetBookList():Promise<string>;
 
 export function GetBooksPath():Promise<string>;
 
-export function GetChapterContentByChapterName(arg1:string,arg2:string):Promise<string>;
+export function GetChapterContentByChapterName(arg1:string,arg2:string,arg3:string,arg4:string):Promise<string>;
 
-export function GetChapterListByFileName(arg1:string):Promise<string>;
+export function GetChapterListByFileName(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function GetScOne():Promise<string>;
 

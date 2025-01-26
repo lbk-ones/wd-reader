@@ -20,15 +20,24 @@ import {
     LogError,
     OnFileDrop,
     OnFileDropOff,
-    Quit, WindowCenter,
+    Quit,
+    WindowCenter,
     WindowMinimise,
     WindowReloadApp,
-    WindowSetAlwaysOnTop, WindowSetSize
+    WindowSetAlwaysOnTop,
+    WindowSetSize
 } from "../wailsjs/runtime/runtime.js";
 import {LineOutlined, PlusOutlined} from "@ant-design/icons";
 import Header from "./components/bus/Header";
 import BookList from "./components/bus/BookList";
-import {CACHE_PREFIX, getCacheItem, setCacheItem} from "./components/Utils";
+import {
+    CACHE_PREFIX,
+    getCacheItem,
+    getSplitMap,
+    getSplitType,
+    getSplitTypeValue,
+    setCacheItem
+} from "./components/Utils";
 import useMemoizedFn from "ahooks/es/useMemoizedFn";
 import MuluList from "./components/bus/MuluList.jsx";
 import ContentSetting from "./components/bus/ContentSetting.jsx";
@@ -41,6 +50,7 @@ const CACHE_SCROLL_TOP = "scroll-top"
 function App() {
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
+    let bookListRef = useRef(null);
     let appRef = useRef(null);
 
     const [api, contextHolder] = notification.useNotification();
@@ -57,7 +67,8 @@ function App() {
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
         leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
-        appTitle: getCacheItem('AppTitle') || '偷得浮生半日闲'
+        appTitle: getCacheItem('AppTitle') || '偷得浮生半日闲',
+        splitMap: getSplitMap() // 拆分方式
     })
 
     const [state, setState, getState] = useAllState({
@@ -318,11 +329,13 @@ function App() {
     }
 
     function goChapterByName(fileName, chapterName, cb = null) {
-        GetChapterListByFileName(fileName).then(res => {
+        let splitType = getSplitType(fileName);
+        let splitTypeValue = getSplitTypeValue(fileName);
+        GetChapterListByFileName(fileName,splitType,splitTypeValue).then(res => {
             if (!hasError(res)) {
                 let strings = res.split("\n");
                 let firstChapter = isEmpty(chapterName) ? get(strings, "[0]", "") : chapterName;
-                GetChapterContentByChapterName(fileName, firstChapter).then(chapterContent => {
+                GetChapterContentByChapterName(fileName, firstChapter,splitType,splitTypeValue).then(chapterContent => {
                     if (!hasError(chapterContent)) {
                         setCacheItem(fileName, firstChapter)
                         setState({
@@ -520,25 +533,27 @@ function App() {
 
     }
 
+    function backBookList(cb=null){
+        reloadBookList(() => {
+
+            setState({
+                currentBookChapterName: '',
+                currentBookName: '',
+                currentBookChapterContent: [],
+                currentBookChapterList: [],
+                muluVisible: false,
+                gotoMuluIndexSearchVisible: false,
+                lastSearchMulu: -1,
+                lastSearchMuluName: "",
+                settingVisible: false
+            })
+            cb && cb()
+        })
+    }
 
     const handleSelect = (option) => {
         if (option.label === '返回书架') {
-            reloadBookList(() => {
-
-                setState({
-                    currentBookChapterName: '',
-                    currentBookName: '',
-                    currentBookChapterContent: [],
-                    currentBookChapterList: [],
-                    muluVisible: false,
-                    gotoMuluIndexSearchVisible: false,
-                    lastSearchMulu: -1,
-                    lastSearchMuluName: "",
-                    settingVisible: false
-                })
-
-            })
-
+            backBookList()
         } else if (option.label === '下一章') {
             nextChpater();
         } else if (option.label === '上一章') {
@@ -700,7 +715,10 @@ function App() {
 
 
     }
-
+    const selectBook = useMemoizedFn(function(item){
+        bookListRef.current.selectBook(item)
+    })
+    const backBookListCallback = useMemoizedFn(backBookList);
     return (
         <div id="App"
              ref={appRef}
@@ -733,19 +751,21 @@ function App() {
         >
 
             <Header
-                toggleTitle={useCallback(toggleTitle,[])}
+                backBookList={backBookListCallback}
+                toggleTitle={useMemoizedFn(toggleTitle)}
                 display={display}
                 state={getState()}
                 setState={setState}
-                isAlwaysTop={useCallback(isAlwaysTop, [])}
+                isAlwaysTop={useMemoizedFn(isAlwaysTop)}
                 settingstate={getSettingState()}
                 setSettingState={setSettingState}
                 title={getSettingState().appTitle}
-                reloadBookList={useCallback(reloadBookList, [])}
+                reloadBookList={useMemoizedFn(reloadBookList)}
             />
 
             {/*index book list*/}
             <BookList
+                ref={bookListRef}
                 state={state}
                 setState={setState}
                 calculateFontLines={useMemoizedFn(calculateFontLines)}
@@ -836,8 +856,10 @@ function App() {
 
             {/*content setting*/}
             <ContentSetting
-                miniSize={useCallback(miniSize,[])}
-                toggleTitle={useCallback(toggleTitle,[])}
+                selectBook={selectBook}
+                backBookList={backBookListCallback}
+                miniSize={useMemoizedFn(miniSize)}
+                toggleTitle={useMemoizedFn(toggleTitle)}
                 state={getState()}
                 calculateFontLines={useMemoizedFn(calculateFontLines)}
                 setState={setState}

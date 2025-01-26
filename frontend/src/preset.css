@@ -2,7 +2,9 @@
 .flex {
     display: flex;
 }
-
+.flex-wrap{
+    flex-wrap: wrap;
+}
 .flex-auto {
     flex: auto;
 }

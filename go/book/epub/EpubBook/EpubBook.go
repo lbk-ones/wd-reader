@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	_type "wd-reader/go/book/epub/type"
-	"wd-reader/go/constant"
 	"wd-reader/go/log"
 	"wd-reader/go/utils"
 )
@@ -291,99 +290,99 @@ func parseChaptersV2(b2 *EpubBook) {
 }
 
 // Deprecated
-func parseChaptersV1(b2 *EpubBook) {
-
-	fmt.Println("-------------开始解析章节")
-	logs := b2.CatLogs
-	refs := b2.Opf.Spine.ItemRefs
-	list := utils.NewArrayList[_type.ItemRef]()
-	list.AddAll(refs)
-	var sections []Section
-	// take .ncx file path
-	ncxPath := b2.NcxPath
-	for in, log := range logs {
-		title := log.Title
-		fmt.Println(fmt.Sprint(in) + "-------------开始解析章节--" + title)
-		// handler chapter title
-		findString := constant.RegChapter.FindString(title)
-		if findString == "" {
-			title = fmt.Sprint(in+1, "、") + title
-		}
-		link := log.Link
-		names := extractFileNames(link)
-		chapterFile := ncxPath + "/" + names
-		if strings.Index(chapterFile, "/") == 0 {
-			chapterFile = strings.Replace(chapterFile, "/", "", 1)
-		}
-		chapterZip, err := b2.ZipReader.Open(chapterFile)
-		if err != nil {
-			fmt.Printf("Error opening chapter file %s: %v\n", chapterFile, err)
-			continue
-		}
-
-		doc, err := html.Parse(chapterZip)
-		if err != nil {
-			_ = chapterZip.Close()
-			fmt.Printf("Error parsing chapter file %s: %v\n", chapterFile, err)
-			continue
-		}
-
-		// extract text from html doc
-		var extractText func(*html.Node) string
-		extractText = func(n *html.Node) string {
-			var s string
-			if n.Type == html.ElementNode && (n.Data == "head" || n.Data == "title" || n.Data == "script" || n.Data == "style" || n.Data == "noscript" || n.Data == "meta") {
-				return ""
-			} else if n.Type == html.TextNode {
-				s = n.Data
-			}
-			var tag string
-			if n.Type == html.ElementNode {
-				tag = n.Data
-			}
-			// recursion
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				s += extractText(c)
-			}
-			// these tag is not allow wrap
-			if tag == "p" || tag == "h1" || tag == "h2" || tag == "h3" || tag == "h4" || tag == "h5" {
-				s = strings.ReplaceAll(s, "\n", "") + "\n"
-			}
-
-			return s
-		}
-
-		titleNoSpace := strings.ReplaceAll(title, " ", "")
-
-		text := extractText(doc)
-		text = html.UnescapeString(text)
-		re := regexp.MustCompile(`\n+`)
-		result := re.ReplaceAllString(text, "\n")
-		split := strings.Split(result, "\n")
-		var newContent []string
-		for _, line := range split {
-			// first line , maybe title
-			line2 := strings.TrimSpace(line)
-			if line2 != "\n" && line2 != "" {
-				firstLineNoSpace := strings.ReplaceAll(line, " ", "")
-				if titleNoSpace != firstLineNoSpace {
-					newContent = append(newContent, line)
-				}
-			}
-		}
-		text = strings.Join(newContent, "\n")
-		s := Section{
-			Title:     title,
-			Content:   text,
-			PlayOrder: log.PlayOrder,
-		}
-		fmt.Println("内容---" + text)
-		sections = append(sections, s)
-		_ = chapterZip.Close()
-
-	}
-	b2.Sections = sections
-}
+//func parseChaptersV1(b2 *EpubBook) {
+//
+//	fmt.Println("-------------开始解析章节")
+//	logs := b2.CatLogs
+//	refs := b2.Opf.Spine.ItemRefs
+//	list := utils.NewArrayList[_type.ItemRef]()
+//	list.AddAll(refs)
+//	var sections []Section
+//	// take .ncx file path
+//	ncxPath := b2.NcxPath
+//	for in, log := range logs {
+//		title := log.Title
+//		fmt.Println(fmt.Sprint(in) + "-------------开始解析章节--" + title)
+//		// handler chapter title
+//		findString := constant.RegChapter.FindString(title)
+//		if findString == "" {
+//			title = fmt.Sprint(in+1, "、") + title
+//		}
+//		link := log.Link
+//		names := extractFileNames(link)
+//		chapterFile := ncxPath + "/" + names
+//		if strings.Index(chapterFile, "/") == 0 {
+//			chapterFile = strings.Replace(chapterFile, "/", "", 1)
+//		}
+//		chapterZip, err := b2.ZipReader.Open(chapterFile)
+//		if err != nil {
+//			fmt.Printf("Error opening chapter file %s: %v\n", chapterFile, err)
+//			continue
+//		}
+//
+//		doc, err := html.Parse(chapterZip)
+//		if err != nil {
+//			_ = chapterZip.Close()
+//			fmt.Printf("Error parsing chapter file %s: %v\n", chapterFile, err)
+//			continue
+//		}
+//
+//		// extract text from html doc
+//		var extractText func(*html.Node) string
+//		extractText = func(n *html.Node) string {
+//			var s string
+//			if n.Type == html.ElementNode && (n.Data == "head" || n.Data == "title" || n.Data == "script" || n.Data == "style" || n.Data == "noscript" || n.Data == "meta") {
+//				return ""
+//			} else if n.Type == html.TextNode {
+//				s = n.Data
+//			}
+//			var tag string
+//			if n.Type == html.ElementNode {
+//				tag = n.Data
+//			}
+//			// recursion
+//			for c := n.FirstChild; c != nil; c = c.NextSibling {
+//				s += extractText(c)
+//			}
+//			// these tag is not allow wrap
+//			if tag == "p" || tag == "h1" || tag == "h2" || tag == "h3" || tag == "h4" || tag == "h5" {
+//				s = strings.ReplaceAll(s, "\n", "") + "\n"
+//			}
+//
+//			return s
+//		}
+//
+//		titleNoSpace := strings.ReplaceAll(title, " ", "")
+//
+//		text := extractText(doc)
+//		text = html.UnescapeString(text)
+//		re := regexp.MustCompile(`\n+`)
+//		result := re.ReplaceAllString(text, "\n")
+//		split := strings.Split(result, "\n")
+//		var newContent []string
+//		for _, line := range split {
+//			// first line , maybe title
+//			line2 := strings.TrimSpace(line)
+//			if line2 != "\n" && line2 != "" {
+//				firstLineNoSpace := strings.ReplaceAll(line, " ", "")
+//				if titleNoSpace != firstLineNoSpace {
+//					newContent = append(newContent, line)
+//				}
+//			}
+//		}
+//		text = strings.Join(newContent, "\n")
+//		s := Section{
+//			Title:     title,
+//			Content:   text,
+//			PlayOrder: log.PlayOrder,
+//		}
+//		fmt.Println("内容---" + text)
+//		sections = append(sections, s)
+//		_ = chapterZip.Close()
+//
+//	}
+//	b2.Sections = sections
+//}
 
 func parseCatLog(b2 *EpubBook) {
 

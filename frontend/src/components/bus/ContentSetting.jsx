@@ -1,9 +1,19 @@
-import {Button, Form, InputNumber, Popover, Switch, Tooltip} from "antd";
-import {getCacheItem, setCacheItem} from "../Utils.jsx";
+import {Button, Form, Input, InputNumber, Modal, Popover, Select, Switch, Tooltip} from "antd";
+import {
+    CACHE_PREFIX,
+    getCacheItem,
+    getSplitMap,
+    getSplitType,
+    getSplitTypeValue,
+    putSplitMap,
+    setCacheItem,
+    setSplitTypeValue
+} from "../Utils.jsx";
 import {SketchPicker} from "react-color";
 import {ExclamationCircleOutlined} from "@ant-design/icons";
 import * as PropTypes from "prop-types";
 import {useState} from "react";
+import {WindowReloadApp} from "../../../wailsjs/runtime/runtime.js";
 
 function ContentSetting(props) {
 
@@ -22,6 +32,9 @@ function ContentSetting(props) {
     if (!(display && settingVisible)) {
         return null
     }
+
+    let currentBookName = state.currentBookName;
+    let splitMaElement = getSplitType(currentBookName);
 
     return (
         <div className="setting-modal">
@@ -234,7 +247,7 @@ function ContentSetting(props) {
                     </Form.Item>
                     <Form.Item
                         label={<div>窗口隐藏 <Tooltip placement="left"
-                                                      title={"鼠标移入的时候才显示，移除变透明"}>
+                                                      title={<span>鼠标移入的时候才显示,<br/>移除变透明</span>}>
                             <ExclamationCircleOutlined/>
                         </Tooltip></div>}
                         name="窗口隐藏"
@@ -334,8 +347,114 @@ function ContentSetting(props) {
                     </Form.Item>
 
                     <Form.Item
+                        style={{
+                            marginTop:'5px'
+                        }}
+                        label={<div>断章方式 <Tooltip placement=" left"
+                                                      title={<span>章节的提取方式<br/>默认是智能提取<br/>如果文章出现章节混乱<br/>那么可以切换章节提取方式</span>}>
+                            <ExclamationCircleOutlined/>
+                        </Tooltip></div>}
+                        name="断章方式"
+                        rules={[
+                            {
+                                required: false,
+                                message: 'Please input your username!',
+                            },
+                        ]}
+                    >
+                        <div className={"flex gap3 flex-wrap"}>
+                            <Select value={splitMaElement} onChange={(value, option)=>{
+                                putSplitMap(currentBookName,value);
+                                let splitTypeValue
+                                if(value === '2') {
+                                    splitTypeValue = setSplitTypeValue(currentBookName,"100");
+                                }else {
+                                    splitTypeValue = setSplitTypeValue(currentBookName,"");
+                                }
+                                setSettingState({
+                                    splitMap:splitTypeValue
+                                })
+                                setCacheItem(currentBookName, "")
+                            }}>
+                                <Select.Option key={"1"} value={"1"}>智能</Select.Option>
+                                <Select.Option  key={"2"} value={"2"}>按段落数分章</Select.Option>
+                                <Select.Option key={"3"} value={"3"}>自定义正则分章</Select.Option>
+                            </Select>
+                            {
+                                splitMaElement === '3' && (
+                                    <Input allowClear
+                                           placeHolder={"请输入正则表达式"}
+                                           value={getSplitTypeValue(currentBookName)}
+                                           onChange={e=>{
+                                               let value = e.target.value;
+                                               let splitTypeValue = setSplitTypeValue(currentBookName,value);
+                                               setSettingState({
+                                                   splitMap:splitTypeValue
+                                               })
+                                           }}
+                                    />
+                                )
+                            }
+
+                            {
+                                splitMaElement === '2' && (
+                                    <InputNumber
+                                        value={Number(getSplitTypeValue(currentBookName))}
+                                        min={10}
+                                        max={1000}
+                                        style={{
+                                            width:'70px'
+                                        }}
+                                        onChange={(value) => {
+                                            let splitTypeValue = setSplitTypeValue(currentBookName,value);
+                                            setSettingState({
+                                                splitMap:splitTypeValue
+                                            })
+                                        }}
+                                    />
+                                )
+                            }
+                            <Button onClick={()=>{
+                                Modal.confirm({
+                                    title: "提示！",
+                                    type: 'warning',
+                                    okText: "我确定",
+                                    cancelText: "取消",
+                                    content: "是否清空该本书的章节阅读历史",
+                                    onOk: () => {
+
+                                        props.backBookList(()=>{
+                                            setCacheItem(currentBookName, "")
+
+                                            props.selectBook(currentBookName)
+                                        })
+
+                                    },
+                                    onCancel:()=>{
+                                        setState({
+                                            settingVisible: false
+                                        })
+                                        props.backBookList(function (){
+                                            props.selectBook(currentBookName)
+                                        })
+
+                                    }
+                                })
+
+                            }}>应用断章方式</Button>
+
+                        </div>
+
+
+
+                    </Form.Item>
+
+                    <Form.Item
+                        style={{
+                            marginTop:'5px'
+                        }}
                         label={"操作"}
-                        name="透明模式"
+                        name="操作"
                         rules={[
                             {
                                 required: false,
@@ -355,8 +474,14 @@ function ContentSetting(props) {
                             setCacheItem('isAlwaysTop', "1")
                             setCacheItem('transparentMode', "0")
                             setCacheItem('leaveWindowHid', "0")
+
+                            // 默认智能断章
+                            putSplitMap(currentBookName,"1");
+                            const splitTypeValue = setSplitTypeValue(currentBookName,"");
+
                             setLine(3)
                             setSettingState({
+                                splitMap:splitTypeValue,
                                 fontColor: "#000",
                                 fontLineHeight: lineHeight+"",
                                 bgColor: "#E8E3D7",

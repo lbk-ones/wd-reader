@@ -26,12 +26,12 @@ export function GetBooksPath() {
   return window['go']['main']['App']['GetBooksPath']();
 }
 
-export function GetChapterContentByChapterName(arg1, arg2) {
-  return window['go']['main']['App']['GetChapterContentByChapterName'](arg1, arg2);
+export function GetChapterContentByChapterName(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['GetChapterContentByChapterName'](arg1, arg2, arg3, arg4);
 }
 
-export function GetChapterListByFileName(arg1) {
-  return window['go']['main']['App']['GetChapterListByFileName'](arg1);
+export function GetChapterListByFileName(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetChapterListByFileName'](arg1, arg2, arg3);
 }
 
 export function GetScOne() {

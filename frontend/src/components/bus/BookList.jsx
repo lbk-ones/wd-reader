@@ -3,10 +3,10 @@ import {DeleteOutlined, GithubOutlined, PlusOutlined, SettingOutlined} from "@an
 import ContextMenu from "../ContextMenu";
 import {Input, message, Statistic} from "antd";
 import * as PropTypes from "prop-types";
-import {getCacheItem, setCacheItem} from "../Utils";
+import {deleteSplitMapByKey, getCacheItem, setCacheItem} from "../Utils";
 import classNames from "classnames";
 import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../wailsjs/go/main/App";
-import {useEffect, useState} from "react";
+import {forwardRef, useEffect, useImperativeHandle, useState} from "react";
 import {BrowserOpenURL} from "../../../wailsjs/runtime/runtime.js";
 
 const TIP = [
@@ -23,16 +23,14 @@ const TIP = [
  * @returns {JSX.Element}
  * @constructor
  */
-function BookList(props) {
+function BookList(props,ref) {
 
     const state = props.state;
 
     const [sc, setSc] = useState("")
 
     useEffect(function (){
-        console.log("初始化")
         GetScOne().then(res=>{
-            console.log('res--->',res)
             if(res){
                 try {
                     let parse = JSON.parse(res);
@@ -69,6 +67,59 @@ function BookList(props) {
         return currentBookList;
     }
 
+    function selectBookFun(tem){
+        props.clickBookToFirst(tem);
+        props.setState({
+            loadingBook: true
+        })
+        if (tem.endsWith("epub")) {
+
+            ParseEpubToTxt(tem).then(res => {
+                if (res.startsWith("错误信息:")) {
+                    message.error(res)
+                    return;
+                }
+
+                let s = tem.replace(".epub", ".txt");
+                let item = getCacheItem(tem);
+                props.reloadBookList(() => {
+                    props.goChapterByName(s, item, () => {
+                        props.setState({
+                            loadingBook: false
+                        })
+                        DeleteEpubFile(tem).then(res => {
+                            // hasError(tem)
+                            console.log(res)
+                        })
+                        props.beginRecordTop(tem)
+
+                        props.calculateFontLines()
+                    });
+                })
+
+            })
+        } else {
+            let item = getCacheItem(tem);
+            console.log('item',item)
+            console.log('tem',tem)
+            props.goChapterByName(tem, item, () => {
+                props.beginRecordTop(tem)
+
+                props.setState({
+                    loadingBook: false
+
+                })
+                props.calculateFontLines()
+            });
+        }
+    }
+    useImperativeHandle(ref,()=>({
+        selectBook:(tem)=>{
+            if(tem){
+                selectBookFun(tem)
+            }
+        }
+    }))
 
     return <>
         {
@@ -126,48 +177,7 @@ function BookList(props) {
                                                 key={"book-list-ul-li" + index}
                                                 title={tem2}
                                                 onDoubleClick={() => {
-                                                    props.clickBookToFirst(tem);
-                                                    props.setState({
-                                                        loadingBook: true
-                                                    })
-                                                    if (tem.endsWith("epub")) {
-
-                                                        ParseEpubToTxt(tem).then(res => {
-                                                            if (res.startsWith("错误信息:")) {
-                                                                message.error(res)
-                                                            }
-
-                                                            let s = tem.replace(".epub", ".txt");
-                                                            let item = getCacheItem(tem);
-                                                            props.reloadBookList(() => {
-                                                                props.goChapterByName(s, item, () => {
-                                                                    props.setState({
-                                                                        loadingBook: false
-                                                                    })
-                                                                    DeleteEpubFile(tem).then(res => {
-                                                                        // hasError(tem)
-                                                                        console.log(res)
-                                                                    })
-                                                                    props.beginRecordTop(tem)
-
-                                                                    props.calculateFontLines()
-                                                                });
-                                                            })
-
-                                                        })
-                                                    } else {
-                                                        let item = getCacheItem(tem);
-                                                        props.goChapterByName(tem, item, () => {
-                                                            props.beginRecordTop(tem)
-
-                                                            props.setState({
-                                                                loadingBook: false
-                                                            })
-                                                            props.calculateFontLines()
-                                                        });
-                                                    }
-
-
+                                                    selectBookFun(tem)
                                                 }}>
                                                 <div style={{width:'90%'}} className={classNames("flex-auto over-hidden shrink-1 text-overflow-dot", {
                                                     "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
@@ -246,20 +256,20 @@ function BookList(props) {
     </>;
 }
 
-BookList.propTypes = {
-    state: PropTypes.any,
-    display: PropTypes.bool,
-    state1: PropTypes.any,
-    clickBookPlus: PropTypes.func,
-    onSelect: PropTypes.func,
-    onSearch: PropTypes.func,
-    clickBookToFirst: PropTypes.func,
-    reloadBookList: PropTypes.func,
-    calculateFontLines: PropTypes.func,
-    goChapterByName: PropTypes.func,
-    beginRecordTop: PropTypes.func,
-    hasError: PropTypes.func,
-    setState: PropTypes.func,
-};
+// BookList.propTypes = {
+//     state: PropTypes.any,
+//     display: PropTypes.bool,
+//     state1: PropTypes.any,
+//     clickBookPlus: PropTypes.func,
+//     onSelect: PropTypes.func,
+//     onSearch: PropTypes.func,
+//     clickBookToFirst: PropTypes.func,
+//     reloadBookList: PropTypes.func,
+//     calculateFontLines: PropTypes.func,
+//     goChapterByName: PropTypes.func,
+//     beginRecordTop: PropTypes.func,
+//     hasError: PropTypes.func,
+//     setState: PropTypes.func,
+// };
 
-export default BookList
+export default forwardRef(BookList)

@@ -12,6 +12,8 @@ import (
 	url2 "net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"wd-reader/go/book/epub/EpubBook"
@@ -108,7 +110,8 @@ func GetBookListExtract() string {
 }
 
 // GetChapterListByFileNameExtract  获取章节列表 抽离
-func GetChapterListByFileNameExtract(_fileName string) string {
+// 添加第二个参数来表示断章的方式 1 代表智能分章 2代表按段落数来进行分比如十段一章 3代表自定义正则分章
+func GetChapterListByFileNameExtract(_fileName string, splitType string, splitValue string) string {
 	path := GetAppPath()
 	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
 	if strings.HasSuffix(fileName, ".txt") {
@@ -143,7 +146,46 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 				continue
 			}
 			index++
-			findString := constant.RegChapter.FindString(line)
+			var findString string
+			// 自定义拆分方式
+			if splitType == "1" {
+				findString = constant.RegChapter.FindString(line)
+			} else if splitType == "2" {
+				if splitValue == "0" {
+					findString = constant.RegChapter.FindString(line)
+				} else {
+					atoi, err := strconv.Atoi(splitValue)
+					if err != nil {
+						return WrapperExceptionStr(err.Error())
+					}
+					if index >= atoi {
+						i := index % atoi
+						if i == 0 {
+							i2 := index / atoi
+							findString = strconv.FormatInt(int64(i2), 10) + "、"
+							mu.Lock()
+							strs = append(strs, findString)
+							mu.Unlock()
+							continue
+						} else {
+							continue
+						}
+					} else if index == 1 {
+						findString = "0、"
+						mu.Lock()
+						strs = append(strs, findString)
+						mu.Unlock()
+						continue
+					}
+				}
+			} else if splitType == "3" {
+				if splitValue != "" {
+					findString = regexp.MustCompile(splitValue).FindString(line)
+				} else {
+					findString = constant.RegChapter.FindString(line)
+				}
+			}
+			//findString := constant.RegChapter.FindString(line)
 			if findString != "" {
 				replaceNonSpace := strings.ReplaceAll(line, " ", "")
 				mu.Lock()
@@ -160,7 +202,7 @@ func GetChapterListByFileNameExtract(_fileName string) string {
 }
 
 // GetChapterContentByChpaterNameExtract  获取章节内容
-func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string) string {
+func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string, splitType string, splitTypeValue string) string {
 
 	path := GetAppPath()
 	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
@@ -178,6 +220,49 @@ func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string)
 	defer file.Close()
 	scanner := GetScanner(fileName, file)
 	strs := make([]string, 0)
+	// intelligent split
+	if splitType == "1" || splitType == "3" {
+		if splitType == "1" || splitTypeValue == "" {
+			strs = intelligentSplit(chapterName, scanner, strs, constant.RegChapter)
+		} else {
+			reg2 := regexp.MustCompile(splitTypeValue)
+			strs = intelligentSplit(chapterName, scanner, strs, reg2)
+		}
+	} else if splitType == "2" {
+		strs = splitByLines(chapterName, scanner, strs, splitType, splitTypeValue)
+	}
+	if err := scanner.Err(); err != nil {
+		return WrapperExceptionStr(fmt.Sprintln(fmt.Errorf("error while scanning file: %w", err)))
+	}
+	return strings.Join(strs, "\n")
+}
+
+func splitByLines(chapterName string, scanner *bufio.Scanner, strs []string, splitType string, value string) []string {
+	linesPerSegment, _ := strconv.Atoi(value)
+	chapterIndx, _ := strconv.Atoi(strings.ReplaceAll(chapterName, "、", ""))
+
+	lineCount := 0
+	startLine := chapterIndx * linesPerSegment
+	endLine := startLine + linesPerSegment
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		if lineCount >= startLine && lineCount < endLine {
+			strs = append(strs, line)
+		}
+		lineCount++
+		if lineCount >= endLine {
+			break
+		}
+	}
+	return strs
+}
+
+// 智能拆段
+func intelligentSplit(chapterName string, scanner *bufio.Scanner, strs []string, regexp *regexp.Regexp) []string {
 	var start bool
 	lastLineNoAllSpace := strings.Replace(chapterName, " ", "", -1)
 	chapterNameNoSpace := strings.TrimSpace(chapterName)
@@ -198,7 +283,7 @@ func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string)
 		}
 		// 碰到下一个结束标识符
 		// 因为有些文本有重复章节名称 且除了空格都一样 所以这里要 去掉空格之后 再去比较 不等于才退出
-		findString := constant.RegChapter.FindString(line)
+		findString := regexp.FindString(line)
 		// 两行临近这种也不记录 可能是错误的文本校准 只有文本相同了才跳过
 		// 不跳过
 		if start {
@@ -221,10 +306,7 @@ func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string)
 			mu.Unlock()
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return WrapperExceptionStr(fmt.Sprintln(fmt.Errorf("error while scanning file: %w", err)))
-	}
-	return strings.Join(strs, "\n")
+	return strs
 }
 
 // TransferFileFromFileSys  下载文件

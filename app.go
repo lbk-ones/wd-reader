@@ -113,17 +113,32 @@ func (a *App) DeleteEpubFile(filename string) string {
 
 // GetBookList 获取文件列表
 func (a *App) GetBookList() string {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Logger.Fatal(err)
+		}
+	}()
 	return book.GetBookListExtract()
 }
 
 // GetChapterListByFileName 传入文件名称获取文件章节或者卷列表
-func (a *App) GetChapterListByFileName(_fileName string) string {
-	return book.GetChapterListByFileNameExtract(_fileName)
+func (a *App) GetChapterListByFileName(_fileName string, splitType string, splitValue string) string {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Logger.Fatal(err)
+		}
+	}()
+	return book.GetChapterListByFileNameExtract(_fileName, splitType, splitValue)
 }
 
 // GetChapterContentByChapterName 根据传入文件名和章节名称来获取这一章节的内容
-func (a *App) GetChapterContentByChapterName(_fileName string, chapterName string) string {
-	return book.GetChapterContentByChpaterNameExtract(_fileName, chapterName)
+func (a *App) GetChapterContentByChapterName(_fileName string, chapterName string, splitType string, splitValue string) string {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Logger.Fatal(err)
+		}
+	}()
+	return book.GetChapterContentByChpaterNameExtract(_fileName, chapterName, splitType, splitValue)
 }
 
 // AddFile 添加文件
