@@ -61,16 +61,10 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		AlwaysOnTop:   true,
-		Frameless:     true,
-		DisableResize: false,
-		Windows: &windows.Options{
-			WebviewIsTransparent:              true,
-			WindowIsTranslucent:               true,
-			DisableFramelessWindowDecorations: true,
-			BackdropType:                      windows.Auto,
-		},
-		//BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
+		AlwaysOnTop:      true,
+		Frameless:        true,
+		DisableResize:    false,
+		BackgroundColour: options.NewRGBA(0, 0, 0, 0),
 		OnDomReady: func(ctx context.Context) {
 			//runtime.LogInfo(ctx, "app dom ready")
 		},
@@ -95,6 +89,12 @@ func main() {
 		LogLevelProduction: logger.INFO,
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop: true,
+		},
+		Windows: &windows.Options{
+			WebviewIsTransparent:              true,
+			WindowIsTranslucent:               true,
+			DisableFramelessWindowDecorations: true,
+			BackdropType:                      windows.Auto,
 		},
 		Mac: &mac.Options{
 			TitleBar: mac.TitleBarHiddenInset(),
