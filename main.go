@@ -111,14 +111,21 @@ func main() {
 			BackdropType:                      windows.Auto,
 		},
 		Mac: &mac.Options{
-			TitleBar: mac.TitleBarHiddenInset(),
+			TitleBar: &mac.TitleBar{
+				TitlebarAppearsTransparent: true,
+				HideTitle:                  true,
+				HideTitleBar:               true,
+				FullSizeContent:            true,
+				UseToolbar:                 true,
+				HideToolbarSeparator:       true,
+			},
 			About: &mac.AboutInfo{
 				Title:   fmt.Sprintf("%s %s", constant.APP_NAME, version),
 				Message: "WdReader \n\nCopyright © 2024",
 				Icon:    icon,
 			},
 			WebviewIsTransparent: true,
-			WindowIsTranslucent:  true,
+			WindowIsTranslucent:  false,
 		},
 		Linux: &linux.Options{
 			ProgramName:         constant.APP_NAME,
