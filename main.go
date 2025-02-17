@@ -12,6 +12,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"strings"
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
 )
@@ -25,6 +26,15 @@ var icon []byte
 
 var ctxStatic context.Context
 
+func (a *App) onSecondInstanceLaunch(secondInstanceData options.SecondInstanceData) {
+	secondInstanceArgs := secondInstanceData.Args
+	ctx := a.ctx
+	log.GetLogger().Info("user opened second instance", strings.Join(secondInstanceData.Args, ","))
+	log.GetLogger().Info("user opened second from", secondInstanceData.WorkingDirectory)
+	runtime.WindowUnminimise(ctx)
+	runtime.Show(ctx)
+	go runtime.EventsEmit(ctx, "launchArgs", secondInstanceArgs)
+}
 func main() {
 
 	// recover
@@ -61,9 +71,13 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		AlwaysOnTop:      true,
-		Frameless:        true,
-		DisableResize:    false,
+		AlwaysOnTop:   true,
+		Frameless:     true,
+		DisableResize: false,
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId:               "e3984e08-28dc-4e3d-b70a-45e961589cdc",
+			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
+		},
 		BackgroundColour: options.NewRGBA(0, 0, 0, 0),
 		OnDomReady: func(ctx context.Context) {
 			//runtime.LogInfo(ctx, "app dom ready")
