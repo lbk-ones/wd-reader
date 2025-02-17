@@ -52,7 +52,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: stable
+          go-version: '1.21'
 
       - name: Install chocolatey
         uses: crazy-max/ghaction-chocolatey@v2
@@ -61,12 +61,12 @@ jobs:
 
       - name: Install wails
         shell: bash
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.2
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Build frontend assets
         shell: bash
@@ -90,13 +90,13 @@ jobs:
 
       - name: Compress portable binary
         working-directory: ./build/bin
-        run: Compress-Archive -Path "../books","wdreader.exe" "WdReader_Portable_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip"
+        run: Compress-Archive -Path "../books","wdreader.exe" "wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip"
 
       - name: Upload release asset (Portable)
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.normalise_version.outputs.version }}
-          files: ./build/bin/WdReader_Portable_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip
+          files: ./build/bin/wdreader_${{ steps.normalise_version.outputs.version }}_${{ steps.normalise_platform.outputs.tag }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Build Windows NSIS installer
