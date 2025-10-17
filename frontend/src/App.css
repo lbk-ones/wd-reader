@@ -12,7 +12,7 @@
     user-select: none;
 }
 
-#root{
+#root {
     width: 100vw;
     height: 100vh;
 }
@@ -295,7 +295,7 @@
     top: 0;
     background-color: #fff;
     box-sizing: border-box;
-    border-bottom: 1px solid rgba(204, 204, 204, 0.32);
+    border-bottom: 2px solid rgba(204, 204, 204, 0.32);
 
 }
 

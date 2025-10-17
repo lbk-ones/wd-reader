@@ -1,7 +1,14 @@
 import {isEmpty} from "lodash-es";
-import {DeleteOutlined, GithubOutlined, PlusOutlined, SettingOutlined} from "@ant-design/icons";
+import {
+    DeleteOutlined,
+    FireOutlined,
+    FireTwoTone,
+    GithubOutlined,
+    PlusOutlined,
+    SettingOutlined
+} from "@ant-design/icons";
 import ContextMenu from "../ContextMenu";
-import {Input, message, Statistic} from "antd";
+import {Button, Input, message, Statistic} from "antd";
 import * as PropTypes from "prop-types";
 import {deleteSplitMapByKey, getCacheItem, setCacheItem} from "../Utils";
 import classNames from "classnames";
@@ -23,26 +30,26 @@ const TIP = [
  * @returns {JSX.Element}
  * @constructor
  */
-function BookList(props,ref) {
+function BookList(props, ref) {
 
     const state = props.state;
 
     const [sc, setSc] = useState("")
 
-    useEffect(function (){
-        GetScOne().then(res=>{
-            if(res){
+    useEffect(function () {
+        GetScOne().then(res => {
+            if (res) {
                 try {
                     let parse = JSON.parse(res);
                     setSc(parse.hitokoto || TIP[parseInt(Math.random() * (TIP.length - 1))])
-                }catch (e){
+                } catch (e) {
 
                 }
-            }else{
+            } else {
                 setSc(res || TIP[parseInt(Math.random() * (TIP.length - 1))])
             }
         })
-    },[])
+    }, [])
 
     function sortBookList() {
         let currentBookList = state.currentBookList;
@@ -67,7 +74,7 @@ function BookList(props,ref) {
         return currentBookList;
     }
 
-    function selectBookFun(tem){
+    function selectBookFun(tem) {
         props.clickBookToFirst(tem);
         props.setState({
             loadingBook: true
@@ -100,8 +107,8 @@ function BookList(props,ref) {
             })
         } else {
             let item = getCacheItem(tem);
-            console.log('item',item)
-            console.log('tem',tem)
+            console.log('item', item)
+            console.log('tem', tem)
             props.goChapterByName(tem, item, () => {
                 props.beginRecordTop(tem)
 
@@ -113,9 +120,10 @@ function BookList(props,ref) {
             });
         }
     }
-    useImperativeHandle(ref,()=>({
-        selectBook:(tem)=>{
-            if(tem){
+
+    useImperativeHandle(ref, () => ({
+        selectBook: (tem) => {
+            if (tem) {
                 selectBookFun(tem)
             }
         }
@@ -127,26 +135,38 @@ function BookList(props,ref) {
                 <div className="book-list">
                     <ul className={"book-list-ul flex flex-column-nowrap"}>
                         <div className="book-list-top-box">
-                            <div
-                                className={"add-book"}
-                                title={"添加文件，右键更多功能"}
-                                style={{
-                                    "--wails-drop-target": "drop"
-                                }} onClick={props.clickBookPlus}>
+                            <div className={"flex flex-row gap5"}>
+                                <div
+                                    className={"add-book"}
+                                    title={"添加文件，右键更多功能"}
+                                    style={{
+                                        "--wails-drop-target": "drop"
+                                    }} onClick={props.clickBookPlus}>
 
-                                <PlusOutlined/>
+                                    <PlusOutlined/>
 
-                                <ContextMenu
-                                    fontSize={16}
-                                    options={
-                                        [
-                                            {label: "去下载"}
-                                        ]
-                                    }
-                                    onSelect={props.onSelect}
-                                />
+                                    <ContextMenu
+                                        fontSize={16}
+                                        options={
+                                            [
+                                                {label: "去下载"}
+                                            ]
+                                        }
+                                        onSelect={props.onSelect}
+                                    />
+                                </div>
+
+                                <div className={"mb-5"}>
+                                    <Button size={"small"}
+                                            style={{width: "100px", marginLeft: '5px', padding: '5px'}}
+                                            onClick={e => props.onSelect({label: "去下载"})}><FireTwoTone
+                                        twoToneColor={"red"}/>图书下载</Button>
+                                </div>
+
                             </div>
+
                             <div className={"search-box"}>
+
                                 <Input.Search allowClear={true}
                                               placeholder={"搜索"}
                                               style={{
@@ -157,6 +177,9 @@ function BookList(props,ref) {
                                 />
 
                                 <div className={"flex flex-row gap10 align-item-center"}>
+                                    <Statistic title="当前版本"
+                                               value={state.version || "1.0"}/>
+
                                     <Statistic title="正在阅读"
                                                value={(getCacheItem("LastClickBook") || "").split(",").filter(Boolean).length + "本"}/>
                                     <Statistic title="拥有图书"
@@ -171,7 +194,7 @@ function BookList(props,ref) {
                                     sortBookList()
                                         .filter(Boolean)
                                         .map((tem, index) => {
-                                            let tem2 = tem?.replace(".txt","");
+                                            let tem2 = tem?.replace(".txt", "");
                                             return <li
                                                 className={classNames("book-list-ul-li flex flex-row-nowrap justify-b w-100")}
                                                 key={"book-list-ul-li" + index}
@@ -179,28 +202,29 @@ function BookList(props,ref) {
                                                 onDoubleClick={() => {
                                                     selectBookFun(tem)
                                                 }}>
-                                                <div style={{width:'90%'}} className={classNames("flex-auto over-hidden shrink-1 text-overflow-dot", {
-                                                    "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
-                                                })}>
-                                                {tem2}
+                                                <div style={{width: '90%'}}
+                                                     className={classNames("flex-auto over-hidden shrink-1 text-overflow-dot", {
+                                                         "book-list-ul-li-active": (getCacheItem("LastClickBook") || "").split(",").indexOf(tem) === 0
+                                                     })}>
+                                                    {tem2}
                                                 </div>
-                                                <div  style={{
+                                                <div style={{
                                                     // flexBasis:"20px",
-                                                    flexShrink:"0",
-                                                    width:'auto',
-                                                    paddingRight:2
+                                                    flexShrink: "0",
+                                                    width: 'auto',
+                                                    paddingRight: 2
                                                 }}>
-                                                    <DeleteOutlined style={{color:'darkred'}} onClick={(e)=>{
+                                                    <DeleteOutlined style={{color: 'darkred'}} onClick={(e) => {
                                                         e.stopPropagation()
 
-                                                        DeleteFile(tem).then(res=>{
+                                                        DeleteFile(tem).then(res => {
                                                             if (!props.hasError(res)) {
                                                                 message.info("删除成功！")
                                                                 props.reloadBookList()
                                                             }
                                                         })
 
-                                                    }} />
+                                                    }}/>
                                                 </div>
                                             </li>
                                         })
@@ -227,7 +251,7 @@ function BookList(props,ref) {
                                         fontSize: "25px",
                                         paddingRight: "5px"
                                     }}
-                                    onClick={()=>{
+                                    onClick={() => {
                                         BrowserOpenURL("https://github.com/lbk-ones/wd-reader")
                                     }}
                                 />

@@ -1,6 +1,13 @@
 
 # 1、introduction
 
+![首页](images/home.png "首页")
+![阅读界面](images/read-content.png "阅读界面")
+![阅读界面](images/read-content-catlogs.png "阅读界面")
+![阅读界面设置](images/read-content-settings.png "阅读界面设置")
+![阅读界面目录](images/read-content-mulu.png "阅读界面目录")
+![阅读界面目录](images/book-download.png "阅读界面目录")
+
 A mysterious e-book reader
 
 You can use a computer in any setting, whether it's for work or school, as long as you have it. It's highly concealed and difficult to detect

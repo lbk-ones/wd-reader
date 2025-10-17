@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
-import {Button, Drawer, Input, message, Modal, notification, Space, Spin, theme} from 'antd';
+import {Alert, Button, Drawer, Input, message, Modal, notification, Space, Spin, theme} from 'antd';
 import {presetPalettes} from '@ant-design/colors';
 import {filter, find, findIndex, get, isEmpty, throttle, trim} from 'lodash-es'
 import {
@@ -58,8 +58,8 @@ function App() {
     const [settingState, setSettingState, getSettingState] = useAllState({
         fontColor: getCacheItem('fontColor') || '#000',
         fontLineHeight: getCacheItem('fontLineHeight') || '30',
-        blankLineHeight:0,// 舍弃高度
-        newContentHeight:0,// 总高度
+        blankLineHeight: 0,// 舍弃高度
+        newContentHeight: 0,// 总高度
         bgColor: getCacheItem('bgColor') || '#E8E3D7',
         fontSize: getCacheItem('fontSize') || '20',
         clickPage: getCacheItem('clickPage') || '1',
@@ -94,7 +94,7 @@ function App() {
         lastSearchMulu: -1,
         lastSearchMuluName: "",
         gotoMuluIndexSearchVisible: false,
-        oneLine:false
+        oneLine: false
     })
 
 
@@ -176,15 +176,17 @@ function App() {
                 event.preventDefault();
             }
         });
-        let calculateFontLinesAuto = throttle((e)=>{calculateFontLines()},300);
+        let calculateFontLinesAuto = throttle((e) => {
+            calculateFontLines()
+        }, 300);
 
-        window.addEventListener("resize",calculateFontLinesAuto)
+        window.addEventListener("resize", calculateFontLinesAuto)
 
         return () => {
             window.removeEventListener("error", handlerError)
             window.removeEventListener("unhandledrejection", unhandledrejection)
             OnFileDropOff()
-            window.removeEventListener("resize",calculateFontLinesAuto)
+            window.removeEventListener("resize", calculateFontLinesAuto)
         }
     }, [])
 
@@ -331,11 +333,11 @@ function App() {
     function goChapterByName(fileName, chapterName, cb = null) {
         let splitType = getSplitType(fileName);
         let splitTypeValue = getSplitTypeValue(fileName);
-        GetChapterListByFileName(fileName,splitType,splitTypeValue).then(res => {
+        GetChapterListByFileName(fileName, splitType, splitTypeValue).then(res => {
             if (!hasError(res)) {
                 let strings = res.split("\n");
                 let firstChapter = isEmpty(chapterName) ? get(strings, "[0]", "") : chapterName;
-                GetChapterContentByChapterName(fileName, firstChapter,splitType,splitTypeValue).then(chapterContent => {
+                GetChapterContentByChapterName(fileName, firstChapter, splitType, splitTypeValue).then(chapterContent => {
                     if (!hasError(chapterContent)) {
                         setCacheItem(fileName, firstChapter)
                         setState({
@@ -406,19 +408,20 @@ function App() {
         }
     }
 
-    function getBookContainerHeight(){
+    function getBookContainerHeight() {
         const state = getState();
         const settingState = getSettingState();
         let ht = 0
-        ht+=state.showTitle?30:0
+        ht += state.showTitle ? 30 : 0
         const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
-        ht+=showBottomBar?30:0
-        if(appRef.current){
+        ht += showBottomBar ? 30 : 0
+        if (appRef.current) {
             return appRef.current.clientHeight - ht
-        }else{
-            return getBookContainerHeight(height)
+        } else {
+            //return getBookContainerHeight()
         }
     }
+
     /**
      * 动态计算行高 以至于让文字自适应页面
      * 废了点心思 基本实现文字自适应高度 不会再出现半截文字那种 当然 用鼠标滚轮肯定就另当别论了 如果重新调整行高之后需要从这一章节开始看
@@ -427,16 +430,16 @@ function App() {
      * @param fullScreen 是否全屏
      * @param fullRow 几行
      */
-    function calculateFontLines(lineHeight2= "",fontSize2= "",fullScreen= 0,fullRow=0) {
+    function calculateFontLines(lineHeight2 = "", fontSize2 = "", fullScreen = 0, fullRow = 0) {
         let clientHeight = getBookContainerHeight();
         let lineHeight = getSettingState().fontLineHeight;
-        if(lineHeight2){
+        if (lineHeight2) {
             lineHeight = lineHeight2
         }
 
-        if(fullScreen){
+        if (fullScreen) {
             clientHeight = fullScreen
-            lineHeight = fullScreen/fullRow
+            lineHeight = fullScreen / fullRow
         }
 
         function getLines(lh) {
@@ -447,13 +450,14 @@ function App() {
         // 计算行数 向下取整
         let lines = getLines(lineHeight);
         // 新行高 向下取整
-        let newLineHeight = Math.floor(clientHeight/lines);
+        let newLineHeight = Math.floor(clientHeight / lines);
         let fontSize = getSettingState().fontSize;
-        if(fontSize2){
+        if (fontSize2) {
             fontSize = fontSize2
         }
 
         let blankHeight = 0;
+
         function getContentHeight() {
             // 小于字体大小了之后最理想的行高
             const fontSizeScale = fontSize + 4;
@@ -468,9 +472,9 @@ function App() {
         let newContentHeight = getContentHeight();
 
         // 高度溢出了 需要重新计算
-        if(newContentHeight>clientHeight){
-            while (newContentHeight>clientHeight){
-                if(newLineHeight>1 && fontSize>1){
+        if (newContentHeight > clientHeight) {
+            while (newContentHeight > clientHeight) {
+                if (newLineHeight > 1 && fontSize > 1) {
                     newLineHeight--;
                     fontSize--;
                     lines = getLines(newLineHeight);
@@ -479,10 +483,10 @@ function App() {
             }
         }
         setSettingState({
-            fontLineHeight:newLineHeight, // 新的行高
-            fontSize:fontSize, // 新的行高
-            blankLineHeight:blankHeight, // 之前的想法暂未用到
-            newContentHeight:newContentHeight // 计算高度
+            fontLineHeight: newLineHeight, // 新的行高
+            fontSize: fontSize, // 新的行高
+            blankLineHeight: blankHeight, // 之前的想法暂未用到
+            newContentHeight: newContentHeight // 计算高度
         })
         setCacheItem('fontLineHeight', newLineHeight)
         setCacheItem('fontSize', fontSize)
@@ -519,21 +523,21 @@ function App() {
     }
 
 
-    function toggleTitle(){
+    function toggleTitle() {
         let showTitle = getState().showTitle;
         let b = !showTitle;
         setCacheItem("标题开关", b);
         setState({
             showTitle: b
         })
-        setTimeout(()=>{
+        setTimeout(() => {
             // 重新计算
             calculateFontLines()
-        },100)
+        }, 100)
 
     }
 
-    function backBookList(cb=null){
+    function backBookList(cb = null) {
         reloadBookList(() => {
 
             setState({
@@ -696,26 +700,27 @@ function App() {
         }
     });
 
-    function miniSize(rows){
+    function miniSize(rows) {
 
         setState({
-            oneLine:true, // 目前没用到这个字段
-            showTitle:false
+            oneLine: true, // 目前没用到这个字段
+            showTitle: false
         })
         setSettingState({
-            fontSize:20
+            fontSize: 20
         })
         // setCacheItem("fontSize",25)
         WindowSetSize(600, 120)
 
-        setTimeout(()=>{
+        setTimeout(() => {
             WindowCenter()
-            calculateFontLines("","",120,rows)
-        },100)
+            calculateFontLines("", "", 120, rows)
+        }, 100)
 
 
     }
-    const selectBook = useMemoizedFn(function(item){
+
+    const selectBook = useMemoizedFn(function (item) {
         bookListRef.current.selectBook(item)
     })
     const backBookListCallback = useMemoizedFn(backBookList);
@@ -745,6 +750,7 @@ function App() {
                  let leaveWindowHid = getSettingState().leaveWindowHid;
                  if (leaveWindowHid === '1') {
                      setDisplay(false)
+
                  }
              }}
 
@@ -842,11 +848,11 @@ function App() {
                         nextChpater();
                     }
                 }}
-                lastChapter={e=>{
+                lastChapter={e => {
                     e.stopPropagation();
                     lastChpater();
                 }}
-                nextChapter={e=>{
+                nextChapter={e => {
                     e.stopPropagation();
                     nextChpater();
                 }}
@@ -943,7 +949,7 @@ function App() {
 
 
             <Drawer
-                title="从链接中下载"
+                title="图书下载"
                 placement={"top"}
                 // width={500}
                 onClose={function () {
@@ -981,9 +987,11 @@ function App() {
                     </Space>
                 }
             >
+                <Alert className={"mb-10"} message="最好下载txt、epub格式，解析最快最稳定" type="info"/>
+
                 <p className={"mb-5"}>
                     <Space>
-                        <Button onClick={(e) => {
+                        <Button size={"small"} onClick={(e) => {
                             let downloadFromUrlList = getState().downloadFromUrlList;
                             downloadFromUrlList.push(null)
                             setState({
@@ -991,7 +999,7 @@ function App() {
                             })
                         }}><PlusOutlined/></Button>
 
-                        <Button onClick={(e) => {
+                        <Button size={"small"} onClick={(e) => {
                             let downloadFromUrlList = getState().downloadFromUrlList;
                             if (downloadFromUrlList.length > 1) {
                                 downloadFromUrlList.pop()
@@ -1018,22 +1026,27 @@ function App() {
                                               setState({
                                                   downloadFromUrlList
                                               })
-                                          }} placeHolder={"请输入地址"}/>
+                                          }} placeHolder={"请输入图书文件地址，点击提交即可下载"}/>
                         })
                     }
                 </div>
 
 
-                <p className={"mt-20 flex flex-row gap5"}>
+                <Alert
+                    className={"mt-10 mb-10"}
+                    message={"内置下载地址(点击跳转)：强烈推荐Z-Lib世界最大电子图书馆（可能需要翻墙）"} type="info"/>
+
+                <p className={"flex flex-row gap5"}>
+
                     <Button title={"zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网"} onClick={() => {
                         BrowserOpenURL("https://zh.opendelta.org/")
                     }}>Z-Lib</Button>
-                    <Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {
-                        BrowserOpenURL("https://zxcsol.com/")
-                    }}>知轩藏书</Button>
+                    {/*<Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {*/}
+                    {/*    BrowserOpenURL("https://zxcsol.com/")*/}
+                    {/*}}>知轩藏书</Button>*/}
                     <Button title={"80电子书"} onClick={() => {
-                        BrowserOpenURL("https://www.80637.com/")
-                    }}>80电子书</Button>
+                        BrowserOpenURL("https://www.jiumodiary.com/")
+                    }}>鸠摩搜索</Button>
                     <Button title={"顶点小说"} onClick={() => {
                         BrowserOpenURL("https://www.najjdd.com/")
                     }}>顶点小说</Button>

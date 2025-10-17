@@ -46,7 +46,7 @@ function Header(props) {
                     type === '1' && (
                         <BorderInnerOutlined title={"隐藏标题栏！"}
                                              style={{
-                                                 fontSize:25
+                                                 fontSize: 25
                                              }}
                                              onClick={() => {
                                                  props.toggleTitle()
@@ -144,7 +144,7 @@ function Header(props) {
                     }}>
                         <img src={CsSVg} alt=""/>
                         <span>{props.title}</span>
-                        <span>{state.version || ""}</span>
+                        {/*<span>{state.version || ""}</span>*/}
                     </div>
 
                     <div className={"flex flex-row-nowrap gap5 font-s20"}
