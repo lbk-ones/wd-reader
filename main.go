@@ -12,6 +12,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.design/x/hotkey"
+	"golang.design/x/hotkey/mainthread"
 	"strings"
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
@@ -24,6 +26,7 @@ var version string
 //go:embed build/appicon.png
 var icon []byte
 
+var hk *hotkey.Hotkey
 var ctxStatic context.Context
 
 func (a *App) onSecondInstanceLaunch(secondInstanceData options.SecondInstanceData) {
@@ -54,6 +57,14 @@ func main() {
 				log.GetLogger().Error(err.Error())
 			}
 		}
+		if hk != nil {
+			err := hk.Unregister()
+			log.GetLogger().Info("hk success unregister")
+			if err != nil {
+				log.GetLogger().Error(err.Error())
+			}
+		}
+
 	}()
 
 	mylogger := log.InitLog()
@@ -88,6 +99,10 @@ func main() {
 			//server.startup(ctx)
 			runtime.LogInfo(ctx, "current app version :"+version)
 			runtime.LogInfo(ctx, "app started")
+			mainthread.Init(func() {
+				RegisterHotKey(ctx)
+			})
+
 		},
 		OnShutdown: func(ctx context.Context) {
 			runtime.LogInfo(ctx, "bye bye ...")
@@ -140,4 +155,26 @@ func main() {
 		panic(err.Error())
 		//fmt.Fatal(err.Error())
 	}
+}
+
+// RegisterHotKey boss key
+func RegisterHotKey(ctx context.Context) {
+	hk = hotkey.New([]hotkey.Modifier{hotkey.ModCtrl}, hotkey.KeySpace)
+	err := hk.Register()
+	if err != nil {
+		log.Logger.Error(err)
+		return
+	}
+	log.Logger.Info("register hotkey success")
+	go func() {
+		for {
+			event := <-hk.Keydown()
+			log.Logger.Info("hotkey keydown", event)
+			if runtime.WindowIsMinimised(ctx) {
+				runtime.WindowUnminimise(ctx)
+			} else {
+				runtime.WindowMinimise(ctx)
+			}
+		}
+	}()
 }
