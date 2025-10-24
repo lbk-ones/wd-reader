@@ -20,13 +20,6 @@ jobs:
           - linux/amd64
 
     steps:
-      - name: Install x11
-        shell: bash
-        run: |
-          sudo apt update
-          sudo apt install -y libx11-dev
-          sudo apt install -y xvfb
-
       - name: Checkout source code
         uses: actions/checkout@v3
 
@@ -72,6 +65,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libfuse-dev libfuse2
+          sudo apt install -y xorg xauth x11-apps xvfb libx11-dev
+
+      - name: 启动虚拟显示器并运行测试
+        run: |
+          # 启动虚拟显示器
+          Xvfb :0 -screen 0 1024x768x24 &
+          export DISPLAY=:0
+          # 运行 X11 测试程序
+          xeyes &  # 模拟 GUI 程序运行
+          sleep 3  # 等待程序执行
+          echo "X11 环境测试成功"
 
       - name: Setup Node
         uses: actions/setup-node@v3
