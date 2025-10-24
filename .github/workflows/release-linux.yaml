@@ -20,6 +20,13 @@ jobs:
           - linux/amd64
 
     steps:
+      - name: Install x11
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y libx11-dev
+          sudo apt install -y xvfb
+
       - name: Checkout source code
         uses: actions/checkout@v3
 
