@@ -65,9 +65,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libfuse-dev libfuse2
-          sudo apt install -y libx11-dev xvfb
+          sudo apt-get install -y libx11-dev libx11-6 xvfb
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          echo "export DISPLAY=:99.0" >> $GITHUB_ENV
+          export DISPLAY=:99
+          echo $DISPLAY
+          ps aux | grep Xvfb
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
