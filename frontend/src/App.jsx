@@ -1085,9 +1085,11 @@ function App() {
                                                         })
 
                                                     }}/></span>
-                            <span>工作目录: {state.booksPath}</span>
-                            <span>地址: {window.location.href}</span>
+                            <span title={state.booksPath}>工作目录: ***</span>
+                            <span title={window.location.href}>地址: ***</span>
                             <span>缓存: {window.localStorage.length}</span>
+                            <span>windows/linux系统老板键：ctrl+space</span>
+                            <span>Mac系统老板键：command+space</span>
 
                             <span><Button size={"small"} onClick={function () {
                                 Modal.confirm({

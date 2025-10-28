@@ -16,6 +16,7 @@ import (
 	"golang.design/x/hotkey/mainthread"
 	"strings"
 	"wd-reader/go/constant"
+	"wd-reader/go/htk"
 	"wd-reader/go/log"
 )
 
@@ -59,7 +60,7 @@ func main() {
 		}
 		if hk != nil {
 			err := hk.Unregister()
-			log.GetLogger().Info("hk success unregister")
+			log.GetLogger().Info("htk success unregister")
 			if err != nil {
 				log.GetLogger().Error(err.Error())
 			}
@@ -159,7 +160,7 @@ func main() {
 
 // RegisterHotKey boss key
 func RegisterHotKey(ctx context.Context) {
-	hk = hotkey.New([]hotkey.Modifier{hotkey.ModCtrl}, hotkey.KeySpace)
+	hk = htk.New()
 	err := hk.Register()
 	if err != nil {
 		log.Logger.Error(err)
@@ -168,8 +169,8 @@ func RegisterHotKey(ctx context.Context) {
 	log.Logger.Info("register hotkey success")
 	go func() {
 		for {
-			event := <-hk.Keydown()
-			log.Logger.Info("hotkey keydown", event)
+			_ = <-hk.Keydown()
+			//log.Logger.Info("hotkey keydown", event)
 			if runtime.WindowIsMinimised(ctx) {
 				runtime.WindowUnminimise(ctx)
 			} else {
