@@ -4,7 +4,6 @@ import {createRoot} from 'react-dom/client'
 import './style.css'
 import App from './App'
 import {ConfigProvider, message} from "antd";
-
 const container = document.getElementById('root')
 
 const root = createRoot(container)

@@ -74,7 +74,7 @@ function Header(props) {
                 }
                 <DisconnectOutlined
                     title={"隐藏自己！"}
-                    style={{color: settingstate.leaveWindowHid === '1' ? '#8B0000' : 'unset'}}
+                    style={{color: settingstate.leaveWindowHid === '1' ? 'gray' : 'unset'}}
                     onClick={() => {
                         let qf = settingstate.leaveWindowHid === '1' ? '0' : '1';
                         setCacheItem("leaveWindowHid", qf)
@@ -85,7 +85,7 @@ function Header(props) {
                 />
                 <PushpinOutlined
                     title={"窗口置顶"}
-                    style={{color: settingstate.isAlwaysTop === '1' ? '#8B0000' : 'unset'}}
+                    style={{color: settingstate.isAlwaysTop === '1' ? 'gray' : 'unset'}}
                     onClick={() => {
                         let qf = settingstate.isAlwaysTop === '1' ? '0' : '1';
                         isAlwaysTop(qf)

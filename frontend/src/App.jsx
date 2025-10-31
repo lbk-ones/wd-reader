@@ -750,7 +750,6 @@ function App() {
                  let leaveWindowHid = getSettingState().leaveWindowHid;
                  if (leaveWindowHid === '1') {
                      setDisplay(false)
-
                  }
              }}
 
@@ -1065,7 +1064,7 @@ function App() {
                     <Drawer
                         title="系统设置"
                         placement={"bottom"}
-                        // width={500}
+                        height={'80%'}
                         onClose={function () {
                             setState({
                                 sysSettingVisible: false
@@ -1088,31 +1087,34 @@ function App() {
                             <span title={state.booksPath}>工作目录: ***</span>
                             <span title={window.location.href}>地址: ***</span>
                             <span>缓存: {window.localStorage.length}</span>
+                            <span>linux系统要切换到xorg(x11)显示协议才生效</span>
                             <span>windows/linux系统老板键：ctrl+space</span>
                             <span>Mac系统老板键：command+space</span>
 
-                            <span><Button size={"small"} onClick={function () {
-                                Modal.confirm({
-                                    title: "警告！",
-                                    type: 'warning',
-                                    okText: "我确定",
-                                    cancelText: "取消",
-                                    content: "清空缓存会丢失所有文本的阅读记录",
-                                    onOk: () => {
-                                        for (let i = 0; i < window.localStorage.length; i++) {
-                                            let s = window.localStorage.key(i);
-                                            if (s && s.startsWith(CACHE_PREFIX)) {
-                                                window.localStorage.removeItem(s);
+                            <span>
+                                <Button size={"small"} onClick={function () {
+                                    Modal.confirm({
+                                        title: "警告！",
+                                        type: 'warning',
+                                        okText: "我确定",
+                                        cancelText: "取消",
+                                        content: "清空缓存会丢失所有文本的阅读记录",
+                                        onOk: () => {
+                                            for (let i = 0; i < window.localStorage.length; i++) {
+                                                let s = window.localStorage.key(i);
+                                                if (s && s.startsWith(CACHE_PREFIX)) {
+                                                    window.localStorage.removeItem(s);
+                                                }
                                             }
+                                            WindowReloadApp();
                                         }
-                                        WindowReloadApp();
-                                    }
-                                })
-                            }}>清空所有缓存</Button></span>
+                                    })
+                                }}>清空所有缓存</Button></span>
                             <span><Button size={"small"} onClick={function () {
                                 setCacheItem("LastClickBook", "")
                                 WindowReloadApp();
                             }}>清除阅读记录</Button></span>
+
                         </div>
                     </Drawer>
                 )

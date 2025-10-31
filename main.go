@@ -4,6 +4,11 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"strings"
+	"wd-reader/go/constant"
+	"wd-reader/go/htk"
+	"wd-reader/go/log"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -14,10 +19,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.design/x/hotkey"
 	"golang.design/x/hotkey/mainthread"
-	"strings"
-	"wd-reader/go/constant"
-	"wd-reader/go/htk"
-	"wd-reader/go/log"
 )
 
 //go:embed all:frontend/dist
@@ -169,8 +170,8 @@ func RegisterHotKey(ctx context.Context) {
 	log.Logger.Info("register hotkey success")
 	go func() {
 		for {
-			_ = <-hk.Keydown()
-			//log.Logger.Info("hotkey keydown", event)
+			event := <-hk.Keydown()
+			log.Logger.Info("hotkey keydown", event)
 			if runtime.WindowIsMinimised(ctx) {
 				runtime.WindowUnminimise(ctx)
 			} else {
