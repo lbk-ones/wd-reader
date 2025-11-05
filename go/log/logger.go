@@ -1,12 +1,17 @@
 package log
 
 import (
-	"github.com/natefinch/lumberjack"
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
+	"wd-reader/go/constant"
+
+	"github.com/natefinch/lumberjack"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -22,6 +27,19 @@ type MyLogrus struct {
 	logger *logrus.Logger
 }
 
+func getLogPath() string {
+	osName := runtime.GOOS
+	//isWindows := osName == "windows"
+	isLinux := osName == "linux"
+	isMac := osName == "darwin"
+	if isMac || isLinux {
+		homeDir, _ := os.UserHomeDir()
+		return homeDir
+	}
+	dir, _ := os.Getwd()
+	return dir
+}
+
 // GetLogger get only one instance
 func GetLogger() *logrus.Logger {
 	once.Do(func() {
@@ -30,10 +48,12 @@ func GetLogger() *logrus.Logger {
 
 		// 设置日志级别
 		Logger.SetLevel(logrus.InfoLevel)
-
+		path := getLogPath()
+		joinLogPath := filepath.Join(path, constant.BOOK_PATH, "log", "wd-log.log")
+		fmt.Println("log-path:" + joinLogPath)
 		// 创建日志切割器
 		logWriter := &lumberjack.Logger{
-			Filename:   "log/wd-log.log",
+			Filename:   joinLogPath,
 			MaxSize:    20,   // 单个日志文件最大大小（MB）
 			MaxBackups: 3,    // 保留旧文件的最大数量
 			MaxAge:     7,    // 保留旧文件的最大天数

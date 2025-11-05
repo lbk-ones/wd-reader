@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
 	"wd-reader/go/server"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct

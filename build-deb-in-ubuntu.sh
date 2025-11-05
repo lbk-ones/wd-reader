@@ -1,5 +1,5 @@
 #!/bin/bash
-version=1.5
+version=1.4
 BAK_TARGET_DIR=build/linux/wdreader_0.0.0_amd64_bak
 INIT_DIR=build/linux/wdreader_0.0.0_amd64
 INIT_VERSION=$(jq -r '.info.productVersion' wails.json)

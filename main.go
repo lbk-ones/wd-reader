@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"strings"
+	"wd-reader/go/book"
 	"wd-reader/go/constant"
 	"wd-reader/go/htk"
 	"wd-reader/go/log"
@@ -40,6 +41,16 @@ func (a *App) onSecondInstanceLaunch(secondInstanceData options.SecondInstanceDa
 	runtime.Show(ctx)
 	go runtime.EventsEmit(ctx, "launchArgs", secondInstanceArgs)
 }
+func clearApp() {
+	// ubuntu 下不知道为什么会卡着 卡很久
+	if hk != nil && !book.IsLinux() {
+		err := hk.Unregister()
+		log.GetLogger().Info("htk success unregister")
+		if err != nil {
+			log.GetLogger().Error(err.Error())
+		}
+	}
+}
 func main() {
 
 	// recover
@@ -59,14 +70,7 @@ func main() {
 				log.GetLogger().Error(err.Error())
 			}
 		}
-		if hk != nil {
-			err := hk.Unregister()
-			log.GetLogger().Info("htk success unregister")
-			if err != nil {
-				log.GetLogger().Error(err.Error())
-			}
-		}
-
+		clearApp()
 	}()
 
 	mylogger := log.InitLog()
@@ -108,9 +112,20 @@ func main() {
 		},
 		OnShutdown: func(ctx context.Context) {
 			runtime.LogInfo(ctx, "bye bye ...")
+
 		},
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
 			runtime.LogInfo(ctx, "app will close")
+			//dialog, err := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
+			//	Type:    runtime.QuestionDialog,
+			//	Title:   "Quit?",
+			//	Message: "Are you sure you want to quit?",
+			//})
+			//
+			//if err != nil {
+			//	return false
+			//}
+			//return dialog != "Yes"
 			return false
 		},
 		Bind: []interface{}{
