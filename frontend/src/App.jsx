@@ -127,6 +127,7 @@ function App() {
     }
 
     function AddFleAndHandlerRes(paths) {
+        paths =  (paths || []).filter(Boolean)
         setState({
             loadingBook: true,
             loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增",

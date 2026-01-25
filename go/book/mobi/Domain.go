@@ -1,72 +1,85 @@
 package mobi
 
+// PALMDOC_HEADER PalmDOC 头部信息
+// 包含压缩类型、文本记录数等关键信息
 type PALMDOC_HEADER struct {
-	Compression    int `json:"compression"`
-	NumTextRecords int `json:"numTextRecords"`
-	RecordSize     int `json:"recordSize"`
-	Encryption     int `json:"encryption"`
-}
-type MOBI_HEADER struct {
-	Magic          string `json:"magic"`
-	Length         uint32 `json:"length"`
-	Type           uint32 `json:"type"`
-	Encoding       uint32 `json:"encoding"`
-	Uid            uint32 `json:"uid"`
-	Version        uint32 `json:"version"`
-	TitleOffset    uint32 `json:"titleOffset"`
-	TitleLength    uint32 `json:"titleLength"`
-	LocaleRegion   uint32 `json:"localeRegion"`
-	LocaleLanguage uint32 `json:"localeLanguage"`
-	ResourceStart  uint32 `json:"resourceStart"`
-	Huffcdic       uint32 `json:"huffcdic"`
-	NumHuffcdic    uint32 `json:"numHuffcdic"`
-	ExthFlag       uint32 `json:"exthFlag"`
-	TrailingFlags  uint32 `json:"trailingFlags"`
-	Indx           uint32 `json:"indx"`
-	Title          []byte `json:"title"`
-	Language       string `json:"language"`
+	Compression    int `json:"compression"`    // 压缩类型：1=无压缩, 2=PalmDOC, 17480=HUFF/CDIC
+	NumTextRecords int `json:"numTextRecords"` // 文本记录的数量
+	RecordSize     int `json:"recordSize"`     // 记录大小（通常为 4096）
+	Encryption     int `json:"encryption"`     // 加密类型
 }
 
+// MOBI_HEADER Mobi 格式核心头部
+// 包含版本号、标题偏移、字符编码、Huffman 表偏移等核心元数据
+type MOBI_HEADER struct {
+	Magic          string `json:"magic"`          // 标识符 "MOBI"
+	Length         uint32 `json:"length"`         // 头部长度
+	Type           uint32 `json:"type"`           // Mobi 类型
+	Encoding       uint32 `json:"encoding"`       // 文本编码：1252=CP1252, 65001=UTF-8
+	Uid            uint32 `json:"uid"`            // 唯一 ID
+	Version        uint32 `json:"version"`        // 格式版本号
+	TitleOffset    uint32 `json:"titleOffset"`    // 标题在记录中的偏移量
+	TitleLength    uint32 `json:"titleLength"`    // 标题长度
+	LocaleRegion   uint32 `json:"localeRegion"`   // 地区代码
+	LocaleLanguage uint32 `json:"localeLanguage"` // 语言代码
+	ResourceStart  uint32 `json:"resourceStart"`  // 资源记录起始索引
+	Huffcdic       uint32 `json:"huffcdic"`       // HUFF/CDIC 记录的索引
+	NumHuffcdic    uint32 `json:"numHuffcdic"`    // HUFF/CDIC 记录数量
+	ExthFlag       uint32 `json:"exthFlag"`       // EXTH 头部存在标志 (bit 6)
+	TrailingFlags  uint32 `json:"trailingFlags"`  // 尾部数据标志
+	Indx           uint32 `json:"indx"`           // 索引记录位置
+	Title          []byte `json:"title"`          // 解析出的标题内容
+	Language       string `json:"language"`       // 解析出的语言字符串
+}
+
+// EXTH_HEADER 扩展头部 (Extra Header)
+// 包含书籍的详细元数据，如作者、ISBN、出版商等
 type EXTH_HEADER struct {
-	Magic   string    `json:"magic"`
-	Length  int       `json:"length"`
-	Count   int       `json:"count"`
-	ExthRow *EXTH_ROW `json:"exthRow"`
+	Magic   string    `json:"magic"`   // 标识符 "EXTH"
+	Length  int       `json:"length"`  // 头部长度
+	Count   int       `json:"count"`   // 记录数量
+	ExthRow *EXTH_ROW `json:"exthRow"` // 解析后的扩展记录内容
 }
+
+// EXTH_ROW 具体的 EXTH 记录内容
 type EXTH_ROW struct {
-	Creator                  []string `json:"creator"`
-	Publisher                string   `json:"publisher"`
-	Description              string   `json:"description"`
-	ISBN                     string   `json:"isbn"`
-	Subject                  []string `json:"subject"`
-	Date                     string   `json:"date"`
-	Contributor              []string `json:"contributor"`
-	Rights                   string   `json:"rights"`
-	SubjectCode              []string `json:"subjectCode"`
-	Source                   []string `json:"source"`
-	ASIN                     string   `json:"asin"`
-	Boundary                 uint32   `json:"boundary"`
-	FixedLayout              string   `json:"fixedLayout"`
-	NumResources             uint32   `json:"numResources"`
-	OriginalResolution       string   `json:"originalResolution"`
-	ZeroGutter               string   `json:"zeroGutter"`
-	ZeroMargin               string   `json:"zeroMargin"`
-	CoverURI                 string   `json:"coverURI"`
-	RegionMagnification      string   `json:"regionMagnification"`
-	CoverOffset              uint32   `json:"coverOffset"`
-	ThumbnailOffset          uint32   `json:"thumbnailOffset"`
-	Title                    string   `json:"title"`
-	Language                 []string `json:"language"`
-	PageProgressionDirection string   `json:"pageProgressionDirection"`
+	Creator                  []string `json:"creator"`                  // 作者 (Type 100)
+	Publisher                string   `json:"publisher"`                // 出版社 (Type 101)
+	Description              string   `json:"description"`              // 简介 (Type 103)
+	ISBN                     string   `json:"isbn"`                     // ISBN (Type 104)
+	Subject                  []string `json:"subject"`                  // 主题/分类 (Type 105)
+	Date                     string   `json:"date"`                     // 出版日期 (Type 106)
+	Contributor              []string `json:"contributor"`              // 贡献者 (Type 108)
+	Rights                   string   `json:"rights"`                   // 版权信息 (Type 109)
+	SubjectCode              []string `json:"subjectCode"`              // 主题代码 (Type 110)
+	Source                   []string `json:"source"`                   // 来源 (Type 112)
+	ASIN                     string   `json:"asin"`                     // ASIN 号 (Type 113)
+	Boundary                 uint32   `json:"boundary"`                 // KF8 边界偏移 (Type 121)
+	FixedLayout              string   `json:"fixedLayout"`              // 固定布局 (Type 122)
+	NumResources             uint32   `json:"numResources"`             // 资源数量 (Type 125)
+	OriginalResolution       string   `json:"originalResolution"`       // 原始分辨率 (Type 126)
+	ZeroGutter               string   `json:"zeroGutter"`               // 无装订线 (Type 127)
+	ZeroMargin               string   `json:"zeroMargin"`               // 无边距 (Type 128)
+	CoverURI                 string   `json:"coverURI"`                 // 封面 URI (Type 129)
+	RegionMagnification      string   `json:"regionMagnification"`      // 区域放大 (Type 132)
+	CoverOffset              uint32   `json:"coverOffset"`              // 封面图片偏移 (Type 201)
+	ThumbnailOffset          uint32   `json:"thumbnailOffset"`          // 缩略图偏移 (Type 202)
+	Title                    string   `json:"title"`                    // 标题 (Type 503)
+	Language                 []string `json:"language"`                 // 语言 (Type 524)
+	PageProgressionDirection string   `json:"pageProgressionDirection"` // 翻页方向 (Type 527)
 }
+
+// KF8_HEADER Kindle Format 8 (AZW3) 特有头部
 type KF8_HEADER struct {
-	ResourceStart int `json:"resourceStart"`
-	Fdst          int `json:"fdst"`
-	NumFdst       int `json:"numFdst"`
-	Frag          int `json:"frag"`
-	Skel          int `json:"skel"`
-	Guide         int `json:"guide"`
+	ResourceStart int `json:"resourceStart"` // 资源起始位置
+	Fdst          int `json:"fdst"`          // FDST 表位置
+	NumFdst       int `json:"numFdst"`       // FDST 条目数
+	Frag          int `json:"frag"`          // FRAG 表位置
+	Skel          int `json:"skel"`          // SKEL 表位置
+	Guide         int `json:"guide"`         // GUIDE 表位置
 }
+
+// HEADERS 汇总所有解析出的头部信息
 type HEADERS struct {
 	PalmdocHeader *PALMDOC_HEADER `json:"palmdoc"`
 	PdbHeader     *PDB_HEADER     `json:"pdb"`
@@ -74,39 +87,73 @@ type HEADERS struct {
 	ExthHeader    *EXTH_HEADER    `json:"exth"`
 	Kf8Header     *KF8_HEADER     `json:"kf8"`
 }
+
+// DecompressFunc 解压缩函数类型定义
 type DecompressFunc func([]byte) ([]byte, error)
+
+// RemoveTrailEntriesFunc 移除尾部数据函数类型定义
 type RemoveTrailEntriesFunc func([]byte) []byte
+
+// MOBI_BOOK 表示一本解析后的 Mobi 电子书
 type MOBI_BOOK struct {
-	Headers            *HEADERS               `json:"headers"`
-	IS_KF8             bool                   `json:"isKf8"`
-	Decompress         DecompressFunc         `json:"-"`
-	RemoveTrailEntries RemoveTrailEntriesFunc `json:"-"`
+	Headers            *HEADERS               `json:"headers"` // 所有头部信息
+	IS_KF8             bool                   `json:"isKf8"`   // 是否为 KF8/AZW3 格式
+	Decompress         DecompressFunc         `json:"-"`       // 解压缩方法
+	RemoveTrailEntries RemoveTrailEntriesFunc `json:"-"`       // 移除尾部数据方法
 }
 
+// PDB_HEADER PDB (Palm Database) 头部，位于文件最开始
 type PDB_HEADER struct {
-	Name       string `json:"name"`
-	Type       string `json:"type"`
-	Creator    string `json:"creator"`
-	NumRecords int    `json:"numRecords"`
+	Name       string `json:"name"`       // 数据库名称
+	Type       string `json:"type"`       // 类型
+	Creator    string `json:"creator"`    // 创建者 ID
+	NumRecords int    `json:"numRecords"` // 记录总数
 }
 
-// HUFF_HEADER HUFF_HEADER 是单独纯在的 不纳入 HEADERS里面去
+// HUFF_HEADER Huffman 压缩表头部
+// 单独存在，不纳入 HEADERS
 type HUFF_HEADER struct {
-	Magic   string `json:"magic"`
-	Offset1 uint32 `json:"offset1"`
-	Offset2 uint32 `json:"offset2"`
+	Magic   string `json:"magic"`   // 标识符 "HUFF"
+	Offset1 uint32 `json:"offset1"` // 表1 偏移量
+	Offset2 uint32 `json:"offset2"` // 表2 偏移量
 }
 
-// CDIC_HEADER CDIC_HEADER 是单独纯在的 不纳入 HEADERS里面去
+// CDIC_HEADER 压缩字典头部
+// 单独存在，不纳入 HEADERS
 type CDIC_HEADER struct {
-	Magic      string `json:"magic"`
-	Length     uint32 `json:"length"`
-	NumEntries uint32 `json:"numEntries"`
-	CodeLength uint32 `json:"codeLength"`
+	Magic      string `json:"magic"`      // 标识符 "CDIC"
+	Length     uint32 `json:"length"`     // 头部长度
+	NumEntries uint32 `json:"numEntries"` // 字典条目数
+	CodeLength uint32 `json:"codeLength"` // 编码长度
+}
+
+// INDX_HEADER 索引记录头部
+// 用于解析 Mobi 的索引结构 (如 NCX, SKEL 等)
+type INDX_HEADER struct {
+	Magic      string `json:"magic"`      // 标识符 "INDX"
+	Length     uint32 `json:"length"`     // 头部长度
+	Type       uint32 `json:"type"`       // 索引类型 (0=普通, 2=Inflection)
+	Idxt       uint32 `json:"idxt"`       // IDXT 块的偏移量
+	NumRecords uint32 `json:"numRecords"` // 索引记录数
+	Encoding   uint32 `json:"encoding"`   // 编码
+	Language   uint32 `json:"language"`   // 语言
+	Total      uint32 `json:"total"`      // 总条目数
+	Ordt       uint32 `json:"ordt"`       // ORDT 表偏移
+	Ligt       uint32 `json:"ligt"`       // LIGT 表偏移
+	NumLigt    uint32 `json:"numLigt"`    // LIGT 条目数
+	NumCncx    uint32 `json:"numCncx"`    // CNCX 条目数
+}
+
+// TAGX_HEADER TAGX (Tag Index) 头部
+// 定义了索引中 Tags 的控制字节和结构
+type TAGX_HEADER struct {
+	Magic           string `json:"magic"`           // 标识符 "TAGX"
+	Length          uint32 `json:"length"`          // 头部长度
+	NumControlBytes uint32 `json:"numControlBytes"` // 控制字节数
 }
 
 var (
-	// MIME map
+	// MIME 类型映射表
 	MIME = map[string]string{
 		"XML":   "application/xml",
 		"XHTML": "application/xhtml+xml",
@@ -115,7 +162,8 @@ var (
 		"SVG":   "image/svg+xml",
 	}
 
-	// PDB_HEADER_OFFSET_MAP map
+	// PDB_HEADER_OFFSET_MAP PDB 头部字段偏移量映射
+	// 格式: 字段名: {偏移量, 长度, 类型}
 	PDB_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"name":       {0, 32, "string"},
 		"type":       {60, 4, "string"},
@@ -123,7 +171,7 @@ var (
 		"numRecords": {76, 2, "uint16"},
 	}
 
-	// PALMDOC_HEADER_OFFSET_MAP map
+	// PALMDOC_HEADER_OFFSET_MAP PalmDOC 头部字段偏移量映射
 	PALMDOC_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"compression":    {0, 2, "uint16"},
 		"numTextRecords": {8, 2, "uint16"},
@@ -131,7 +179,7 @@ var (
 		"encryption":     {12, 2, "uint16"},
 	}
 
-	// MOBI_HEADER_OFFSET_MAP map
+	// MOBI_HEADER_OFFSET_MAP Mobi 头部字段偏移量映射
 	MOBI_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"magic":          {16, 4, "string"},
 		"length":         {20, 4, "uint32"},
@@ -151,7 +199,7 @@ var (
 		"indx":           {244, 4, "uint32"},
 	}
 
-	// KF8_HEADER_OFFSET_MAP map
+	// KF8_HEADER_OFFSET_MAP KF8 头部字段偏移量映射
 	KF8_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"resourceStart": {108, 4, "uint32"},
 		"fdst":          {192, 4, "uint32"},
@@ -161,14 +209,14 @@ var (
 		"guide":         {260, 4, "uint32"},
 	}
 
-	// EXTH_HEADER_OFFSET_MAP map
+	// EXTH_HEADER_OFFSET_MAP EXTH 头部字段偏移量映射
 	EXTH_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"magic":  {0, 4, "string"},
 		"length": {4, 4, "uint32"},
 		"count":  {8, 4, "uint32"},
 	}
 
-	// INDX_HEADER_OFFSET_MAP map
+	// INDX_HEADER_OFFSET_MAP 索引头部字段偏移量映射
 	INDX_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"magic":      {0, 4, "string"},
 		"length":     {4, 4, "uint32"},
@@ -184,21 +232,21 @@ var (
 		"numCncx":    {52, 4, "uint32"},
 	}
 
-	// TAGX_HEADER_MAP map
+	// TAGX_HEADER_MAP TAGX 头部字段偏移量映射
 	TAGX_HEADER_MAP = map[string][]interface{}{
 		"magic":           {0, 4, "string"},
 		"length":          {4, 4, "uint32"},
 		"numControlBytes": {8, 4, "uint32"},
 	}
 
-	// HUFF_HEADER_MAP map
+	// HUFF_HEADER_MAP HUFF 头部字段偏移量映射
 	HUFF_HEADER_MAP = map[string][]interface{}{
 		"magic":   {0, 4, "string"},
 		"offset1": {8, 4, "uint32"},
 		"offset2": {12, 4, "uint32"},
 	}
 
-	// CDIC_HEADER_OFFSET_MAP map
+	// CDIC_HEADER_OFFSET_MAP CDIC 头部字段偏移量映射
 	CDIC_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"magic":      {0, 4, "string"},
 		"length":     {4, 4, "uint32"},
@@ -206,13 +254,13 @@ var (
 		"codeLength": {12, 4, "uint32"},
 	}
 
-	// FDST_HEADER_OFFSET_MAP map
+	// FDST_HEADER_OFFSET_MAP FDST 头部字段偏移量映射
 	FDST_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"magic":      {0, 4, "string"},
 		"numEntries": {8, 4, "uint32"},
 	}
 
-	// FONT_HEADER_OFFSET_MAP map
+	// FONT_HEADER_OFFSET_MAP FONT 头部字段偏移量映射
 	FONT_HEADER_OFFSET_MAP = map[string][]interface{}{
 		"flags":     {8, 4, "uint32"},
 		"dataStart": {12, 4, "uint32"},
@@ -220,13 +268,14 @@ var (
 		"keyStart":  {20, 4, "uint32"},
 	}
 
-	// MOBI_ENCODING map
+	// MOBI_ENCODING 编码方式映射表
 	MOBI_ENCODING = map[uint32]string{
 		1252:  "windows-1252",
 		65001: "utf-8",
 	}
 
-	// EXTH_RECORD_TYPE map
+	// EXTH_RECORD_TYPE EXTH 记录类型定义
+	// 格式: 类型ID: {字段名, 数据类型, 是否为数组}
 	EXTH_RECORD_TYPE = map[uint32][]interface{}{
 		100: {"creator", "string", true},
 		101: {"publisher"},
@@ -254,7 +303,7 @@ var (
 		527: {"pageProgressionDirection"},
 	}
 
-	// MOBI_LANG map
+	// MOBI_LANG 语言代码映射表 (基于 Windows LCID)
 	MOBI_LANG = map[uint32][]interface{}{
 		1:  {"ar", "ar-SA", "ar-IQ", "ar-EG", "ar-LY", "ar-DZ", "ar-MA", "ar-TN", "ar-OM", "ar-YE", "ar-SY", "ar-JO", "ar-LB", "ar-KW", "ar-AE", "ar-BH", "ar-QA"},
 		2:  {"bg"},

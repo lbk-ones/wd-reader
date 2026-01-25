@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"wd-reader/go/book/epub/EpubBook"
+	"wd-reader/go/book/mobi"
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
 	"wd-reader/go/server"
@@ -268,9 +269,10 @@ func intelligentSplit(chapterName string, scanner *bufio.Scanner, strs []string,
 	chapterNameNoSpace := strings.TrimSpace(chapterName)
 	var index int = 0
 	var lstIndex int = 0
+	htmlTags := []string{"<img", "<script", "<style"}
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
+		if line == "" || utils.ContainsPrefix(htmlTags, line) {
 			continue
 		}
 		lineNoAllSpace := strings.Replace(line, " ", "", -1)
@@ -324,11 +326,13 @@ func TransferFileFromFileSys(name []string) string {
 	array := []string{".mobi", ".azw3", ".azw", ".docx", ".doc", ".pdf", ".html", ".htmlz"}
 	log.Logger.Info("exclude txt,epub  only allow other suffix ", strings.Join(array, ","))
 	for _, na := range name {
-
+		if strings.TrimSpace(na) == "" {
+			continue
+		}
 		mu.Lock()
 		if strings.HasPrefix(na, "http") {
 			httpUrl = append(httpUrl, na)
-		} else if !strings.HasPrefix(na, "http") && (strings.HasSuffix(na, ".txt") || strings.HasSuffix(na, ".epub")) && !strings.HasPrefix(na, bookToPath) {
+		} else if !strings.HasPrefix(na, "http") && (strings.HasSuffix(na, ".txt") || strings.HasSuffix(na, ".epub") || strings.HasSuffix(na, ".mobi") || strings.HasSuffix(na, ".azw") || strings.HasSuffix(na, ".azw3")) && !strings.HasPrefix(na, bookToPath) {
 			fileUrl = append(fileUrl, na)
 		} else if utils.ContainsSuffix(array, na) {
 			log.Logger.Info("detect file type " + filepath.Ext(na))
@@ -373,6 +377,35 @@ func TransferFileFromFileSys(name []string) string {
 					//if strings.HasPrefix(s, constant.ERROR_PREFIX) {
 					//	resJsonMap[ht] = "epub文件解析失败," + s
 					//}
+					DeleteFile(base)
+				} else if ext == ".mobi" || ext == ".azw3" || ext == ".azw" {
+					log.Logger.Info("Processing " + filepath.Base(join))
+					reader, err := mobi.NewReader(join)
+					if err != nil {
+						log.Logger.Error("Parse error:", err)
+						continue
+					}
+
+					text, err := reader.ExtractText()
+					if err != nil {
+						log.Logger.Error("Extraction error:", err)
+						continue
+					}
+
+					if len(text) == 0 {
+						log.Logger.Warning("No text extracted (encrypted or empty?)")
+						continue
+					}
+
+					ext := filepath.Ext(join)
+					outPath := join[:len(join)-len(ext)] + ".txt"
+
+					err = os.WriteFile(outPath, append([]byte{0xEF, 0xBB, 0xBF}, []byte(text)...), 0644)
+					if err != nil {
+						log.Logger.Error("Write error", err)
+						continue
+					}
+					log.Logger.Info("Saved to ", filepath.Base(outPath), " bytes length is:", len(text))
 					DeleteFile(base)
 				}
 			} else {

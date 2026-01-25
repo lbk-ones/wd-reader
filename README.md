@@ -31,6 +31,7 @@ ps:
 - Many ways to Add file
 - Delete files
 - Custom setting And The functions that an e-book reader should have
+- support epub,mobi,azw,azw3,txt file local parse!
 
 # 3、download
 
