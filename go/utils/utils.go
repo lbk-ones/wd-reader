@@ -22,3 +22,14 @@ func ContainsSuffix(slice []string, target string) bool {
 	}
 	return false
 }
+
+// ContainsPrefix 切片是否包含某个元素
+func ContainsPrefix(slice []string, target string) bool {
+	for _, s := range slice {
+
+		if strings.HasPrefix(target, s) {
+			return true
+		}
+	}
+	return false
+}
