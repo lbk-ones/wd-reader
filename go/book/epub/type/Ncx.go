@@ -42,7 +42,7 @@ type NavMap struct {
 // NavPoint 对应 <navPoint> 元素
 type NavPoint struct {
 	ID        string     `xml:"id,attr"`
-	PlayOrder int        `xml:"playOrder,attr"`
+	PlayOrder string     `xml:"playOrder,attr"`
 	NavLabel  NavLabel   `xml:"navLabel"`
 	Content   NavContent `xml:"content"`
 	Points    []NavPoint `xml:"navPoint"`

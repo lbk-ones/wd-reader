@@ -9,5 +9,5 @@ type CatLog struct {
 	Id        string `json:"id"`
 	Title     string `json:"title"`
 	Link      string `json:"link"`
-	PlayOrder int    `json:"play_order"`
+	PlayOrder string `json:"play_order"`
 }

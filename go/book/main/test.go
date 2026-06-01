@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
-	"wd-reader/go/book"
+	"strconv"
+	"wd-reader/go/book/epub/EpubBook"
 	//"wd-reader/go/book/epub/EpubBook"
 )
 
@@ -35,17 +37,17 @@ type Hitokoto struct {
 
 func main() {
 	//EpubBook.GetChapterListByFileNameExtract("岳父朱棣，迎娶毁容郡主我乐麻了【正文完结版】 (过节长肉肉) (Z-Library).txt")
-	//epub, err := EpubBook.ParseEpub("C:\\Users\\win 10\\Downloads\\hcham.epub", "D:\\GolandProjects\\wd-reader\\books\\很纯很暧昧.txt")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	panic(err)
-	//}
-	//err = epub.WriteEpub()
-	//if err != nil {
-	//	fmt.Println(err)
-	//	panic(err)
-	//}
-	//fmt.Println("写入成功" + strconv.Itoa(len(epub.Sections)) + "目录")
+	epub, err := EpubBook.ParseEpub("E:\\bk_dowload\\《很纯很暧昧》 (鱼人二代) (Z-Library).epub", "E:\\GolandProjects\\wd-reader\\books\\很纯很暧昧.txt")
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	err = epub.WriteEpub()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println("写入成功" + strconv.Itoa(len(epub.Sections)) + "目录")
 	//var wt = "http://agagha/agahga.txt"
 	//base := path.Base(wt)
 	//println(base)
@@ -93,5 +95,5 @@ func main() {
 	//extract := book.GetChapterListByFileNameExtract("很纯很暧昧.txt")
 	//fmt.Println(extract)
 
-	book.TransferFileFromFileSys([]string{"C:\\Users\\win 10\\Downloads\\白夜行 (东野圭吾 (Higashino Keigo)) (Z-Library).azw3"})
+	//book.TransferFileFromFileSys([]string{"C:\\Users\\win 10\\Downloads\\白夜行 (东野圭吾 (Higashino Keigo)) (Z-Library).azw3"})
 }
