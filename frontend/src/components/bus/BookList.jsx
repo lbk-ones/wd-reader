@@ -6,7 +6,8 @@ import {
     DownloadOutlined,
     GithubOutlined,
     PlusOutlined,
-    SettingOutlined
+    SettingOutlined,
+    QuestionCircleOutlined
 } from "@ant-design/icons";
 import {Button, Input, message} from "antd";
 import {getCacheItem} from "../Utils";
@@ -189,6 +190,8 @@ function BookList(props, ref) {
             </ul>
             <footer className="library-footer">
                 <span className="library-quote" title={sc}>{sc || '翻开一页，暂别喧嚣。'}</span>
+                <button className="footer-icon" title="使用说明（F1）" aria-label="使用说明"
+                        onClick={props.onOpenHelp}><QuestionCircleOutlined/></button>
                 <button className="footer-icon" title="项目主页" aria-label="项目主页"
                         onClick={() => Browser.OpenURL('https://github.com/lbk-ones/wd-reader')}><GithubOutlined/></button>
                 <button className="footer-icon" title="应用设置" aria-label="应用设置"

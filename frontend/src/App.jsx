@@ -32,6 +32,7 @@ import useMemoizedFn from "ahooks/es/useMemoizedFn";
 import MuluList from "./components/bus/MuluList.jsx";
 import ContentSetting from "./components/bus/ContentSetting.jsx";
 import Content from "./components/bus/Content.jsx";
+import UsageGuide from "./components/bus/UsageGuide.jsx";
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
@@ -73,6 +74,7 @@ function App() {
         loadIngBookList: false,
         showTitle: getCacheItem("标题开关") !== 'false',
         settingVisible: false,
+        helpVisible: false,
         fontColor: '#000',
         muluVisible: false,
         serverUrl: '',
@@ -165,12 +167,17 @@ function App() {
         });
 
         function handleReaderKeyDown(event) {
+            if (event.key === 'F1') {
+                event.preventDefault();
+                if (!event.repeat) openUsageGuide();
+                return;
+            }
             if (event.key === 'PageDown' || event.key === 'PageUp') {
                 event.preventDefault();
             }
             if (event.key === 'Escape' && !event.repeat && !event.defaultPrevented
                 && getSettingState().miniMode === '1' && getState().currentBookName
-                && !getState().settingVisible && !getState().muluVisible
+                && !getState().settingVisible && !getState().muluVisible && !getState().helpVisible
                 && !event.target?.closest('input, textarea, select, [contenteditable="true"], .ant-modal, .ant-select-dropdown')) {
                 event.preventDefault();
                 exitMiniMode();
@@ -584,6 +591,8 @@ function App() {
             }, 200)
         } else if (option.label === '最小化') {
             Window.Minimise();
+        } else if (option.label === '使用说明') {
+            openUsageGuide();
         } else if (option.label === '退出系统') {
             Application.Quit();
         }
@@ -599,6 +608,7 @@ function App() {
         {label: '下一章'},
         {label: '上一章'},
         {label: '返回书架'},
+        {label: '使用说明'},
         {label: '最小化'},
         {label: '退出系统'},
 
@@ -703,6 +713,19 @@ function App() {
         }
     });
 
+    const openUsageGuide = useMemoizedFn(async () => {
+        if (getState().helpVisible) return;
+        try {
+            if (getSettingState().miniMode === '1' && getState().currentBookName) {
+                await miniSize(getSettingState().miniRows, false);
+            }
+            setDisplay(true);
+            setState({helpVisible: true, settingVisible: false, muluVisible: false, sysSettingVisible: false});
+        } catch (error) {
+            message.error(String(error));
+        }
+    });
+
     const exitMiniMode = useMemoizedFn(() => {
         setState({settingVisible: false});
         return miniSize(getSettingState().miniRows, false).catch(error => message.error(String(error)));
@@ -796,7 +819,7 @@ function App() {
              }}
              onMouseLeave={() => {
                  let leaveWindowHid = getSettingState().leaveWindowHid;
-                 if (leaveWindowHid === '1') {
+                 if (leaveWindowHid === '1' && !getState().helpVisible) {
                      setDisplay(false)
                  }
              }}
@@ -807,6 +830,7 @@ function App() {
                 backBookList={backBookListCallback}
                 toggleTitle={useMemoizedFn(toggleTitle)}
                 exitMiniMode={exitMiniMode}
+                onOpenHelp={openUsageGuide}
                 display={display}
                 state={getState()}
                 setState={setState}
@@ -819,6 +843,7 @@ function App() {
 
             {/*index book list*/}
             <BookList
+                onOpenHelp={openUsageGuide}
                 ref={bookListRef}
                 state={state}
                 setState={setState}
@@ -1087,7 +1112,7 @@ function App() {
                 <p className={"flex flex-row gap5"}>
 
                     <Button title={"zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网"} onClick={() => {
-                        Browser.OpenURL("https://zh.opendelta.org/")
+                        Browser.OpenURL("https://www.bing.com/search?q=Z-Library")
                     }}>Z-Lib</Button>
                     {/*<Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {*/}
                     {/*    Browser.OpenURL("https://zxcsol.com/")*/}
@@ -1122,6 +1147,8 @@ function App() {
                         open={getState().sysSettingVisible}
                     >
                         <div className={"flex flex-column gap10"}>
+
+                            <Button onClick={openUsageGuide}>使用说明（F1）</Button>
 
                             <span>自定义标题：<Input placeHolder={"自定义应用标题"} value={getSettingState().appTitle}
                                                     onChange={(e) => {
@@ -1169,6 +1196,7 @@ function App() {
                 )
             }
 
+            <UsageGuide open={state.helpVisible} onClose={() => setState({helpVisible: false})}/>
             {contextHolder}
         </div>
     )

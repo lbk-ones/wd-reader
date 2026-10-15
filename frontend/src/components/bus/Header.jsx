@@ -4,7 +4,7 @@ import {Application, Window} from '@wailsio/runtime';
 import {
     BookOutlined, BorderInnerOutlined, BorderOutlined, CloseOutlined,
     DatabaseOutlined, DisconnectOutlined, MinusOutlined, PushpinOutlined,
-    ExpandOutlined, HolderOutlined, RedoOutlined, SettingOutlined,
+    ExpandOutlined, HolderOutlined, QuestionCircleOutlined, RedoOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import {setCacheItem} from '../Utils.jsx';
 
@@ -57,6 +57,7 @@ function Header(props) {
             {reading && control('隐藏标题栏', <BorderInnerOutlined/>, props.toggleTitle)}
             {reading && control('阅读设置', <SettingOutlined/>, () => props.setState({settingVisible: true}))}
             {reading && control('返回书架', <DatabaseOutlined/>, props.backBookList)}
+            {reading && control('使用说明', <QuestionCircleOutlined/>, props.onOpenHelp)}
             {control('离开窗口时隐藏', <DisconnectOutlined/>, () => toggleSetting('leaveWindowHid'), settings.leaveWindowHid === '1')}
             {control('窗口置顶', <PushpinOutlined/>, () => toggleSetting('isAlwaysTop'), settings.isAlwaysTop === '1')}
             {!reading && control('刷新书架', <RedoOutlined/>, () => Window.ForceReload())}
