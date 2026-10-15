@@ -164,11 +164,19 @@ function App() {
             AddFleAndHandlerRes(event.data);
         });
 
-        document.addEventListener('keydown', function (event) {
+        function handleReaderKeyDown(event) {
             if (event.key === 'PageDown' || event.key === 'PageUp') {
                 event.preventDefault();
             }
-        });
+            if (event.key === 'Escape' && !event.repeat && !event.defaultPrevented
+                && getSettingState().miniMode === '1' && getState().currentBookName
+                && !getState().settingVisible && !getState().muluVisible
+                && !event.target?.closest('input, textarea, select, [contenteditable="true"], .ant-modal, .ant-select-dropdown')) {
+                event.preventDefault();
+                exitMiniMode();
+            }
+        }
+        document.addEventListener('keydown', handleReaderKeyDown);
         let calculateFontLinesAuto = throttle((e) => {
             calculateFontLines()
         }, 300);
@@ -179,7 +187,9 @@ function App() {
             window.removeEventListener("error", handlerError)
             window.removeEventListener("unhandledrejection", unhandledrejection)
             offFileDrop()
+            document.removeEventListener('keydown', handleReaderKeyDown)
             window.removeEventListener("resize", calculateFontLinesAuto)
+            calculateFontLinesAuto.cancel()
         }
     }, [])
 
@@ -693,6 +703,11 @@ function App() {
         }
     });
 
+    const exitMiniMode = useMemoizedFn(() => {
+        setState({settingVisible: false});
+        return miniSize(getSettingState().miniRows, false).catch(error => message.error(String(error)));
+    });
+
     async function miniSize(rows, enabled = true) {
         const miniRows = Math.min(4, Math.max(1, Number(rows) || 3));
         if (enabled && !normalWindowRef.current) {
@@ -791,6 +806,7 @@ function App() {
             <Header
                 backBookList={backBookListCallback}
                 toggleTitle={useMemoizedFn(toggleTitle)}
+                exitMiniMode={exitMiniMode}
                 display={display}
                 state={getState()}
                 setState={setState}

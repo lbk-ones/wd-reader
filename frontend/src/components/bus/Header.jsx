@@ -4,14 +4,28 @@ import {Application, Window} from '@wailsio/runtime';
 import {
     BookOutlined, BorderInnerOutlined, BorderOutlined, CloseOutlined,
     DatabaseOutlined, DisconnectOutlined, MinusOutlined, PushpinOutlined,
-    RedoOutlined, SettingOutlined,
+    ExpandOutlined, HolderOutlined, RedoOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import {setCacheItem} from '../Utils.jsx';
 
 function Header(props) {
     const {state, settingstate: settings} = props;
     const reading = !isEmpty(state.currentBookName);
-    if (!props.display || (!state.showTitle && reading)) return null;
+    if (!props.display) return null;
+    if (reading && settings.miniMode === '1') {
+        return <aside className="mini-controls" aria-label="迷你阅读操作栏"
+                      onClick={event => event.stopPropagation()}>
+            <div className="mini-drag-handle" aria-label="拖动迷你窗口" title="按住此处拖动窗口"
+                 style={{'--wails-draggable': 'drag'}}>
+                <HolderOutlined aria-hidden="true"/>
+            </div>
+            <button type="button" className="mini-control-button" aria-label="阅读设置" title="阅读设置"
+                    onClick={() => props.setState({settingVisible: true})}><SettingOutlined/></button>
+            <button type="button" className="mini-control-button" aria-label="退出迷你模式" title="退出迷你模式（Esc）"
+                    onClick={props.exitMiniMode}><ExpandOutlined/></button>
+        </aside>;
+    }
+    if (!state.showTitle && reading) return null;
 
     function toggleSetting(key) {
         const value = settings[key] === '1' ? '0' : '1';

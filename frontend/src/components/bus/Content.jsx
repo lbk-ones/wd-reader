@@ -32,7 +32,7 @@ const Content = (props, ref) => {
                          className={"book-content-div flex w-100 flex-column-nowrap no-shrink over-auto"}
                          style={{
                              lineHeight: Number(settingState.fontLineHeight) + "px",
-                             padding: "0 10px",
+                             padding: settingState.miniMode === '1' ? "0 42px 0 10px" : "0 10px",
                              boxSizing: "border-box",
                              textAlign: "left",
                              // textIndent: "2em",
