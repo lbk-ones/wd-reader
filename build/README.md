@@ -1,35 +1,20 @@
-# Build Directory
+# Wails 3 build assets
 
-The build directory is used to house all the build files and assets for your application. 
+`Taskfile.yml` in the repository root dispatches to the desktop tasks in this directory.
+Application metadata lives in `build/config.yml`; Wails v2's `wails.json` is no longer used.
 
-The structure is:
+- `wails3 dev`: build the development binary, start Vite and watch Go sources.
+- `wails3 build`: build a production binary in the root `bin/` directory.
+- `wails3 package`: build the native installer/package on the matching OS.
+- `wails3 task linux:create:deb`: build a DEB.
+- `wails3 task linux:create:appimage`: build an AppImage.
+- `wails3 package ARCH=arm64`: select the target architecture.
 
-* bin - Output directory
-* darwin - macOS specific files
-* windows - Windows specific files
+Use `VERSION=1.4.0` on build/package commands to set the runtime version.
+For release metadata, first run `node scripts/set-version.mjs 1.4.0`.
+This regenerates Windows resources, macOS plist files and Linux package metadata from `config.yml`.
+Regeneration also creates ignored iOS metadata; this project only configures desktop builds.
 
-## Mac
-
-The `darwin` directory holds files specific to Mac builds.
-These may be customised and used as part of the build. To return these files to the default state, simply delete them
-and
-build with `wails build`.
-
-The directory contains the following files:
-
-- `Info.plist` - the main plist file used for Mac builds. It is used when building using `wails build`.
-- `Info.dev.plist` - same as the main plist file but used when building using `wails dev`.
-
-## Windows
-
-The `windows` directory contains the manifest and rc files used when building with `wails build`.
-These may be customised for your application. To return these files to the default state, simply delete them and
-build with `wails build`.
-
-- `icon.ico` - The icon used for the application. This is used when building using `wails build`. If you wish to
-  use a different icon, simply replace this file with your own. If it is missing, a new `icon.ico` file
-  will be created using the `appicon.png` file in the build directory.
-- `installer/*` - The files used to create the Windows installer. These are used when building using `wails build`.
-- `info.json` - Application details used for Windows builds. The data here will be used by the Windows installer,
-  as well as the application itself (right click the exe -> properties -> details)
-- `wails.exe.manifest` - The main application manifest file.
+`build/appicon.png` remains the source for the application icons.
+The desktop tasks are based on the Wails v3.0.0-beta.29 template.
+See `docs/wails3-migration.md` for platform requirements and test coverage.

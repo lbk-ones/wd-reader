@@ -12,7 +12,7 @@ A mysterious e-book reader
 
 You can use a computer in any setting, whether it's for work or school, as long as you have it. It's highly concealed and difficult to detect
 
-Suitable for Windows, iOS, Linux (IOS needs to skip mandatory signature to use)
+Suitable for Windows, macOS, Linux
 
 Supports e-book formats such as txt, epub, mobi, azw3, azw, docx, dox, pdf, html, htmlz, etc
 
@@ -39,7 +39,18 @@ ps:
 
 
 # 4、acknowledgments
-thanks wails ! expectation wails V3 release
+thanks wails!
 
 # 5、env
-go 1.21 - 1.22 
+Go 1.25+ and Node.js 24 LTS. Wails is pinned to v3.0.0-beta.29 (including the frontend runtime).
+
+```sh
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.29
+wails3 dev
+wails3 build
+```
+
+Build output: `bin/wdreader.exe` on Windows, `bin/wdreader` on macOS/Linux.
+Run commands from the repository root. On Windows, the existing `books` directory is relative to the working directory; on macOS/Linux it remains `~/books`.
+
+See [the Wails 3 migration notes](docs/wails3-migration.md) for feature mapping, packaging commands, compatibility and verification details.

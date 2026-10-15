@@ -42,7 +42,7 @@ func TestExtractMethods(t *testing.T) {
 		//t.Logf("HTML Sample (first %d chars):\n%s", sampleLen, htmlContent[:sampleLen])
 
 		// 生成同名 html 文件
-		htmlPath := strings.Replace(mobiPath, filepath.Ext(mobiPath), ".html", 1)
+		htmlPath := filepath.Join(t.TempDir(), "book.html")
 		err = os.WriteFile(htmlPath, []byte(htmlContent), 0644)
 		if err != nil {
 			t.Fatalf("Failed to write HTML file: %v", err)
@@ -72,7 +72,7 @@ func TestExtractMethods(t *testing.T) {
 		t.Logf("Text Sample (first %d chars):\n%s", sampleLen, textContent[:sampleLen])
 
 		// 生成同名 txt 文件
-		txtPath := strings.Replace(mobiPath, filepath.Ext(mobiPath), ".txt", 1)
+		txtPath := filepath.Join(t.TempDir(), "book.txt")
 		err = os.WriteFile(txtPath, []byte(textContent), 0644)
 		if err != nil {
 			t.Fatalf("Failed to write TXT file: %v", err)

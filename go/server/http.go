@@ -90,7 +90,7 @@ func PostOctetStream(params map[string]string, data []byte) (*DataParse, error) 
 		return nil, fmt.Errorf("failed unmarshal, respData: %s, error: %s", respData, err.Error())
 	}
 	if resp.Success != true {
-		return resp, fmt.Errorf("request_id: %s, code: %d, message: %s", "ww", resp.Code, resp.Message)
+		return resp, fmt.Errorf("request_id: %s, code: %s, message: %s", "ww", resp.Code, resp.Message)
 	}
 	return resp, nil
 

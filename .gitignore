@@ -1,4 +1,9 @@
 build/bin
+/bin/
+/.task/
+/*.syso
+# Wails generates mobile metadata when refreshing desktop build assets.
+/build/ios/
 node_modules
 frontend/dist
 log

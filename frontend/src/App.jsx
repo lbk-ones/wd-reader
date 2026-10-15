@@ -11,22 +11,12 @@ import {
     GetChapterListByFileName,
     GetServerUrl,
     GetVersion,
-    OpenFileDialog
-} from "../wailsjs/go/main/App";
-import {GetChapterContentByChapterName} from "../wailsjs/go/main/App.js";
+    OpenFileDialog,
+    LogError
+} from "../bindings/wd-reader/app";
+import {GetChapterContentByChapterName} from "../bindings/wd-reader/app.js";
 import useAllState from "./components/lib/hooks/UseAllState";
-import {
-    BrowserOpenURL,
-    LogError,
-    OnFileDrop,
-    OnFileDropOff,
-    Quit,
-    WindowCenter,
-    WindowMinimise,
-    WindowReloadApp,
-    WindowSetAlwaysOnTop,
-    WindowSetSize
-} from "../wailsjs/runtime/runtime.js";
+import {Application, Browser, Events, Window} from "@wailsio/runtime";
 import {LineOutlined, PlusOutlined} from "@ant-design/icons";
 import Header from "./components/bus/Header";
 import BookList from "./components/bus/BookList";
@@ -138,11 +128,11 @@ function App() {
     }
 
     function handlerError(e) {
-        LogError(e.error.stack)
+        LogError(e.error?.stack || e.message || String(e)).catch(console.error)
     }
 
     function unhandledrejection(e) {
-        LogError("unhandledrejection:" + e.reason)
+        LogError("unhandledrejection:" + e.reason).catch(console.error)
     }
 
     useEffect(function () {
@@ -167,10 +157,9 @@ function App() {
                 serverUrl: res
             })
         })
-        OnFileDrop(function (x, y, paths) {
-            AddFleAndHandlerRes(paths);
-
-        }, true)
+        const offFileDrop = Events.On("files-dropped", event => {
+            AddFleAndHandlerRes(event.data);
+        });
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'PageDown' || event.key === 'PageUp') {
@@ -186,7 +175,7 @@ function App() {
         return () => {
             window.removeEventListener("error", handlerError)
             window.removeEventListener("unhandledrejection", unhandledrejection)
-            OnFileDropOff()
+            offFileDrop()
             window.removeEventListener("resize", calculateFontLinesAuto)
         }
     }, [])
@@ -360,9 +349,9 @@ function App() {
 
         let isAlwaysTop = _isAlwaysTop ? _isAlwaysTop : getSettingState().isAlwaysTop;
         if (isAlwaysTop === '1') {
-            WindowSetAlwaysOnTop(true)
+            Window.SetAlwaysOnTop(true)
         } else {
-            WindowSetAlwaysOnTop(false)
+            Window.SetAlwaysOnTop(false)
         }
     }
 
@@ -581,9 +570,9 @@ function App() {
                 toCurrentChapterNameInList()
             }, 200)
         } else if (option.label === '最小化') {
-            WindowMinimise();
+            Window.Minimise();
         } else if (option.label === '退出系统') {
-            Quit();
+            Application.Quit();
         }
     };
 
@@ -711,10 +700,10 @@ function App() {
             fontSize: 20
         })
         // setCacheItem("fontSize",25)
-        WindowSetSize(600, 120)
+        Window.SetSize(600, 120)
 
         setTimeout(() => {
-            WindowCenter()
+            Window.Center()
             calculateFontLines("", "", 120, rows)
         }, 100)
 
@@ -786,7 +775,7 @@ function App() {
                         if (r) {
                             AddFleAndHandlerRes([r]);
                         }
-                    })
+                    }).catch(error => message.error(String(error)))
                 }}
                 onSelect={function (option) {
                     if (option.label === '去下载') {
@@ -1039,20 +1028,20 @@ function App() {
                 <p className={"flex flex-row gap5"}>
 
                     <Button title={"zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网"} onClick={() => {
-                        BrowserOpenURL("https://zh.opendelta.org/")
+                        Browser.OpenURL("https://zh.opendelta.org/")
                     }}>Z-Lib</Button>
                     {/*<Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {*/}
-                    {/*    BrowserOpenURL("https://zxcsol.com/")*/}
+                    {/*    Browser.OpenURL("https://zxcsol.com/")*/}
                     {/*}}>知轩藏书</Button>*/}
                     <Button title={"80电子书"} onClick={() => {
-                        BrowserOpenURL("https://www.jiumodiary.com/")
+                        Browser.OpenURL("https://www.jiumodiary.com/")
                     }}>鸠摩搜索</Button>
                     <Button title={"顶点小说"} onClick={() => {
-                        BrowserOpenURL("https://www.najjdd.com/")
+                        Browser.OpenURL("https://www.najjdd.com/")
                     }}>顶点小说</Button>
 
                     <Button title={"epubor-converter"} onClick={() => {
-                        BrowserOpenURL("https://s3.amazonaws.com/download.epubor.com.bk/epubor-converter.exe")
+                        Browser.OpenURL("https://s3.amazonaws.com/download.epubor.com.bk/epubor-converter.exe")
                     }}>电子书格式转换器下载</Button>
                 </p>
 
@@ -1107,13 +1096,13 @@ function App() {
                                                     window.localStorage.removeItem(s);
                                                 }
                                             }
-                                            WindowReloadApp();
+                                            Window.ForceReload();
                                         }
                                     })
                                 }}>清空所有缓存</Button></span>
                             <span><Button size={"small"} onClick={function () {
                                 setCacheItem("LastClickBook", "")
-                                WindowReloadApp();
+                                Window.ForceReload();
                             }}>清除阅读记录</Button></span>
 
                         </div>

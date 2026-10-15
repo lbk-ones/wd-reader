@@ -12,9 +12,9 @@ import {Button, Input, message, Statistic} from "antd";
 import * as PropTypes from "prop-types";
 import {deleteSplitMapByKey, getCacheItem, setCacheItem} from "../Utils";
 import classNames from "classnames";
-import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../wailsjs/go/main/App";
+import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../bindings/wd-reader/app";
 import {forwardRef, useEffect, useImperativeHandle, useState} from "react";
-import {BrowserOpenURL} from "../../../wailsjs/runtime/runtime.js";
+import {Browser} from "@wailsio/runtime";
 
 const TIP = [
     "没有人比我更懂你的需求😀",
@@ -252,7 +252,7 @@ function BookList(props, ref) {
                                         paddingRight: "5px"
                                     }}
                                     onClick={() => {
-                                        BrowserOpenURL("https://github.com/lbk-ones/wd-reader")
+                                        Browser.OpenURL("https://github.com/lbk-ones/wd-reader")
                                     }}
                                 />
                             <SettingOutlined

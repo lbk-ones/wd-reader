@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,12 +14,13 @@ import (
 	"wd-reader/go/log"
 	"wd-reader/go/server"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // App struct
 type App struct {
-	ctx context.Context
+	application *application.App
+	window      *application.WebviewWindow
 }
 
 // NewApp creates a new App application struct
@@ -28,42 +28,37 @@ func NewApp() *App {
 	return &App{}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-}
-
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-// OpenFileDialog Deprecated 目前这个好像有BUG用不起来 就很烦
-func (a *App) OpenFileDialog() string {
-	// ".mobi", ".azw3", ".azw", ".docx", ".doc", ".pdf", ".html", ".htmlz"
-	fmt.Println("开始调用")
-	dialog, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:            "文件选择",
-		DefaultDirectory: "./",
-		DefaultFilename:  "",
-		Filters: []runtime.FileFilter{
+// OpenFileDialog uses the native Wails 3 file picker.
+func (a *App) OpenFileDialog() (string, error) {
+	selection, err := a.application.Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
+		Title:          "文件选择",
+		CanChooseFiles: true,
+		Window:         a.window,
+		Filters: []application.FileFilter{
 			{
 				DisplayName: "*.txt;*.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
 				Pattern:     "*.txt;*.epub;*.mobi;*.azw3;*.azw;*.docx;*.dox;*.pdf;*.html;*.htmlz",
 			},
 		},
-		ShowHiddenFiles:            false,
-		CanCreateDirectories:       false,
-		ResolvesAliases:            false,
-		TreatPackagesAsDirectories: false,
-	})
-	if err != nil {
-		fmt.Println(fmt.Errorf("failed to open file dialog: %v", err))
+		ShowHiddenFiles:      false,
+		CanCreateDirectories: false,
+		ResolvesAliases:      false,
+	}).PromptForSingleSelection()
+	// Wails' Windows dialog returns an internal, unexported cancellation error.
+	// Treat closing the picker as an empty selection, as on the other platforms.
+	if err != nil && err.Error() == "cancelled by user" {
+		return "", nil
 	}
-	fmt.Println("调用返回" + dialog)
-	return dialog
+	return selection, err
 }
+
+// LogError keeps frontend errors in the rotating application log.
+func (a *App) LogError(message string) { log.GetLogger().Error(message) }
 
 // GetAppPath 获取目前程序运行目录
 func (a *App) GetAppPath() string {

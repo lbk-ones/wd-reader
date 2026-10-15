@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=wdreader
+Comment=A discreet desktop ebook reader
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/wdreader %u
+Terminal=false
+Type=Application
+Icon=wdreader
+Categories=Utility;
+StartupWMClass=wdreader
+
+ 

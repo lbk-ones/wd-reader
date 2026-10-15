@@ -12,13 +12,7 @@ import {
     SettingOutlined
 } from "@ant-design/icons";
 import {setCacheItem} from "../Utils.jsx";
-import {
-    Quit, WindowCenter,
-    WindowGetSize,
-    WindowMinimise, WindowReload,
-    WindowReloadApp, WindowSetSize,
-    WindowToggleMaximise
-} from "../../../wailsjs/runtime/runtime.js";
+import {Application, Window} from "@wailsio/runtime";
 import {memo} from "react";
 import * as PropTypes from "prop-types";
 import {message} from "antd";
@@ -97,30 +91,30 @@ function Header(props) {
                 {
                     type !== '1' && (
                         <RedoOutlined title={"刷新"} onClick={() => {
-                            WindowReloadApp()
+                            Window.ForceReload()
                         }}/>
                     )
                 }
                 <MinusOutlined onClick={() => {
-                    WindowMinimise();
+                    Window.Minimise();
                 }}/>
                 <BorderOutlined onClick={() => {
 
-                    WindowGetSize().then(res => {
-                        if (res.w === 400 && res.h === 600) {
-                            WindowSetSize(960, 540)
+                    Window.Size().then(res => {
+                        if (res.width === 400 && res.height === 600) {
+                            Window.SetSize(960, 540)
                         } else {
-                            WindowSetSize(400, 600)
+                            Window.SetSize(400, 600)
                         }
                         setTimeout(() => {
-                            WindowCenter()
+                            Window.Center()
                         }, 100)
                     });
 
 
                 }}/>
                 <CloseOutlined onClick={() => {
-                    Quit();
+                    Application.Quit();
                 }}/>
             </>
 
@@ -140,7 +134,7 @@ function Header(props) {
                         "--wails-draggable": "drag"
                     }} onDoubleClick={(e) => {
                         e.stopPropagation()
-                        WindowToggleMaximise()
+                        Window.ToggleMaximise()
                     }}>
                         <img src={CsSVg} alt=""/>
                         <span>{props.title}</span>
@@ -169,7 +163,7 @@ function Header(props) {
                      title={state.currentBookName.replace(".txt", "")}
                      onDoubleClick={(e) => {
                          e.stopPropagation()
-                         WindowToggleMaximise()
+                         Window.ToggleMaximise()
                      }}
                 >
                     <img src={CsSVg} alt=""/>

@@ -13,7 +13,7 @@ import {SketchPicker} from "react-color";
 import {ExclamationCircleOutlined} from "@ant-design/icons";
 import * as PropTypes from "prop-types";
 import {useState} from "react";
-import {WindowReloadApp} from "../../../wailsjs/runtime/runtime.js";
+import {Window} from "@wailsio/runtime";
 
 function ContentSetting(props) {
 
