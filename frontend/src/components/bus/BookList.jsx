@@ -7,10 +7,12 @@ import {
     GithubOutlined,
     PlusOutlined,
     SettingOutlined,
-    QuestionCircleOutlined
+    QuestionCircleOutlined,
+    AppstoreOutlined,
+    UnorderedListOutlined
 } from "@ant-design/icons";
 import {Button, Input, message} from "antd";
-import {getCacheItem} from "../Utils";
+import {getCacheItem, setCacheItem} from "../Utils";
 import classNames from "classnames";
 import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../bindings/wd-reader/app";
 import {forwardRef, useEffect, useImperativeHandle, useState} from "react";
@@ -29,6 +31,12 @@ function BookList(props, ref) {
     const state = props.state;
 
     const [sc, setSc] = useState("")
+    const [libraryLayout, setLibraryLayout] = useState(() => getCacheItem('libraryLayout') === 'grid' ? 'grid' : 'list');
+
+    function changeLayout(layout) {
+        setLibraryLayout(layout);
+        setCacheItem('libraryLayout', layout);
+    }
 
     useEffect(function () {
         GetScOne().then(res => {
@@ -148,9 +156,21 @@ function BookList(props, ref) {
             </div>
             <div className="library-section-label">
                 <span><ReadOutlined/> 藏书一览</span>
-                <span>{recentBooks.length ? recentBooks.length + ' 本阅读足迹' : '双击书籍，开始阅读'}</span>
+                <div className="library-view-actions">
+                    <span className="library-reading-count">{recentBooks.length ? recentBooks.length + ' 本阅读足迹' : '双击开始阅读'}</span>
+                    <div className="library-layout-switch" role="group" aria-label="书架布局">
+                        <button type="button" aria-label="列表布局" aria-pressed={libraryLayout === 'list'}
+                                title="切换为列表布局" onClick={() => changeLayout('list')}>
+                            <UnorderedListOutlined/><span>列表</span>
+                        </button>
+                        <button type="button" aria-label="矩阵布局" aria-pressed={libraryLayout === 'grid'}
+                                title="切换为矩阵布局" onClick={() => changeLayout('grid')}>
+                            <AppstoreOutlined/><span>矩阵</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <ul className="book-list-ul" aria-label="书籍列表">
+            <ul className={classNames('book-list-ul', {'book-list-ul--grid': libraryLayout === 'grid'})} aria-label="书籍列表">
                 {books.map((name, index) => {
                     const title = name.replace(/\.(txt|epub)$/i, '');
                     const isRecent = recentBooks[0] === name;

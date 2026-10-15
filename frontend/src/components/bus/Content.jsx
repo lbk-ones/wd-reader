@@ -14,6 +14,8 @@ const Content = (props, ref) => {
     }
     const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
     const bookContainerHeight = props.getBookContainerHeight();
+    const chapterIndex = findIndex(state.currentBookChapterList, name => name === state.currentBookChapterName);
+    const compactChapter = settingState.miniMode === '1' || settingState.transparentMode === '1';
     return <div
 
         onContextMenu={props.onContextMenu}
@@ -32,6 +34,7 @@ const Content = (props, ref) => {
                          className={"book-content-div flex w-100 flex-column-nowrap no-shrink over-auto"}
                          style={{
                              lineHeight: Number(settingState.fontLineHeight) + "px",
+                             '--reader-line-height': Number(settingState.fontLineHeight) + 'px',
                              padding: settingState.miniMode === '1' ? "0 42px 0 10px" : "0 10px",
                              boxSizing: "border-box",
                              textAlign: "left",
@@ -48,11 +51,12 @@ const Content = (props, ref) => {
                         {
                             !isEmpty(state.currentBookChapterName)
                             && (
-                                <p className={"font-bold"} style={{
-                                    textIndent: '2em'
-                                }}>
-                                    {state.currentBookChapterName || ""}
-                                </p>
+                                <header className={`reader-chapter${compactChapter ? ' reader-chapter--compact' : ''}`}>
+                                    <div className="reader-chapter-index" aria-hidden="true">
+                                        {chapterIndex >= 0 ? `CHAPTER ${String(chapterIndex + 1).padStart(3, '0')}` : 'CHAPTER'}
+                                    </div>
+                                    <h2 className="reader-chapter-title">{state.currentBookChapterName}</h2>
+                                </header>
                             )
                         }
                         {
