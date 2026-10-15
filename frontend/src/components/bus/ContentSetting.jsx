@@ -12,15 +12,14 @@ import {
 import {SketchPicker} from "react-color";
 import {CloseOutlined, ExclamationCircleOutlined} from "@ant-design/icons";
 import * as PropTypes from "prop-types";
-import {useState} from "react";
 import {Window} from "@wailsio/runtime";
 
 function ContentSetting(props) {
 
-    const [line, setLine] = useState(3)
     let state = props.state;
     let display = props.display;
     let settingState = props.settingState;
+    const line = settingState.miniRows;
     let settingVisible = state.settingVisible;
     let setState = props.setState;
     let isAlwaysTop = props.isAlwaysTop;
@@ -306,7 +305,6 @@ function ContentSetting(props) {
 
                     <Form.Item
                         label="迷你化"
-                        name="迷你化"
                         rules={[
                             {
                                 required: false,
@@ -314,11 +312,11 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch size="small" onChange={(value) => {
+                        <Switch size="small" aria-label="迷你化" checked={settingState.miniMode === '1'} onChange={(value) => {
                                     setState({
                                         settingVisible: false
                                     })
-                                    miniSize(line)
+                                    miniSize(line, value).catch(console.error)
                                 }}
                         />
                         &nbsp;&nbsp;&nbsp;
@@ -331,8 +329,12 @@ function ContentSetting(props) {
                                 width:'70px'
                             }}
                             onChange={(value) => {
-                                console.log('value-000>',value)
-                                setLine(value)
+                                if (value === null) return;
+                                setCacheItem('miniRows', value)
+                                setSettingState({miniRows: value})
+                                if (settingState.miniMode === '1') {
+                                    miniSize(value, true).catch(console.error)
+                                }
                             }}
                         />
 
@@ -455,7 +457,15 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Button type="primary" onClick={() => {
+                        <Button type="primary" onClick={async () => {
+                            if (settingState.miniMode === '1') {
+                                try {
+                                    await miniSize(3, false)
+                                } catch (error) {
+                                    console.error(error)
+                                    return;
+                                }
+                            }
                             let lineHeight = 30
                             let fontSize = 20
                             setCacheItem('fontColor', '#000')
@@ -472,7 +482,7 @@ function ContentSetting(props) {
                             putSplitMap(currentBookName,"1");
                             const splitTypeValue = setSplitTypeValue(currentBookName,"");
 
-                            setLine(3)
+                            setCacheItem('miniRows', 3)
                             setSettingState({
                                 splitMap:splitTypeValue,
                                 fontColor: "#000",
@@ -484,11 +494,12 @@ function ContentSetting(props) {
                                 isAlwaysTop: "1",
                                 transparentMode: "0",
                                 leaveWindowHid: "0",
+                                miniRows: 3,
                             })
                             setDisplay(true)
                             isAlwaysTop(getCacheItem('isAlwaysTop'));
                             setTimeout(()=>{
-                                props.calculateFontLines(lineHeight)
+                                props.calculateFontLines(lineHeight, fontSize)
                             },100)
                         }}>
                             恢复默认

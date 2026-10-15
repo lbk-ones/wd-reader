@@ -42,6 +42,7 @@ function App() {
     let pageContentRef = useRef(null);
     let bookListRef = useRef(null);
     let appRef = useRef(null);
+    const normalWindowRef = useRef(null);
 
     const [api, contextHolder] = notification.useNotification();
 
@@ -57,6 +58,8 @@ function App() {
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
         leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
+        miniMode: getCacheItem('miniMode') || '0',
+        miniRows: Math.min(4, Math.max(1, Number(getCacheItem('miniRows')) || 3)),
         appTitle: getCacheItem('AppTitle') || '偷得浮生半日闲',
         splitMap: getSplitMap() // 拆分方式
     })
@@ -690,25 +693,64 @@ function App() {
         }
     });
 
-    function miniSize(rows) {
+    async function miniSize(rows, enabled = true) {
+        const miniRows = Math.min(4, Math.max(1, Number(rows) || 3));
+        if (enabled && !normalWindowRef.current) {
+            let savedWindow;
+            try {
+                savedWindow = JSON.parse(getCacheItem('miniNormalWindow'));
+            } catch {
+                // Older installations have no saved normal window.
+            }
+            normalWindowRef.current = {
+                ...await Window.Size(),
+                showTitle: getState().showTitle,
+                fontSize: Number(getSettingState().fontSize),
+                fontLineHeight: Number(getSettingState().fontLineHeight)
+            };
+            if (getSettingState().miniMode === '1' && savedWindow?.width > 0 && savedWindow?.height > 0) {
+                normalWindowRef.current = savedWindow;
+            }
+            setCacheItem('miniNormalWindow', JSON.stringify(normalWindowRef.current));
+        }
+        setCacheItem('miniMode', enabled ? '1' : '0');
+        setCacheItem('miniRows', miniRows);
+        setSettingState({miniMode: enabled ? '1' : '0', miniRows});
 
-        setState({
-            oneLine: true, // 目前没用到这个字段
-            showTitle: false
-        })
-        setSettingState({
-            fontSize: 20
-        })
-        // setCacheItem("fontSize",25)
-        Window.SetSize(600, 120)
-
-        setTimeout(() => {
-            Window.Center()
-            calculateFontLines("", "", 120, rows)
-        }, 100)
-
-
+        const normalWindow = normalWindowRef.current || {
+            width: 400, height: 690, showTitle: getCacheItem('标题开关') !== 'false'
+        };
+        // Older saved mini-mode snapshots only contain the window geometry.
+        const normalFontSize = Number(normalWindow.fontSize) > 0 ? Number(normalWindow.fontSize) : 20;
+        const normalLineHeight = Number(normalWindow.fontLineHeight) > 0 ? Number(normalWindow.fontLineHeight) : 30;
+        setState({oneLine: enabled, showTitle: enabled ? false : normalWindow.showTitle});
+        if (enabled) {
+            setSettingState({fontSize: 20});
+        } else {
+            // Restore before resizing so the resize handler cannot reuse the mini line height.
+            setSettingState({fontSize: normalFontSize, fontLineHeight: normalLineHeight});
+            setCacheItem('fontSize', normalFontSize);
+            setCacheItem('fontLineHeight', normalLineHeight);
+        }
+        await Window.SetSize(enabled ? 600 : normalWindow.width, enabled ? 120 : normalWindow.height);
+        await Window.Center();
+        if (!enabled) {
+            normalWindowRef.current = null;
+            setCacheItem('miniNormalWindow', '');
+        }
+        await new Promise(resolve => window.requestAnimationFrame(() => {
+            calculateFontLines(enabled ? '' : normalLineHeight, enabled ? 20 : normalFontSize,
+                enabled ? 120 : 0, enabled ? miniRows : 0);
+            resolve();
+        }));
     }
+
+    // Reapply the saved reading mode when opening a book after a reload.
+    useEffect(() => {
+        if (state.currentBookName && getSettingState().miniMode === '1') {
+            miniSize(getSettingState().miniRows).catch(console.error);
+        }
+    }, [state.currentBookName]);
 
     const selectBook = useMemoizedFn(function (item) {
         bookListRef.current.selectBook(item)
