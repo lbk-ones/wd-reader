@@ -159,7 +159,7 @@ const Content = (props, ref) => {
                                     })()}
                                     percentPosition={{align: 'start', type: 'inner'}}
                                     size={["100%", 5]}
-                                    strokeColor="#f60"
+                                    strokeColor="#718771"
                                 />
                             </div>
                         )

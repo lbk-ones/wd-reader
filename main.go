@@ -53,7 +53,7 @@ func main() {
 		Name:             "reader",
 		Title:            "wd-reader",
 		Width:            400,
-		Height:           600,
+		Height:           690,
 		Frameless:        true,
 		AlwaysOnTop:      true,
 		BackgroundType:   application.BackgroundTypeTransparent,

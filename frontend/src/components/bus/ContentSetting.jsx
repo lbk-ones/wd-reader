@@ -10,7 +10,7 @@ import {
     setSplitTypeValue
 } from "../Utils.jsx";
 import {SketchPicker} from "react-color";
-import {ExclamationCircleOutlined} from "@ant-design/icons";
+import {CloseOutlined, ExclamationCircleOutlined} from "@ant-design/icons";
 import * as PropTypes from "prop-types";
 import {useState} from "react";
 import {Window} from "@wailsio/runtime";
@@ -37,32 +37,30 @@ function ContentSetting(props) {
     let splitMaElement = getSplitType(currentBookName);
 
     return (
-        <div className="setting-modal">
-                            <span className={'setting-modal-close'} onClick={() => {
-                                setState({
-                                    settingVisible: false
-                                })
-                                // props.calculateFontLines()
-                            }}>
-                                ×
-                            </span>
+        <div className="setting-modal" role="dialog" aria-labelledby="reading-preferences-title">
+            <header className="settings-header">
+                <h2 id="reading-preferences-title">阅读偏好</h2>
+                <button type="button" className="setting-modal-close" aria-label="关闭阅读偏好"
+                        onClick={() => setState({settingVisible: false})}>
+                    <CloseOutlined/>
+                </button>
+            </header>
             <div className={"setting-modal-center"} onClick={(e) => {
                 e.stopPropagation();
             }}>
 
 
                 <Form
+                    size="small"
+                    colon={false}
+                    labelAlign="left"
                     layout={"horizontal"}
                     name="basic"
                     labelCol={{
-                        span: 9,
-                        xs: 9,
-                        sm: 4
+                        flex: '76px'
                     }}
                     wrapperCol={{
-                        span: 15,
-                        xs: 15,
-                        sm: 20,
+                        flex: 1,
                     }}
                     initialValues={{
                         layout: "horizontal",
@@ -125,9 +123,10 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Popover zIndex={112} content={() => {
+                        <Popover zIndex={1200} content={() => {
                             return (
                                 <SketchPicker
+                                    disableAlpha
                                     color={settingState.bgColor}
                                     onChange={(color) => {
                                         setCacheItem('bgColor', color.hex)
@@ -144,16 +143,13 @@ function ContentSetting(props) {
                                     }}
                                 />
                             )
-                        }} trigger="click" title="颜色选择">
+                        }} trigger="click" title="背景颜色">
 
-                            <div
-                                style={{
-                                    width: '20px',
-                                    height: '20px',
-                                    // margin: '20px',
-                                    backgroundColor: settingState.bgColor
-                                }}
-                            />
+                            <button type="button" className="settings-color-button" aria-label="选择背景色">
+                                <span className="settings-color-swatch" style={{backgroundColor: settingState.bgColor}}/>
+                                <span>{settingState.bgColor.toUpperCase()}</span>
+                                <span className="settings-color-edit">更改</span>
+                            </button>
 
                         </Popover>
                     </Form.Item>
@@ -167,9 +163,10 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Popover zIndex={112} content={() => {
+                        <Popover zIndex={1200} content={() => {
                             return (
                                 <SketchPicker
+                                    disableAlpha
                                     color={settingState.fontColor}
                                     onChange={(color) => {
                                         let hex = color.hex;
@@ -187,16 +184,13 @@ function ContentSetting(props) {
                                     }}
                                 />
                             )
-                        }} trigger="click" title="颜色选择">
+                        }} trigger="click" title="字体颜色">
 
-                            <div
-                                style={{
-                                    width: '20px',
-                                    height: '20px',
-                                    // margin: '20px',
-                                    backgroundColor: settingState.fontColor
-                                }}
-                            />
+                            <button type="button" className="settings-color-button" aria-label="选择字体颜色">
+                                <span className="settings-color-swatch" style={{backgroundColor: settingState.fontColor}}/>
+                                <span>{settingState.fontColor.toUpperCase()}</span>
+                                <span className="settings-color-edit">更改</span>
+                            </button>
 
                         </Popover>
 
@@ -205,9 +199,8 @@ function ContentSetting(props) {
                         label="点击翻页"
                         name="clickPage"
                     >
-                        <input style={{zIndex: 9000, width: 30, height: 30}} type={'checkbox'}
-                               checked={settingState.clickPage === '1'} onChange={e => {
-                            let string = e.target.checked === true ? "1" : "0";
+                        <Switch size="small" checked={settingState.clickPage === '1'} onChange={value => {
+                            let string = value ? "1" : "0";
                             setCacheItem('clickPage', string)
                             setSettingState({
                                 clickPage: string
@@ -218,7 +211,7 @@ function ContentSetting(props) {
                         label="显示进度"
                         name="显示进度"
                     >
-                        <Switch checked={settingState.showProgress === '1'} onChange={(value) => {
+                        <Switch size="small" checked={settingState.showProgress === '1'} onChange={(value) => {
                             let string = value === true ? "1" : "0";
                             setCacheItem('showProgress', string)
                             setSettingState({
@@ -236,7 +229,7 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch checked={settingState.isAlwaysTop === '1'} onChange={(value) => {
+                        <Switch size="small" checked={settingState.isAlwaysTop === '1'} onChange={(value) => {
                             let string = value === true ? "1" : "0";
                             setCacheItem('isAlwaysTop', string)
                             setSettingState({
@@ -258,7 +251,7 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch checked={settingState.leaveWindowHid === '1'} onChange={(value) => {
+                        <Switch size="small" checked={settingState.leaveWindowHid === '1'} onChange={(value) => {
                             let string = value === true ? "1" : "0";
                             setCacheItem('leaveWindowHid', string)
                             setSettingState({
@@ -281,7 +274,7 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch checked={settingState.transparentMode === '1'} onChange={(value) => {
+                        <Switch size="small" checked={settingState.transparentMode === '1'} onChange={(value) => {
                             let string = value === true ? "1" : "0";
                             setCacheItem('transparentMode', string)
                             setSettingState({
@@ -306,7 +299,7 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch checked={state.showTitle === true} onChange={(value) => {
+                        <Switch size="small" checked={state.showTitle === true} onChange={(value) => {
                             toggleTitle()
                         }}/>
                     </Form.Item>
@@ -321,7 +314,7 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch onChange={(value) => {
+                        <Switch size="small" onChange={(value) => {
                                     setState({
                                         settingVisible: false
                                     })

@@ -716,6 +716,7 @@ function App() {
     const backBookListCallback = useMemoizedFn(backBookList);
     return (
         <div id="App"
+             className={`${isEmpty(state.currentBookChapterName) ? 'is-library' : 'is-reading'} ${settingState.transparentMode === '1' ? 'is-transparent' : ''}`}
              ref={appRef}
              style={{
                  // border: display ? getState().currentBookChapterName ? "1px solid transparent" : "1px solid rgba(204, 204, 204, 0.32)" : "none",

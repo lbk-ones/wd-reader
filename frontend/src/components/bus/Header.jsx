@@ -1,210 +1,57 @@
-import {isEmpty} from "lodash-es";
-import CsSVg from "../../assets/images/cs.svg";
+import {memo} from 'react';
+import {isEmpty} from 'lodash-es';
+import {Application, Window} from '@wailsio/runtime';
 import {
-    BorderInnerOutlined,
-    BorderOutlined,
-    CloseOutlined,
-    DatabaseOutlined,
-    DisconnectOutlined,
-    MinusOutlined,
-    PushpinOutlined,
-    RedoOutlined,
-    SettingOutlined
-} from "@ant-design/icons";
-import {setCacheItem} from "../Utils.jsx";
-import {Application, Window} from "@wailsio/runtime";
-import {memo} from "react";
-import * as PropTypes from "prop-types";
-import {message} from "antd";
-
+    BookOutlined, BorderInnerOutlined, BorderOutlined, CloseOutlined,
+    DatabaseOutlined, DisconnectOutlined, MinusOutlined, PushpinOutlined,
+    RedoOutlined, SettingOutlined,
+} from '@ant-design/icons';
+import {setCacheItem} from '../Utils.jsx';
 
 function Header(props) {
+    const {state, settingstate: settings} = props;
+    const reading = !isEmpty(state.currentBookName);
+    if (!props.display || (!state.showTitle && reading)) return null;
 
-    const state = props.state;
-    const setState = props.setState;
-    const isAlwaysTop = props.isAlwaysTop;
-    const setSettingState = props.setSettingState;
-    const settingstate = props.settingstate;
-    const reloadBookList = props.reloadBookList;
-    let isDisplay = props.display && (state.showTitle || isEmpty(state.currentBookName));
-
-    if (!isDisplay) {
-        return null
+    function toggleSetting(key) {
+        const value = settings[key] === '1' ? '0' : '1';
+        setCacheItem(key, value);
+        props.setSettingState({[key]: value});
+        if (key === 'isAlwaysTop') props.isAlwaysTop(value);
     }
 
-    function getMenuSuffixBtn(type = "0") {
-
-        return (
-            <>
-                {
-                    type === '1' && (
-                        <BorderInnerOutlined title={"隐藏标题栏！"}
-                                             style={{
-                                                 fontSize: 25
-                                             }}
-                                             onClick={() => {
-                                                 props.toggleTitle()
-                                             }}/>
-                    )
-                }
-                {
-                    type === '1' && (
-                        <SettingOutlined title={"设置！"}
-                                         onClick={() => {
-                                             setState({
-                                                 settingVisible: true
-                                             })
-                                         }}/>
-                    )
-                }
-
-                {
-                    type === '1' && (
-                        <DatabaseOutlined title={"返回书架！"}
-                                          onClick={() => {
-                                              props.backBookList()
-                                          }}/>
-                    )
-                }
-                <DisconnectOutlined
-                    title={"隐藏自己！"}
-                    style={{color: settingstate.leaveWindowHid === '1' ? 'gray' : 'unset'}}
-                    onClick={() => {
-                        let qf = settingstate.leaveWindowHid === '1' ? '0' : '1';
-                        setCacheItem("leaveWindowHid", qf)
-                        setSettingState({
-                            leaveWindowHid: qf
-                        })
-                    }}
-                />
-                <PushpinOutlined
-                    title={"窗口置顶"}
-                    style={{color: settingstate.isAlwaysTop === '1' ? 'gray' : 'unset'}}
-                    onClick={() => {
-                        let qf = settingstate.isAlwaysTop === '1' ? '0' : '1';
-                        isAlwaysTop(qf)
-                        setCacheItem("isAlwaysTop", qf)
-                        setSettingState({
-                            isAlwaysTop: qf
-                        })
-                    }}/>
-                {
-                    type !== '1' && (
-                        <RedoOutlined title={"刷新"} onClick={() => {
-                            Window.ForceReload()
-                        }}/>
-                    )
-                }
-                <MinusOutlined onClick={() => {
-                    Window.Minimise();
-                }}/>
-                <BorderOutlined onClick={() => {
-
-                    Window.Size().then(res => {
-                        if (res.width === 400 && res.height === 600) {
-                            Window.SetSize(960, 540)
-                        } else {
-                            Window.SetSize(400, 600)
-                        }
-                        setTimeout(() => {
-                            Window.Center()
-                        }, 100)
-                    });
-
-
-                }}/>
-                <CloseOutlined onClick={() => {
-                    Application.Quit();
-                }}/>
-            </>
-
-        )
+    async function resizeWindow() {
+        const size = await Window.Size();
+        await Window.SetSize(size.width === 400 && size.height === 690 ? 960 : 400,
+            size.width === 400 && size.height === 690 ? 540 : 690);
+        await Window.Center();
     }
 
-    return (<div className={"title"}>
+    const control = (label, icon, onClick, active = false, extraClass = '') => (
+        <button key={label} className={`window-button ${active ? 'is-active' : ''} ${extraClass}`}
+                aria-label={label} title={label} onClick={onClick}>{icon}</button>
+    );
 
-
-        {/*index page*/}
-        {isEmpty(state.currentBookName) && (
-            <div className={"title-div font-bold flex1"}>
-                <div className={"w-100 flex no-shrink justify-b align-item-center"} style={{
-                    color: "darkred"
-                }}>
-                    <div className={"flex flex-auto align-item-center gap2"} style={{
-                        "--wails-draggable": "drag"
-                    }} onDoubleClick={(e) => {
-                        e.stopPropagation()
-                        Window.ToggleMaximise()
-                    }}>
-                        <img src={CsSVg} alt=""/>
-                        <span>{props.title}</span>
-                        {/*<span>{state.version || ""}</span>*/}
-                    </div>
-
-                    <div className={"flex flex-row-nowrap gap5 font-s20"}
-                         onClick={(e) => {
-                             e.stopPropagation()
-                         }}>
-                        {
-                            getMenuSuffixBtn()
-                        }
-                    </div>
-
-                </div>
-            </div>
-        )
-        }
-
-
-        {
-            !isEmpty(state.currentBookName) && <>
-                <div className={"title-div font-bold"}
-                     style={{"--wails-draggable": "drag", display: "flex", flex: 1}}
-                     title={state.currentBookName.replace(".txt", "")}
-                     onDoubleClick={(e) => {
-                         e.stopPropagation()
-                         Window.ToggleMaximise()
-                     }}
-                >
-                    <img src={CsSVg} alt=""/>
-                    {
-                        `${state.currentBookName.replace(".txt", "")}`
-                    }
-                </div>
-
-                <div className={"title-div font-bold mr-5"}
-                     style={{justifyContent: "flex-end", gap: 3, fontSize: 20}}
-                     title={state.currentBookChapterName}>
-
-                    {
-                        getMenuSuffixBtn("1")
-                    }
-                </div>
-
-            </>
-        }
-
-
-    </div>)
-
+    return <header className={`title ${reading ? 'title--reading' : 'title--library'}`}>
+        <div className="title-brand" style={{'--wails-draggable': 'drag'}}
+             title={reading ? state.currentBookName : props.title}
+             onDoubleClick={event => {event.stopPropagation(); Window.ToggleMaximise()}}>
+            <span className="brand-mark" aria-hidden="true"><BookOutlined/></span>
+            <span className="title-name">{reading ? state.currentBookName.replace(/\.(txt|epub)$/i, '') : props.title}</span>
+        </div>
+        <nav className="window-controls" aria-label="窗口控制">
+            {reading && control('隐藏标题栏', <BorderInnerOutlined/>, props.toggleTitle)}
+            {reading && control('阅读设置', <SettingOutlined/>, () => props.setState({settingVisible: true}))}
+            {reading && control('返回书架', <DatabaseOutlined/>, props.backBookList)}
+            {control('离开窗口时隐藏', <DisconnectOutlined/>, () => toggleSetting('leaveWindowHid'), settings.leaveWindowHid === '1')}
+            {control('窗口置顶', <PushpinOutlined/>, () => toggleSetting('isAlwaysTop'), settings.isAlwaysTop === '1')}
+            {!reading && control('刷新书架', <RedoOutlined/>, () => Window.ForceReload())}
+            <span className="window-controls-divider"/>
+            {control('最小化', <MinusOutlined/>, () => Window.Minimise())}
+            {control('切换窗口大小', <BorderOutlined/>, resizeWindow)}
+            {control('关闭应用', <CloseOutlined/>, () => Application.Quit(), false, 'window-button--close')}
+        </nav>
+    </header>;
 }
 
-
-Header.propTypes = {
-    display: PropTypes.bool,
-    state: PropTypes.any,
-    setState: PropTypes.func,
-    toggleTitle: PropTypes.func,
-    backBookList: PropTypes.func,
-    settingstate: PropTypes.any,
-    title: PropTypes.string,
-    reloadBookList: PropTypes.func,
-};
-
-
-/**
- * 应用头
- * @param props
- * @returns {JSX.Element|null}
- */
-export default memo(Header)
+export default memo(Header);

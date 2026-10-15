@@ -19,8 +19,14 @@ root.render(
             theme={{
                 token: {
                     // Seed Token，影响范围大
-                    colorPrimary: '#8B0000',
-                    borderRadius: 0,
+                    colorPrimary: '#476654',
+                    colorText: '#303b34',
+                    colorTextSecondary: '#7b837c',
+                    colorBgContainer: '#fffefa',
+                    colorBorder: '#e3e6de',
+                    borderRadius: 8,
+                    controlHeight: 34,
+                    fontFamily: '"Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif',
                 },
             }}
         >
