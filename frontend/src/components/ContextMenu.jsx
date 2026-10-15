@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import "./ContextMenu.css"
 
-const ContextMenu = ({options, onSelect,fontSize}) => {
+const ContextMenu = ({options, onSelect,fontSize=14}) => {
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
     const menuRef = useRef(null);

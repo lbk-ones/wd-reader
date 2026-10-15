@@ -378,7 +378,7 @@ function ContentSetting(props) {
                             {
                                 splitMaElement === '3' && (
                                     <Input allowClear
-                                           placeHolder={"请输入正则表达式"}
+                                           placeholder={"请输入正则表达式"}
                                            value={getSplitTypeValue(currentBookName)}
                                            onChange={e=>{
                                                let value = e.target.value;

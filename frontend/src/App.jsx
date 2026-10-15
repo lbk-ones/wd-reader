@@ -1099,7 +1099,7 @@ function App() {
                                               setState({
                                                   downloadFromUrlList
                                               })
-                                          }} placeHolder={"请输入图书文件地址，点击提交即可下载"}/>
+                                          }} placeholder={"请输入图书文件地址，点击提交即可下载"}/>
                         })
                     }
                 </div>
@@ -1150,7 +1150,7 @@ function App() {
 
                             <Button onClick={openUsageGuide}>使用说明（F1）</Button>
 
-                            <span>自定义标题：<Input placeHolder={"自定义应用标题"} value={getSettingState().appTitle}
+                            <span>自定义标题：<Input placeholder={"自定义应用标题"} value={getSettingState().appTitle}
                                                     onChange={(e) => {
                                                         let value = e.target.value;
 
