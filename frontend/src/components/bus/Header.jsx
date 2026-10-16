@@ -70,7 +70,7 @@ function Header(props) {
         <nav className="window-controls" aria-label="窗口控制">
             {reading && control('隐藏标题栏', <BorderInnerOutlined/>, props.toggleTitle)}
             {reading && control('阅读设置', <SettingOutlined/>, () => props.setState({settingVisible: true}))}
-            {reading && control('返回书架', <DatabaseOutlined/>, props.backBookList)}
+            {reading && control('返回书架', <DatabaseOutlined/>, () => props.backBookList())}
             {reading && control('使用说明', <QuestionCircleOutlined/>, props.onOpenHelp)}
             {control('离开窗口时隐藏',
                 <DisconnectOutlined/>, () => toggleSetting('leaveWindowHid'), settings.leaveWindowHid === '1')}

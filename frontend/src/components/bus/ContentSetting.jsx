@@ -1,4 +1,4 @@
-import {Button, Form, Input, InputNumber, Modal, Popover, Select, Switch, Tooltip} from "antd";
+import {App as AntdApp, Button, Form, Input, InputNumber, Popover, Select, Switch, Tooltip} from "antd";
 import {
     CACHE_PREFIX,
     getCacheItem,
@@ -15,6 +15,7 @@ import * as PropTypes from "prop-types";
 import {Window} from "@wailsio/runtime";
 
 function ContentSetting(props) {
+    const {modal} = AntdApp.useApp();
 
     let state = props.state;
     let display = props.display;
@@ -205,6 +206,26 @@ function ContentSetting(props) {
                                 clickPage: string
                             })
                         }}/>
+                    </Form.Item>
+                    <Form.Item label="自动翻页" extra="按设定间隔翻到下一页，章末自动进入下一章；打开设置或目录时暂停。">
+                        <div className="flex gap3 flex-wrap" style={{alignItems: 'center'}}>
+                            <Switch size="small" aria-label="自动翻页" checked={settingState.autoPage === '1'}
+                                    onChange={value => {
+                                        const autoPage = value ? '1' : '0';
+                                        setCacheItem('autoPage', autoPage);
+                                        setSettingState({autoPage});
+                                    }}/>
+                            <span>每</span>
+                            <InputNumber aria-label="自动翻页间隔（秒）" min={1} max={3600} precision={0}
+                                         style={{width: 80}} value={settingState.autoPageInterval}
+                                         onChange={value => {
+                                             if (value === null || !Number.isFinite(Number(value))) return;
+                                             const autoPageInterval = Math.min(3600, Math.max(1, Math.round(Number(value))));
+                                             setCacheItem('autoPageInterval', autoPageInterval);
+                                             setSettingState({autoPageInterval});
+                                         }}/>
+                            <span>秒</span>
+                        </div>
                     </Form.Item>
                     <Form.Item
                         label="显示进度"
@@ -410,7 +431,7 @@ function ContentSetting(props) {
                                 )
                             }
                             <Button onClick={()=>{
-                                Modal.confirm({
+                                modal.confirm({
                                     title: "提示！",
                                     type: 'warning',
                                     okText: "我确定",
@@ -473,6 +494,8 @@ function ContentSetting(props) {
                             setCacheItem('bgColor', '#E8E3D7')
                             setCacheItem('fontSize', fontSize+"")
                             setCacheItem('clickPage', "1")
+                            setCacheItem('autoPage', "0")
+                            setCacheItem('autoPageInterval', 30)
                             setCacheItem('showProgress', "1")
                             setCacheItem('isAlwaysTop', "1")
                             setCacheItem('transparentMode', "0")
@@ -490,6 +513,8 @@ function ContentSetting(props) {
                                 bgColor: "#E8E3D7",
                                 fontSize: fontSize+"",
                                 clickPage: "1",
+                                autoPage: "0",
+                                autoPageInterval: 30,
                                 showProgress: "1",
                                 isAlwaysTop: "1",
                                 transparentMode: "0",

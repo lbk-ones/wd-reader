@@ -3,7 +3,7 @@ import React from 'react'
 import {createRoot} from 'react-dom/client'
 import './style.css'
 import App from './App'
-import {ConfigProvider, message} from "antd";
+import {App as AntdApp, ConfigProvider, message} from "antd";
 const container = document.getElementById('root')
 
 const root = createRoot(container)
@@ -30,7 +30,9 @@ root.render(
                 },
             }}
         >
-            <App/>
+            <AntdApp component={false}>
+                <App/>
+            </AntdApp>
         </ConfigProvider>
     </React.StrictMode>
 )

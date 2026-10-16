@@ -46,10 +46,16 @@ const topics = [
         <Section title="常用快捷键">
             <dl className="usage-guide-shortcuts">
                 <div><dt><kbd>F1</kbd></dt><dd>打开使用说明</dd></div>
+                <div><dt><kbd>F2</kbd></dt><dd>打开 / 关闭目录</dd></div>
+                <div><dt><kbd>F3</kbd> / <kbd>F4</kbd></dt><dd>上一页 / 下一页</dd></div>
+                <div><dt><kbd>F5</kbd> / <kbd>F6</kbd></dt><dd>上一章 / 下一章</dd></div>
+                <div><dt><kbd>F7</kbd></dt><dd>开启 / 关闭自动翻页（间隔在阅读偏好中设置）</dd></div>
+                <div><dt><kbd>F8</kbd></dt><dd>进入 / 退出迷你模式（使用已保存的行数）</dd></div>
                 <div><dt><kbd>Esc</kbd></dt><dd>关闭使用说明；在迷你阅读正文中退出迷你模式</dd></div>
                 <div><dt><kbd>Enter</kbd></dt><dd>打开书架中已选中的书籍</dd></div>
                 <div><dt><kbd>Ctrl / ⌘</kbd> + <kbd>Space</kbd></dt><dd>老板键：最小化窗口，再按恢复（Mac 使用 ⌘）</dd></div>
             </dl>
+            <p className="usage-guide-note">F2–F8 在阅读正文时生效；编辑输入框、加载书籍或打开其他面板时暂停。目录打开时可按 F2 关闭；按住按键不会连续触发。</p>
             <p className="usage-guide-note">老板键需要成功注册系统快捷键；如与其他程序冲突，可使用最小化按钮。Linux 全局快捷键依赖 X11 环境。</p>
         </Section>
         <Section title="移动与调整窗口">

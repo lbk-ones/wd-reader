@@ -1,7 +1,7 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
-import {Alert, Button, Drawer, Input, message, Modal, notification, Space, Spin, theme} from 'antd';
+import {Alert, App as AntdApp, Button, Drawer, Input, message, notification, Space, Spin, theme} from 'antd';
 import {presetPalettes} from '@ant-design/colors';
 import {filter, find, findIndex, get, isEmpty, throttle, trim} from 'lodash-es'
 import {
@@ -21,7 +21,9 @@ import {LineOutlined, PlusOutlined} from "@ant-design/icons";
 import Header from "./components/bus/Header";
 import BookList from "./components/bus/BookList";
 import {
-    CACHE_PREFIX,
+    clearCache,
+    getCacheCount,
+    subscribeCacheChanges,
     getCacheItem,
     getSplitMap,
     getSplitType,
@@ -39,11 +41,14 @@ const CACHE_SCROLL_TOP = "scroll-top"
 
 
 function App() {
+    const {modal} = AntdApp.useApp();
+    const cacheCount = useSyncExternalStore(subscribeCacheChanges, getCacheCount);
     const [display, setDisplay] = useState(true)
     let pageContentRef = useRef(null);
     let bookListRef = useRef(null);
     let appRef = useRef(null);
     const normalWindowRef = useRef(null);
+    const shortcutMiniBusyRef = useRef(false);
 
     const [api, contextHolder] = notification.useNotification();
 
@@ -55,6 +60,8 @@ function App() {
         bgColor: getCacheItem('bgColor') || '#E8E3D7',
         fontSize: getCacheItem('fontSize') || '20',
         clickPage: getCacheItem('clickPage') || '1',
+        autoPage: getCacheItem('autoPage') || '0',
+        autoPageInterval: Math.min(3600, Math.max(1, Math.round(Number(getCacheItem('autoPageInterval')) || 30))),
         showProgress: getCacheItem('showProgress') || '1',
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
@@ -92,6 +99,53 @@ function App() {
         oneLine: false
     })
 
+
+    const handleReadingShortcut = useMemoizedFn(event => {
+        if (!/^F[2-8]$/.test(event.key) || event.defaultPrevented
+            || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+        const current = getState();
+        if (!display || !current.currentBookChapterName || current.loadingBook
+            || current.settingVisible || current.helpVisible || current.sysSettingVisible
+            || current.downloadFromUrlVisible || current.gotoMuluIndexSearchVisible
+            || event.target?.closest('input, textarea, select, [contenteditable="true"], .ant-modal, .ant-select-dropdown, [role="textbox"]')
+            || document.querySelector('.ant-modal-wrap')) return;
+        if (current.muluVisible && event.key !== 'F2') return;
+
+        // Suppress the WebView's defaults (including F5 refresh) and key repeats.
+        event.preventDefault();
+        if (event.repeat) return;
+        switch (event.key) {
+            case 'F2':
+                handleSelect({label: '目录'});
+                break;
+            case 'F3':
+                if (pageContentRef.current) pageUp();
+                break;
+            case 'F4':
+                if (pageContentRef.current) pageDown();
+                break;
+            case 'F5':
+                lastChpater();
+                break;
+            case 'F6':
+                nextChpater();
+                break;
+            case 'F7': {
+                const autoPage = getSettingState().autoPage === '1' ? '0' : '1';
+                setCacheItem('autoPage', autoPage);
+                setSettingState({autoPage});
+                message.info(autoPage === '1' ? `自动翻页已开启，每 ${getSettingState().autoPageInterval} 秒翻页` : '自动翻页已关闭');
+                break;
+            }
+            case 'F8':
+                if (shortcutMiniBusyRef.current) return;
+                shortcutMiniBusyRef.current = true;
+                miniSize(getSettingState().miniRows, getSettingState().miniMode !== '1')
+                    .catch(error => message.error(String(error)))
+                    .finally(() => { shortcutMiniBusyRef.current = false; });
+                break;
+        }
+    });
 
     function handlerAddFileRes(res, list) {
         if (!hasError(res)) {
@@ -172,6 +226,7 @@ function App() {
                 if (!event.repeat) openUsageGuide();
                 return;
             }
+            handleReadingShortcut(event);
             if (event.key === 'PageDown' || event.key === 'PageUp') {
                 event.preventDefault();
             }
@@ -234,7 +289,7 @@ function App() {
                 })
 
 
-                cb && cb()
+                if (typeof cb === 'function') cb()
             } else {
                 setState({
                     loadingBook: false
@@ -310,6 +365,37 @@ function App() {
         return Math.ceil(scrollTop + clientHeight) >= scrollHeight;
     }
 
+    const advanceAutoPage = useMemoizedFn(() => {
+        const content = pageContentRef.current;
+        if (!content || content.clientHeight <= 0 || document.hidden) return;
+        if (!checkLastPage()) {
+            pageDown();
+            return;
+        }
+        const current = getState();
+        const chapterIndex = current.currentBookChapterList.indexOf(current.currentBookChapterName);
+        if (chapterIndex < 0) return;
+        if (chapterIndex === current.currentBookChapterList.length - 1) {
+            setCacheItem('autoPage', '0');
+            setSettingState({autoPage: '0'});
+            message.info('已读完全书，自动翻页已关闭');
+            return;
+        }
+        nextChpater();
+    });
+
+    useEffect(() => {
+        if (settingState.autoPage !== '1' || !display || !state.currentBookChapterName
+            || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
+            || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible) return;
+
+        const timer = window.setInterval(advanceAutoPage, settingState.autoPageInterval * 1000);
+        return () => window.clearInterval(timer);
+    }, [settingState.autoPage, settingState.autoPageInterval, display, state.currentBookName,
+        state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
+        state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible,
+        state.gotoMuluIndexSearchVisible, advanceAutoPage]);
+
     function hasError(res, displayError = true) {
         if (res.startsWith("错误信息:")) {
             // message.error(res);
@@ -357,7 +443,7 @@ function App() {
                             currentBookChapterContent: chapterContent.split("\n").filter(Boolean)
                         })
                     }
-                    cb && cb();
+                    if (typeof cb === 'function') cb();
                 })
             }
 
@@ -561,7 +647,7 @@ function App() {
                 lastSearchMuluName: "",
                 settingVisible: false
             })
-            cb && cb()
+            if (typeof cb === 'function') cb()
         })
     }
 
@@ -1162,26 +1248,21 @@ function App() {
                                                     }}/></span>
                             <span title={state.booksPath}>工作目录: ***</span>
                             <span title={window.location.href}>地址: ***</span>
-                            <span>缓存: {window.localStorage.length}</span>
-                            <span>linux系统要切换到xorg(x11)显示协议才生效</span>
-                            <span>windows/linux系统老板键：ctrl+space</span>
-                            <span>Mac系统老板键：command+space</span>
+                            <span>缓存: {cacheCount}</span>
+                            {/*<span>linux系统要切换到xorg(x11)显示协议才生效</span>*/}
+                            {/*<span>windows/linux系统老板键：ctrl+space</span>*/}
+                            {/*<span>Mac系统老板键：command+space</span>*/}
 
                             <span>
                                 <Button size={"small"} onClick={function () {
-                                    Modal.confirm({
+                                    modal.confirm({
                                         title: "警告！",
                                         type: 'warning',
                                         okText: "我确定",
                                         cancelText: "取消",
                                         content: "清空缓存会丢失所有文本的阅读记录",
                                         onOk: () => {
-                                            for (let i = 0; i < window.localStorage.length; i++) {
-                                                let s = window.localStorage.key(i);
-                                                if (s && s.startsWith(CACHE_PREFIX)) {
-                                                    window.localStorage.removeItem(s);
-                                                }
-                                            }
+                                            clearCache();
                                             Window.ForceReload();
                                         }
                                     })

@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log/slog"
+	"net/http"
 	"wd-reader/go/book"
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
@@ -28,8 +29,11 @@ func main() {
 		Icon:        icon,
 		Logger:      slog.New(slog.NewTextHandler(logger.Writer(), nil)),
 		Services:    []application.Service{application.NewService(service)},
-		Assets:      application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
-		Mac:         application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
+		Assets: application.AssetOptions{
+			Handler:    application.AssetFileServerFS(assets),
+			Middleware: optionalDesktopScript,
+		},
+		Mac: application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "e3984e08-28dc-4e3d-b70a-45e961589cdc",
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
@@ -83,4 +87,18 @@ func main() {
 	if err := app.Run(); err != nil {
 		logger.Error(err)
 	}
+}
+
+// The desktop runtime probes this optional server-mode script on every load.
+// A non-JavaScript empty response lets it skip loading without a console 404.
+// Server mode serves its real script before reaching the asset middleware.
+func optionalDesktopScript(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/wails/custom.js" && (r.Method == http.MethodHead || r.Method == http.MethodGet) {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

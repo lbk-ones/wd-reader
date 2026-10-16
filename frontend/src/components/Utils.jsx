@@ -1,9 +1,35 @@
 export const CACHE_PREFIX = "Wd-"
+const CACHE_CHANGE_EVENT = 'wd-cache-change';
+
+export function getCacheCount() {
+    return Object.keys(window.localStorage).filter(key => key.startsWith(CACHE_PREFIX)).length;
+}
+
+export function subscribeCacheChanges(listener) {
+    const onStorage = event => {
+        if (event.storageArea === window.localStorage && (event.key === null || event.key.startsWith(CACHE_PREFIX))) {
+            listener();
+        }
+    };
+    window.addEventListener(CACHE_CHANGE_EVENT, listener);
+    window.addEventListener('storage', onStorage);
+    return () => {
+        window.removeEventListener(CACHE_CHANGE_EVENT, listener);
+        window.removeEventListener('storage', onStorage);
+    };
+}
+
+export function clearCache() {
+    const keys = Object.keys(window.localStorage).filter(key => key.startsWith(CACHE_PREFIX));
+    keys.forEach(key => window.localStorage.removeItem(key));
+    window.dispatchEvent(new Event(CACHE_CHANGE_EVENT));
+}
 
 export function setCacheItem(item, value) {
 
     if (item) {
         window.localStorage.setItem(CACHE_PREFIX + item, value);
+        window.dispatchEvent(new Event(CACHE_CHANGE_EVENT));
     }
 }
 
