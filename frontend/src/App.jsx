@@ -22,6 +22,7 @@ import Header from "./components/bus/Header";
 import BookList from "./components/bus/BookList";
 import {
     clearCache,
+    clearReadingHistory,
     getCacheCount,
     subscribeCacheChanges,
     getCacheItem,
@@ -35,6 +36,10 @@ import MuluList from "./components/bus/MuluList.jsx";
 import ContentSetting from "./components/bus/ContentSetting.jsx";
 import Content from "./components/bus/Content.jsx";
 import UsageGuide from "./components/bus/UsageGuide.jsx";
+import {calculateReadingLayout} from "./components/readingLayout.js";
+import {createReadingProgress} from "./components/readingProgress.js";
+import {prepareReadingShortcut} from "./components/readingShortcuts.js";
+import {createAutoPageTimer} from "./components/autoPageTimer.js";
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
@@ -49,6 +54,8 @@ function App() {
     let appRef = useRef(null);
     const normalWindowRef = useRef(null);
     const shortcutMiniBusyRef = useRef(false);
+    const progressRef = useRef(null);
+    const autoPageTimerRef = useRef(null);
 
     const [api, contextHolder] = notification.useNotification();
 
@@ -100,20 +107,22 @@ function App() {
     })
 
 
-    const handleReadingShortcut = useMemoizedFn(event => {
-        if (!/^F[2-8]$/.test(event.key) || event.defaultPrevented
-            || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
-        const current = getState();
-        if (!display || !current.currentBookChapterName || current.loadingBook
-            || current.settingVisible || current.helpVisible || current.sysSettingVisible
-            || current.downloadFromUrlVisible || current.gotoMuluIndexSearchVisible
-            || event.target?.closest('input, textarea, select, [contenteditable="true"], .ant-modal, .ant-select-dropdown, [role="textbox"]')
-            || document.querySelector('.ant-modal-wrap')) return;
-        if (current.muluVisible && event.key !== 'F2') return;
+    if (progressRef.current === null) {
+        progressRef.current = createReadingProgress({
+            getBookName: () => getState().currentBookName,
+            getContent: () => pageContentRef.current,
+            read: book => getCacheItem(CACHE_SCROLL_TOP + book),
+            write: (book, top) => setCacheItem(CACHE_SCROLL_TOP + book, top),
+        });
+    }
 
-        // Suppress the WebView's defaults (including F5 refresh) and key repeats.
-        event.preventDefault();
-        if (event.repeat) return;
+    const postponeAutoPage = useMemoizedFn(() => {
+        autoPageTimerRef.current?.reset();
+    });
+
+    const handleReadingShortcut = useMemoizedFn(event => {
+        if (!prepareReadingShortcut(event, getState(), display,
+            () => document.querySelector('.ant-modal-wrap'))) return;
         switch (event.key) {
             case 'F2':
                 handleSelect({label: '目录'});
@@ -239,6 +248,9 @@ function App() {
             }
         }
         document.addEventListener('keydown', handleReaderKeyDown);
+        const saveReadingPosition = () => progressRef.current.save();
+        window.addEventListener('pagehide', saveReadingPosition);
+        window.addEventListener('beforeunload', saveReadingPosition);
         let calculateFontLinesAuto = throttle((e) => {
             calculateFontLines()
         }, 300);
@@ -250,29 +262,17 @@ function App() {
             window.removeEventListener("unhandledrejection", unhandledrejection)
             offFileDrop()
             document.removeEventListener('keydown', handleReaderKeyDown)
+            window.removeEventListener('pagehide', saveReadingPosition);
+            window.removeEventListener('beforeunload', saveReadingPosition);
+            progressRef.current.stop();
             window.removeEventListener("resize", calculateFontLinesAuto)
             calculateFontLinesAuto.cancel()
         }
     }, [])
 
-    function getContentTop() {
-        return pageContentRef.current?.scrollTop
-    }
-
-    let timer = null;
-
     function recordTop() {
-        if (pageContentRef.current) {
-            let currentBookName = getState().currentBookName;
-            if (currentBookName) {
-                let scrollTop = getContentTop()
-                setCacheItem(CACHE_SCROLL_TOP + currentBookName, scrollTop)
-                window.clearTimeout(timer)
-                timer = setTimeout(function () {
-                    window.requestAnimationFrame(recordTop)
-                }, 1000)
-            }
-        }
+        progressRef.current.save();
+        postponeAutoPage();
     }
 
     function reloadBookList(cb = null) {
@@ -346,6 +346,7 @@ function App() {
     // }
 
     function pageDown() {
+        postponeAutoPage();
         // let clientHeight1 = getContentClientHeight()
         // const clientHeight = Math.floor(pageContentRef.current.clientHeight);
         const newContentHeight = getSettingState().newContentHeight;
@@ -384,13 +385,17 @@ function App() {
         nextChpater();
     });
 
+    if (autoPageTimerRef.current === null) {
+        autoPageTimerRef.current = createAutoPageTimer(advanceAutoPage);
+    }
+
     useEffect(() => {
         if (settingState.autoPage !== '1' || !display || !state.currentBookChapterName
             || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
             || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible) return;
 
-        const timer = window.setInterval(advanceAutoPage, settingState.autoPageInterval * 1000);
-        return () => window.clearInterval(timer);
+        autoPageTimerRef.current.start(settingState.autoPageInterval * 1000);
+        return () => autoPageTimerRef.current.stop();
     }, [settingState.autoPage, settingState.autoPageInterval, display, state.currentBookName,
         state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
         state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible,
@@ -415,6 +420,7 @@ function App() {
     }
 
     function pageUp() {
+        postponeAutoPage();
         // let clientHeight1 = pageContentRef.current.clientHeight;
         // if (getState().showTitle && getSettingState().transparentMode !== '1') {
         //     clientHeight1 = clientHeight1 - 30;
@@ -440,6 +446,8 @@ function App() {
             const selectedChapter = chapters.includes(chapterName) ? chapterName : chapters[0];
             const chapterContent = await GetChapterContentByChapterName(fileName, selectedChapter, splitType, splitTypeValue);
             if (hasError(chapterContent)) return;
+            progressRef.current.stop();
+            progressRef.current.resume();
             if (chapterName && selectedChapter !== chapterName) {
                 // A filtered empty chapter must not restore an unrelated scroll position.
                 setCacheItem(CACHE_SCROLL_TOP + fileName, '0');
@@ -536,67 +544,18 @@ function App() {
      * @param fullRow 几行
      */
     function calculateFontLines(lineHeight2 = "", fontSize2 = "", fullScreen = 0, fullRow = 0) {
-        let clientHeight = getBookContainerHeight();
-        let lineHeight = getSettingState().fontLineHeight;
-        if (lineHeight2) {
-            lineHeight = lineHeight2
-        }
-
-        if (fullScreen) {
-            clientHeight = fullScreen
-            lineHeight = fullScreen / fullRow
-        }
-
-        function getLines(lh) {
-            let lines = Math.floor(clientHeight / lh);
-            return lines === Infinity ? 1 : lines === 0 ? 1 : lines
-        }
-
-        // 计算行数 向下取整
-        let lines = getLines(lineHeight);
-        // 新行高 向下取整
-        let newLineHeight = Math.floor(clientHeight / lines);
-        let fontSize = getSettingState().fontSize;
-        if (fontSize2) {
-            fontSize = fontSize2
-        }
-
-        let blankHeight = 0;
-
-        function getContentHeight() {
-            // 小于字体大小了之后最理想的行高
-            const fontSizeScale = fontSize + 4;
-            // 不能小于字体大小
-            newLineHeight = newLineHeight < fontSize ? fontSizeScale : newLineHeight
-
-            newLineHeight = newLineHeight === Infinity ? fontSizeScale : newLineHeight === 0 ? fontSizeScale : newLineHeight
-            return newLineHeight * lines;
-        }
-
-
-        let newContentHeight = getContentHeight();
-
-        // 高度溢出了 需要重新计算
-        if (newContentHeight > clientHeight) {
-            while (newContentHeight > clientHeight) {
-                if (newLineHeight > 1 && fontSize > 1) {
-                    newLineHeight--;
-                    fontSize--;
-                    lines = getLines(newLineHeight);
-                    newContentHeight = getContentHeight();
-                }
-            }
-        }
-        setSettingState({
-            fontLineHeight: newLineHeight, // 新的行高
-            fontSize: fontSize, // 新的行高
-            blankLineHeight: blankHeight, // 之前的想法暂未用到
-            newContentHeight: newContentHeight // 计算高度
-        })
-        setCacheItem('fontLineHeight', newLineHeight)
-        setCacheItem('fontSize', fontSize)
+        const layout = calculateReadingLayout(
+            fullScreen || getBookContainerHeight(),
+            fontSize2 || getSettingState().fontSize,
+            lineHeight2 || getSettingState().fontLineHeight,
+            fullRow,
+        );
+        // Hidden or minimised windows may temporarily have no measurable height.
+        if (!layout) return;
+        setSettingState(layout);
+        setCacheItem('fontLineHeight', layout.fontLineHeight);
+        setCacheItem('fontSize', layout.fontSize);
     }
-
     function nextChpater() {
         let currentBookChapterList = getState().currentBookChapterList;
         if (!isEmpty(currentBookChapterList)) {
@@ -643,6 +602,7 @@ function App() {
     }
 
     function backBookList(cb = null) {
+        progressRef.current.stop();
         reloadBookList(() => {
 
             setState({
@@ -731,17 +691,7 @@ function App() {
     }
 
     function beginRecordTop(tem) {
-        let cacheItem = getCacheItem(CACHE_SCROLL_TOP + tem) || "0";
-        window.clearTimeout(timer);
-        setTimeout(function () {
-            let current = pageContentRef.current;
-            if (current) {
-                current.scrollTop = parseInt(cacheItem)
-                window.requestAnimationFrame(recordTop)
-            } else {
-                beginRecordTop(tem);
-            }
-        }, 100)
+        progressRef.current.restore(tem);
     }
 
     const muluSearch = useMemoizedFn((_value) => {
@@ -1002,6 +952,7 @@ function App() {
                 settingState={getSettingState()}
                 display={display}
                 ref={pageContentRef}
+                onScroll={recordTop}
                 onContextMenu={e => {
                     e.preventDefault();
                 }}
@@ -1271,13 +1222,15 @@ function App() {
                                         cancelText: "取消",
                                         content: "清空缓存会丢失所有文本的阅读记录",
                                         onOk: () => {
+                                            progressRef.current.stop(false);
                                             clearCache();
                                             Window.ForceReload();
                                         }
                                     })
                                 }}>清空所有缓存</Button></span>
                             <span><Button size={"small"} onClick={function () {
-                                setCacheItem("LastClickBook", "")
+                                progressRef.current.stop(false);
+                                clearReadingHistory();
                                 Window.ForceReload();
                             }}>清除阅读记录</Button></span>
 

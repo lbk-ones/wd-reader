@@ -2,11 +2,13 @@ package book
 
 import (
 	"bufio"
+	"encoding/binary"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf16"
 	"wd-reader/go/constant"
 )
 
@@ -15,6 +17,16 @@ func TestParseReadableChapters(t *testing.T) {
 		name, text, splitType, splitValue string
 		want                              []readableChapter
 	}{
+		{
+			name: "English sentences are not headings", splitType: "1",
+			text: "Chapter One\nThe story begins here.\nShe opened the door.\nCHAPTER II\nHe said: hello.\n",
+			want: []readableChapter{{"Chapter One", []string{"The story begins here.", "She opened the door."}}, {"CHAPTER II", []string{"He said: hello."}}},
+		},
+		{
+			name: "English prose without headings is retained", splitType: "1",
+			text: "The story begins here.\nShe opened the door.",
+			want: []readableChapter{{"正文", []string{"The story begins here.", "She opened the door."}}},
+		},
 		{
 			name: "TOC entries do not shadow real chapters", splitType: "1",
 			text: "目录\n第一章 开始\n第二章 后续\n第一章 开始\n正文内容。\n第二章 后续\n后续内容。\n第三章 空章\n",
@@ -76,6 +88,43 @@ func TestParseReadableChapters(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, test.want) {
 				t.Fatalf("got %#v, want %#v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestUTF16BookChapters(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", dir)
+	bookDir := filepath.Join(GetAppPath(), constant.BOOK_PATH)
+	if err := os.MkdirAll(bookDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, endian := range []string{"LE", "BE"} {
+		t.Run(endian, func(t *testing.T) {
+			var order binary.ByteOrder = binary.LittleEndian
+			bom := []byte{0xff, 0xfe}
+			if endian == "BE" {
+				order = binary.BigEndian
+				bom = []byte{0xfe, 0xff}
+			}
+			text := "第一章 开始\r\n这是正文，包含表情😀。\r\n第二章 后续\r\n后续内容。"
+			data := append([]byte{}, bom...)
+			for _, unit := range utf16.Encode([]rune(text)) {
+				var pair [2]byte
+				order.PutUint16(pair[:], unit)
+				data = append(data, pair[:]...)
+			}
+			fileName := "utf16" + endian + ".txt"
+			if err := os.WriteFile(filepath.Join(bookDir, fileName), data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if got := GetChapterListByFileNameExtract(fileName, "1", ""); got != "第一章 开始\n第二章 后续" {
+				t.Fatalf("directory decoded incorrectly: %q", got)
+			}
+			if got := GetChapterContentByChpaterNameExtract(fileName, "第一章 开始", "1", ""); got != "这是正文，包含表情😀。" {
+				t.Fatalf("body decoded incorrectly: %q", got)
 			}
 		})
 	}

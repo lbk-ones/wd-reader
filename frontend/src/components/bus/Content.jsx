@@ -31,6 +31,7 @@ const Content = (props, ref) => {
             !state.currentBookName.endsWith(".epub") && (
                 <div className={"flex flex-auto shrink-1 w-100"}>
                     <div id={"book-content-id"} ref={ref}
+                         onScroll={props.onScroll}
                          className={"book-content-div flex w-100 flex-column-nowrap no-shrink over-auto"}
                          style={{
                              lineHeight: Number(settingState.fontLineHeight) + "px",

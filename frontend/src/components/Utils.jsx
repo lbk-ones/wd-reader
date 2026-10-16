@@ -25,6 +25,15 @@ export function clearCache() {
     window.dispatchEvent(new Event(CACHE_CHANGE_EVENT));
 }
 
+export function clearReadingHistory() {
+    const keys = Object.keys(window.localStorage).filter(key => key.startsWith(CACHE_PREFIX)
+        && (key === CACHE_PREFIX + 'LastClickBook'
+            || key.startsWith(CACHE_PREFIX + 'scroll-top')
+            || /\.(txt|epub|mobi|azw|azw3)$/i.test(key)));
+    keys.forEach(key => window.localStorage.removeItem(key));
+    window.dispatchEvent(new Event(CACHE_CHANGE_EVENT));
+}
+
 export function setCacheItem(item, value) {
 
     if (item) {

@@ -7,6 +7,7 @@ import (
 	"github.com/saintfish/chardet"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 	"io"
 	url2 "net/url"
@@ -28,7 +29,7 @@ var (
 
 // GetDecoder 根据编码方式获取解码器 单独处理国标
 func GetDecoder(charset string) *encoding.Decoder {
-	replace := strings.Replace(charset, "-", "", -1)
+	replace := strings.ToUpper(strings.ReplaceAll(charset, "-", ""))
 	var decoder *encoding.Decoder = nil
 	if replace == "GB18030" {
 		decoder = simplifiedchinese.GB18030.NewDecoder()
@@ -36,6 +37,10 @@ func GetDecoder(charset string) *encoding.Decoder {
 		decoder = simplifiedchinese.GBK.NewDecoder()
 	} else if replace == "HZGB2312" {
 		decoder = simplifiedchinese.HZGB2312.NewDecoder()
+	} else if replace == "UTF16LE" {
+		decoder = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewDecoder()
+	} else if replace == "UTF16BE" || replace == "UTF16" {
+		decoder = unicode.UTF16(unicode.BigEndian, unicode.UseBOM).NewDecoder()
 	}
 	return decoder
 }
@@ -62,6 +67,14 @@ func GetFileCharset(fileName string) string {
 	if err != nil || len(bytes) == 0 {
 		return "UTF-8"
 	}
+	if len(bytes) >= 2 {
+		if bytes[0] == 0xff && bytes[1] == 0xfe {
+			return "UTF-16LE"
+		}
+		if bytes[0] == 0xfe && bytes[1] == 0xff {
+			return "UTF-16BE"
+		}
+	}
 
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(bytes)
@@ -77,7 +90,7 @@ func GetScanner(fileName string, file *os.File) *bufio.Scanner {
 	charset := GetFileCharset(fileName)
 	decoder := GetDecoder(charset)
 	var scanner *bufio.Scanner = nil
-	// 非国标编码 可能是 utf-8 utf-16 === 这些就不管了
+	// UTF-8 is read directly; other supported encodings are decoded before scanning.
 	if decoder == nil {
 		newReader := bufio.NewReader(file)
 		scanner = bufio.NewScanner(newReader)
