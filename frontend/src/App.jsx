@@ -40,6 +40,7 @@ import {calculateReadingLayout} from "./components/readingLayout.js";
 import {createReadingProgress} from "./components/readingProgress.js";
 import {prepareReadingShortcut} from "./components/readingShortcuts.js";
 import {createAutoPageTimer} from "./components/autoPageTimer.js";
+import {turnReaderPage} from "./components/readingPagination.js";
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
@@ -347,15 +348,7 @@ function App() {
 
     function pageDown() {
         postponeAutoPage();
-        // let clientHeight1 = getContentClientHeight()
-        // const clientHeight = Math.floor(pageContentRef.current.clientHeight);
-        const newContentHeight = getSettingState().newContentHeight;
-
-
-        pageContentRef.current.scrollBy({
-            top: newContentHeight,
-            behavior: 'instant' // 平滑滚动，可根据需要设置
-        });
+        turnReaderPage(pageContentRef.current, getSettingState().fontLineHeight, 1);
     }
 
     function checkLastPage() {
@@ -421,15 +414,7 @@ function App() {
 
     function pageUp() {
         postponeAutoPage();
-        // let clientHeight1 = pageContentRef.current.clientHeight;
-        // if (getState().showTitle && getSettingState().transparentMode !== '1') {
-        //     clientHeight1 = clientHeight1 - 30;
-        // }
-        const newContentHeight = getSettingState().newContentHeight;
-        pageContentRef.current.scrollBy({
-            top: -newContentHeight,
-            behavior: 'instant' // 平滑滚动，可根据需要设置
-        });
+        turnReaderPage(pageContentRef.current, getSettingState().fontLineHeight, -1);
     }
 
     async function goChapterByName(fileName, chapterName, cb = null) {

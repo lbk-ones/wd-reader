@@ -1,7 +1,7 @@
 import {findIndex, isEmpty} from "lodash-es";
 import ContextMenu from "../ContextMenu.jsx";
 import * as PropTypes from "prop-types";
-import {forwardRef, useEffect} from "react";
+import {forwardRef, useLayoutEffect} from "react";
 import {Progress} from "antd";
 
 const Content = (props, ref) => {
@@ -16,6 +16,11 @@ const Content = (props, ref) => {
     const bookContainerHeight = props.getBookContainerHeight();
     const chapterIndex = findIndex(state.currentBookChapterList, name => name === state.currentBookChapterName);
     const compactChapter = settingState.miniMode === '1' || settingState.transparentMode === '1';
+    useLayoutEffect(() => {
+        // A previous chapter may have needed a small alignment gutter at its end.
+        if (ref?.current) ref.current.style.paddingBottom = '0px';
+    }, [ref, state.currentBookName, state.currentBookChapterName,
+        settingState.fontLineHeight, settingState.newContentHeight, compactChapter]);
     return <div
 
         onContextMenu={props.onContextMenu}

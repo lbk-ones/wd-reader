@@ -549,6 +549,13 @@
 /* Keep line metrics and colours owned by the reader preferences. */
 .book-content-div {
     font-family: "Songti SC", "Noto Serif CJK SC", "SimSun", serif;
+    overflow-anchor: none;
+}
+
+.book-content-div > p {
+    flex-shrink: 0;
+    margin: 0;
+    line-height: inherit;
 }
 
 .book-content-div-footer-btn {

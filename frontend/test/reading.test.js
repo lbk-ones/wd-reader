@@ -5,6 +5,60 @@ import {calculateReadingLayout} from '../src/components/readingLayout.js';
 import {createReadingProgress} from '../src/components/readingProgress.js';
 import {createAutoPageTimer} from '../src/components/autoPageTimer.js';
 import {prepareReadingShortcut} from '../src/components/readingShortcuts.js';
+import {calculatePageTurn, turnReaderPage} from '../src/components/readingPagination.js';
+
+test('page turns correct wheel offsets in both directions without skipping the edge line', () => {
+    const turn = (scrollTop, direction) => calculatePageTurn({scrollTop, direction,
+        viewportHeight: 300, contentHeight: 3000, lineHeight: 30, origin: 90});
+    assert.equal(turn(13, 1).top, 300);
+    assert.equal(turn(313, -1).top, 30);
+    assert.equal(turn(613, -1).top, 330);
+    assert.equal(turn(300, 1).top, 600);
+    assert.equal(turn(600, -1).top, 300);
+    for (let top = 0; top < 2500; top += 7.3) {
+        const down = turn(top, 1).top;
+        const up = turn(top, -1).top;
+        assert.equal(down % 30, 0);
+        assert.equal(up % 30, 0);
+        assert(down <= top + 300 + 1e-6 && down > top);
+        assert(up >= top - 300 - 1e-6 && up <= top);
+    }
+});
+
+test('page ends, short chapters, compact windows and fractional line heights stay aligned', () => {
+    const last = calculatePageTurn({scrollTop: 553, direction: 1,
+        viewportHeight: 300, contentHeight: 977, lineHeight: 30, origin: 90});
+    assert.deepEqual(last, {top: 690, pageHeight: 300, paddingBottom: 13});
+    assert.equal((977 + last.paddingBottom - last.pageHeight) % 30, 0);
+    const short = calculatePageTurn({scrollTop: 0, direction: 1,
+        viewportHeight: 300, contentHeight: 120, lineHeight: 30});
+    assert.deepEqual(short, {top: 0, pageHeight: 300, paddingBottom: 0});
+    assert.equal(calculatePageTurn({scrollTop: 13, direction: 1,
+        viewportHeight: 30, contentHeight: 900, lineHeight: 30}).top, 30);
+    const fractional = calculatePageTurn({scrollTop: 17.2, direction: 1,
+        viewportHeight: 320, contentHeight: 3150, lineHeight: 31.5, origin: 94.5});
+    assert.equal(fractional.top, 315);
+    assert.equal(fractional.pageHeight, 315);
+    assert.equal(calculatePageTurn({scrollTop: 0, direction: 1,
+        viewportHeight: 0, contentHeight: 300, lineHeight: 30}), null);
+});
+
+test('DOM page turns use real paragraph offsets and do not accumulate chapter-end padding', () => {
+    const content = {scrollTop: 553, clientHeight: 300, clientTop: 0,
+        style: {paddingBottom: '0px'},
+        get scrollHeight() {return 977 + parseFloat(this.style.paddingBottom);},
+        getBoundingClientRect: () => ({top: 20}),
+        querySelector: () => ({getBoundingClientRect: () => ({top: 20 + 90 - content.scrollTop})}),
+        scrollTo({top}) {this.scrollTop = Math.min(top, this.scrollHeight - this.clientHeight);},
+    };
+    turnReaderPage(content, 30, 1);
+    assert.equal(content.scrollTop, 690);
+    assert.equal(content.style.paddingBottom, '13px');
+    turnReaderPage(content, 30, 1);
+    assert.equal(content.style.paddingBottom, '13px');
+    turnReaderPage(content, 30, -1);
+    assert.equal(content.scrollTop, 390);
+});
 
 function clock(repeat = false) {
     let now = 0, id = 0;
