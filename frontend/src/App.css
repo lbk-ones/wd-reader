@@ -559,16 +559,47 @@
 }
 
 .book-content-div-footer-btn {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
     height: 30px;
     flex-shrink: 0;
     font-size: 11px;
-    line-height: 30px;
+    line-height: 20px;
     border-top: 1px solid #80807826;
-    padding: 0 10px;
+    padding: 0 8px 5px;
     gap: 8px;
+}
+
+.reader-progress {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 1px;
+    height: 3px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.reader-progress-track, .reader-progress-fill {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: currentColor;
+}
+
+.reader-progress-track {
+    opacity: .18;
+}
+
+.reader-progress-fill {
+    right: auto;
+    min-width: 4px;
+    max-width: 100%;
+    opacity: .8;
+    transition: width .2s ease;
 }
 
 .book-content-div-footer-btn a {
@@ -596,25 +627,23 @@
 .reader-chapter-summary {
     flex: 1;
     min-width: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: 11px 11px;
-    gap: 1px 8px;
-    padding-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     text-indent: 0;
 }
 
-.reader-current-chapter, .reader-next-chapter {
-    grid-column: 1;
+.reader-current-chapter {
+    flex: 1;
     display: flex;
     align-items: center;
     gap: 5px;
     min-width: 0;
-    height: 11px;
-    line-height: 11px;
+    height: 24px;
+    line-height: 20px;
     text-align: left;
     color: inherit;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .reader-current-chapter {
@@ -629,23 +658,42 @@
     text-underline-offset: 2px;
 }
 
-.reader-next-chapter {
-    opacity: .55;
-    font-size: 9px;
-}
-
-.reader-chapter-label, .reader-chapter-position {
+.reader-chapter-position {
     flex-shrink: 0;
     opacity: .65;
-    font-size: 9px;
-}
-
-.reader-chapter-position {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    align-self: center;
+    font-size: 10px;
     line-height: 1;
     white-space: nowrap;
+}
+
+.reader-chapter-nav-slot {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.reader-chapter-nav {
+    height: 24px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+    line-height: 20px;
+    opacity: .7;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.reader-chapter-nav:hover:not(:disabled) {
+    opacity: 1;
+    background: #80807818;
+}
+
+.reader-chapter-nav:disabled {
+    opacity: .3;
+    cursor: default;
 }
 
 .reader-chapter-summary-name {
