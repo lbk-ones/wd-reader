@@ -6,6 +6,123 @@ import {createReadingProgress} from '../src/components/readingProgress.js';
 import {createAutoPageTimer} from '../src/components/autoPageTimer.js';
 import {prepareReadingShortcut} from '../src/components/readingShortcuts.js';
 import {calculatePageTurn, turnReaderPage} from '../src/components/readingPagination.js';
+import {createAutoScroll} from '../src/components/autoScroll.js';
+import {READING_TYPOGRAPHY_PRESETS, DEFAULT_READING_TYPOGRAPHY} from '../src/components/readingTypography.js';
+import {READING_COLOR_PRESETS, DEFAULT_READING_COLORS} from '../src/components/readingColors.js';
+
+test('reading color pairs have strong contrast for both light and dark backgrounds', () => {
+    const luminance = color => {
+        const channels = color.slice(1).match(/../g).map(hex => {
+            const value = parseInt(hex, 16) / 255;
+            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        });
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    };
+    for (const preset of READING_COLOR_PRESETS) {
+        assert.match(preset.bgColor, /^#[0-9A-F]{6}$/);
+        assert.match(preset.fontColor, /^#[0-9A-F]{6}$/);
+        const values = [luminance(preset.bgColor), luminance(preset.fontColor)].sort((a, b) => a - b);
+        assert((values[1] + 0.05) / (values[0] + 0.05) >= 7, preset.name + ' contrast is too low');
+    }
+    assert.equal(DEFAULT_READING_COLORS.name, '暖纸');
+    assert(luminance(READING_COLOR_PRESETS.find(preset => preset.name === '夜读').bgColor) < 0.1);
+});
+
+test('typography presets fit whole lines and preserve the mini row count', () => {
+    assert.deepEqual(DEFAULT_READING_TYPOGRAPHY, {name: '舒适', fontSize: 20, lineHeight: 34});
+    for (const preset of READING_TYPOGRAPHY_PRESETS) {
+        const normal = calculateReadingLayout(630, preset.fontSize, preset.lineHeight);
+        assert.equal(normal.fontSize, preset.fontSize);
+        assert(normal.fontLineHeight >= preset.fontSize * 1.5);
+        assert.equal(normal.newContentHeight % normal.fontLineHeight, 0);
+        assert(normal.newContentHeight <= 630);
+        const mini = calculateReadingLayout(120, preset.fontSize, preset.lineHeight, 3);
+        assert.equal(mini.newContentHeight / mini.fontLineHeight, 3);
+    }
+    assert.deepEqual(calculateReadingLayout(630), calculateReadingLayout(630, 20, 34));
+});
+
+function animationClock() {
+    let time = 0, id = 0;
+    const frames = new Map();
+    return {
+        frames,
+        request(callback) {frames.set(++id, callback); return id;},
+        cancel(key) {frames.delete(key);},
+        now: () => time,
+        frame(timestamp) {
+            time = timestamp;
+            const callbacks = [...frames.values()];
+            frames.clear();
+            callbacks.forEach(callback => callback(timestamp));
+        },
+    };
+}
+
+test('auto-scroll accumulates subpixel movement and pauses for user input and hidden content', () => {
+    const time = animationClock();
+    let top = 0, allowed = true;
+    const content = {clientHeight: 100, scrollHeight: 1000,
+        get scrollTop() {return top;}, set scrollTop(value) {top = Math.round(value);}};
+    const scroll = createAutoScroll({getContent: () => content, canScroll: () => allowed,
+        onEnd: () => assert.fail('not at chapter end'), ...time});
+    scroll.start(5);
+    for (let ms = 0; ms <= 1000; ms += 10) time.frame(ms);
+    assert.equal(content.scrollTop, 5);
+    allowed = false;
+    time.frame(1010);
+    time.frame(10000);
+    allowed = true;
+    time.frame(20000);
+    assert.equal(content.scrollTop, 5);
+    content.scrollTop = 200;
+    scroll.pause();
+    time.frame(21000);
+    assert.equal(content.scrollTop, 200);
+    time.frame(21500);
+    time.frame(21600);
+    assert.equal(content.scrollTop, 201);
+    scroll.stop();
+    assert.equal(time.frames.size, 0);
+    scroll.start(20); scroll.start(30);
+    assert.equal(time.frames.size, 1);
+    scroll.stop();
+});
+
+test('auto-scroll waits at chapter end and fires only once; short chapters have reading time', () => {
+    for (const [height, total, speed, due] of [[100, 105, 100, 2100], [100, 100, 20, 5000]]) {
+        const time = animationClock();
+        let ends = 0;
+        const content = {clientHeight: height, scrollHeight: total, scrollTop: 0};
+        const scroll = createAutoScroll({getContent: () => content, canScroll: () => true,
+            onEnd: () => ends++, ...time});
+        scroll.start(speed);
+        time.frame(0);
+        time.frame(100);
+        time.frame(due - 1);
+        assert.equal(ends, 0);
+        time.frame(due);
+        assert.equal(ends, 1);
+        assert.equal(time.frames.size, 0);
+        time.frame(due + 10000);
+        assert.equal(ends, 1);
+        assert(content.scrollTop <= total - height);
+    }
+});
+
+test('auto-scroll does not move missing or hidden-sized content', () => {
+    const time = animationClock();
+    let content = null;
+    const scroll = createAutoScroll({getContent: () => content, canScroll: () => true,
+        onEnd: () => assert.fail('not readable'), ...time});
+    scroll.start(20);
+    time.frame(0);
+    content = {clientHeight: 0, scrollTop: 12, scrollHeight: 100};
+    time.frame(1000);
+    assert.equal(content.scrollTop, 12);
+    scroll.stop();
+    assert.equal(time.frames.size, 0);
+});
 
 test('page turns correct wheel offsets in both directions without skipping the edge line', () => {
     const turn = (scrollTop, direction) => calculatePageTurn({scrollTop, direction,
@@ -176,6 +293,8 @@ test('F5 cannot refresh reading while panels, loading, hidden content or inputs 
     assert.equal(prepareReadingShortcut(modified, reading, true), false);
     assert.equal(modified.defaultPrevented, undefined);
     assert.equal(prepareReadingShortcut(makeEvent(), reading, true), true);
+    assert.equal(prepareReadingShortcut(makeEvent({key: 'F9'}), reading, true), true);
+    assert.equal(prepareReadingShortcut(makeEvent({key: 'F9', target: {closest: () => true}}), reading, true), false);
     assert.equal(prepareReadingShortcut(makeEvent({key: 'F2'}), {...reading, muluVisible: true}, true), true);
 });
 

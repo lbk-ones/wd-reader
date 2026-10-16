@@ -41,6 +41,9 @@ import {createReadingProgress} from "./components/readingProgress.js";
 import {prepareReadingShortcut} from "./components/readingShortcuts.js";
 import {createAutoPageTimer} from "./components/autoPageTimer.js";
 import {turnReaderPage} from "./components/readingPagination.js";
+import {createAutoScroll} from "./components/autoScroll.js";
+import {DEFAULT_READING_TYPOGRAPHY} from "./components/readingTypography.js";
+import {DEFAULT_READING_COLORS} from "./components/readingColors.js";
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
@@ -57,19 +60,23 @@ function App() {
     const shortcutMiniBusyRef = useRef(false);
     const progressRef = useRef(null);
     const autoPageTimerRef = useRef(null);
+    const autoScrollRef = useRef(null);
+    const autoScrollSaveTimeRef = useRef(0);
 
     const [api, contextHolder] = notification.useNotification();
 
     const [settingState, setSettingState, getSettingState] = useAllState({
-        fontColor: getCacheItem('fontColor') || '#000',
-        fontLineHeight: getCacheItem('fontLineHeight') || '30',
+        fontColor: getCacheItem('fontColor') || DEFAULT_READING_COLORS.fontColor,
+        fontLineHeight: getCacheItem('fontLineHeight') || String(DEFAULT_READING_TYPOGRAPHY.lineHeight),
         blankLineHeight: 0,// 舍弃高度
         newContentHeight: 0,// 总高度
-        bgColor: getCacheItem('bgColor') || '#E8E3D7',
-        fontSize: getCacheItem('fontSize') || '20',
+        bgColor: getCacheItem('bgColor') || DEFAULT_READING_COLORS.bgColor,
+        fontSize: getCacheItem('fontSize') || String(DEFAULT_READING_TYPOGRAPHY.fontSize),
         clickPage: getCacheItem('clickPage') || '1',
-        autoPage: getCacheItem('autoPage') || '0',
+        autoPage: getCacheItem('autoScroll') === '1' ? '0' : getCacheItem('autoPage') || '0',
         autoPageInterval: Math.min(3600, Math.max(1, Math.round(Number(getCacheItem('autoPageInterval')) || 30))),
+        autoScroll: getCacheItem('autoScroll') || '0',
+        autoScrollSpeed: Math.min(100, Math.max(5, Number(getCacheItem('autoScrollSpeed')) || 20)),
         showProgress: getCacheItem('showProgress') || '1',
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
@@ -121,6 +128,14 @@ function App() {
         autoPageTimerRef.current?.reset();
     });
 
+    const setAutoReadingMode = useMemoizedFn((mode, enabled) => {
+        const patch = {[mode]: enabled ? '1' : '0'};
+        if (enabled) patch[mode === 'autoPage' ? 'autoScroll' : 'autoPage'] = '0';
+        Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
+        setSettingState(patch);
+    });
+    const pauseAutoScroll = useMemoizedFn(() => autoScrollRef.current?.pause());
+
     const handleReadingShortcut = useMemoizedFn(event => {
         if (!prepareReadingShortcut(event, getState(), display,
             () => document.querySelector('.ant-modal-wrap'))) return;
@@ -142,9 +157,14 @@ function App() {
                 break;
             case 'F7': {
                 const autoPage = getSettingState().autoPage === '1' ? '0' : '1';
-                setCacheItem('autoPage', autoPage);
-                setSettingState({autoPage});
+                setAutoReadingMode('autoPage', autoPage === '1');
                 message.info(autoPage === '1' ? `自动翻页已开启，每 ${getSettingState().autoPageInterval} 秒翻页` : '自动翻页已关闭');
+                break;
+            }
+            case 'F9': {
+                const enabled = getSettingState().autoScroll !== '1';
+                setAutoReadingMode('autoScroll', enabled);
+                message.info(enabled ? '自动滚动已开启' : '自动滚动已关闭');
                 break;
             }
             case 'F8':
@@ -272,7 +292,11 @@ function App() {
     }, [])
 
     function recordTop() {
-        progressRef.current.save();
+        const now = performance.now();
+        if (getSettingState().autoScroll !== '1' || now - autoScrollSaveTimeRef.current >= 500) {
+            progressRef.current.save();
+            autoScrollSaveTimeRef.current = now;
+        }
         postponeAutoPage();
     }
 
@@ -347,6 +371,7 @@ function App() {
     // }
 
     function pageDown() {
+        pauseAutoScroll();
         postponeAutoPage();
         turnReaderPage(pageContentRef.current, getSettingState().fontLineHeight, 1);
     }
@@ -394,6 +419,50 @@ function App() {
         state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible,
         state.gotoMuluIndexSearchVisible, advanceAutoPage]);
 
+    const canAutoScroll = useMemoizedFn(() => {
+        const current = getState();
+        return getSettingState().autoScroll === '1' && display && !document.hidden
+            && !!current.currentBookChapterName && !current.loadingBook
+            && !current.settingVisible && !current.muluVisible && !current.helpVisible
+            && !current.sysSettingVisible && !current.downloadFromUrlVisible
+            && !current.gotoMuluIndexSearchVisible && !document.querySelector('.ant-modal-wrap');
+    });
+    const advanceAutoScrollChapter = useMemoizedFn(async () => {
+        const current = getState();
+        const index = current.currentBookChapterList.indexOf(current.currentBookChapterName);
+        if (index < 0 || !canAutoScroll()) return;
+        if (index === current.currentBookChapterList.length - 1) {
+            setAutoReadingMode('autoScroll', false);
+            progressRef.current.save();
+            message.info('已读完全书，自动滚动已关闭');
+            return;
+        }
+        const success = await nextChpater();
+        if (!success) setAutoReadingMode('autoScroll', false);
+    });
+    if (autoScrollRef.current === null) {
+        autoScrollRef.current = createAutoScroll({
+            getContent: () => pageContentRef.current,
+            canScroll: canAutoScroll,
+            onEnd: () => advanceAutoScrollChapter().catch(error => {
+                setAutoReadingMode('autoScroll', false);
+                message.error(String(error));
+            }),
+        });
+    }
+    useEffect(() => {
+        if (settingState.autoScroll !== '1' || !display || !state.currentBookChapterName
+            || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
+            || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible) return;
+        autoScrollRef.current.start(settingState.autoScrollSpeed);
+        return () => {
+            autoScrollRef.current.stop();
+            progressRef.current.save();
+        };
+    }, [settingState.autoScroll, settingState.autoScrollSpeed, display, state.currentBookName,
+        state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
+        state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible, state.gotoMuluIndexSearchVisible]);
+
     function hasError(res, displayError = true) {
         if (res.startsWith("错误信息:")) {
             // message.error(res);
@@ -413,6 +482,7 @@ function App() {
     }
 
     function pageUp() {
+        pauseAutoScroll();
         postponeAutoPage();
         turnReaderPage(pageContentRef.current, getSettingState().fontLineHeight, -1);
     }
@@ -446,6 +516,7 @@ function App() {
                 currentBookChapterContent: chapterContent.split("\n").filter(Boolean)
             });
             if (typeof cb === 'function') cb();
+            return true;
         } catch (error) {
             message.error(`读取章节失败：${String(error)}`);
         } finally {
@@ -556,7 +627,7 @@ function App() {
                     setState({
                         loadingBook: true
                     })
-                    goChapterByName(currentBookName, currentBookChapterListElement, () => {
+                    const request = goChapterByName(currentBookName, currentBookChapterListElement, () => {
                         let current = pageContentRef.current;
                         current.scrollTop = 0
                         setState({
@@ -564,6 +635,7 @@ function App() {
                         })
                     });
                     toCurrentChapterNameInList()
+                    return request;
 
                 }
 
@@ -789,8 +861,8 @@ function App() {
             width: 400, height: 690, showTitle: getCacheItem('标题开关') !== 'false'
         };
         // Older saved mini-mode snapshots only contain the window geometry.
-        const normalFontSize = Number(normalWindow.fontSize) > 0 ? Number(normalWindow.fontSize) : 20;
-        const normalLineHeight = Number(normalWindow.fontLineHeight) > 0 ? Number(normalWindow.fontLineHeight) : 30;
+        const normalFontSize = Number(normalWindow.fontSize) > 0 ? Number(normalWindow.fontSize) : DEFAULT_READING_TYPOGRAPHY.fontSize;
+        const normalLineHeight = Number(normalWindow.fontLineHeight) > 0 ? Number(normalWindow.fontLineHeight) : DEFAULT_READING_TYPOGRAPHY.lineHeight;
         setState({oneLine: enabled, showTitle: enabled ? false : normalWindow.showTitle});
         if (enabled) {
             setSettingState({fontSize: 20});
@@ -938,6 +1010,8 @@ function App() {
                 display={display}
                 ref={pageContentRef}
                 onScroll={recordTop}
+                onWheel={pauseAutoScroll}
+                onPointerDown={pauseAutoScroll}
                 onContextMenu={e => {
                     e.preventDefault();
                 }}
@@ -978,6 +1052,8 @@ function App() {
                 isAlwaysTop={isAlwaysTop}
                 setDisplay={setDisplay}
                 setSettingState={setSettingState}
+
+                setAutoReadingMode={setAutoReadingMode}
 
             />
 

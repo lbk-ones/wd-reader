@@ -15,6 +15,7 @@ const Content = (props, ref) => {
     const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
     const bookContainerHeight = props.getBookContainerHeight();
     const chapterIndex = findIndex(state.currentBookChapterList, name => name === state.currentBookChapterName);
+    const nextChapterName = state.currentBookChapterList[chapterIndex + 1];
     const compactChapter = settingState.miniMode === '1' || settingState.transparentMode === '1';
     useLayoutEffect(() => {
         // A previous chapter may have needed a small alignment gutter at its end.
@@ -37,6 +38,8 @@ const Content = (props, ref) => {
                 <div className={"flex flex-auto shrink-1 w-100"}>
                     <div id={"book-content-id"} ref={ref}
                          onScroll={props.onScroll}
+                         onWheel={props.onWheel}
+                         onPointerDown={props.onPointerDown}
                          className={"book-content-div flex w-100 flex-column-nowrap no-shrink over-auto"}
                          style={{
                              lineHeight: Number(settingState.fontLineHeight) + "px",
@@ -117,23 +120,32 @@ const Content = (props, ref) => {
         {/*非透明模式下的下一章*/}
         {
             showBottomBar && (
-                <div className={"book-content-div-footer-btn position-relative"} style={{
+                <div className={"book-content-div-footer-btn position-relative"}
+                     onClick={event => event.stopPropagation()}
+                     onDoubleClick={event => event.stopPropagation()}
+                     style={{
                     color: settingState.fontColor,
                     zIndex: 30,
                     backgroundColor: `${settingState.transparentMode !== "1" ? settingState.bgColor : "rgba(0,0,0,0)"}`
                 }}>
-                    <a className={"text-indent0 h-100 cursor-point no-shrink text-nowrap"} style={{
-                        flexBasis: 120,
-                    }} onClick={props.lastChapter}>上一章</a>
-                    <a className={"text-indent0 h-100 cursor-point no-shrink text-nowrap"} style={{
-                        flexBasis: 120,
-                    }} onClick={props.nextChapter}>下一章</a>
-                    <span
-                        className={"book-content-div-footer-btn-txt cursor-point flex-auto text-over-dot"}
-                        title={state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
-                    >
-                        {state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
-                    </span>
+                    <a className="text-indent0 h-100 cursor-point no-shrink text-nowrap"
+                       onClick={props.lastChapter}>上一章</a>
+                    <div className="reader-chapter-summary">
+                        <button type="button" className="reader-current-chapter"
+                                title={`当前章节：${state.currentBookChapterName}（点击打开目录）`}
+                                aria-label={`当前章节：${state.currentBookChapterName}，打开目录`}
+                                onClick={() => props.onSelect({label: '目录'})}>
+                            <span className="reader-chapter-label">当前</span>
+                            <span className="reader-chapter-summary-name">{state.currentBookChapterName}</span>
+                        </button>
+                        <div className="reader-next-chapter" title={nextChapterName ? `下一章：${nextChapterName}` : '已到全书末章'}>
+                            <span className="reader-chapter-label">下章</span>
+                            <span className="reader-chapter-summary-name">{nextChapterName || '已到全书末章'}</span>
+                        </div>
+                        <span className="reader-chapter-position">{chapterIndex + 1}/{state.currentBookChapterList.length}</span>
+                    </div>
+                    <a className="text-indent0 h-100 cursor-point no-shrink text-nowrap"
+                       onClick={props.nextChapter}>下一章</a>
                     {/*添加个进度条*/}
                     {
                         settingState.showProgress === '1' && (

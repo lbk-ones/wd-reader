@@ -25,7 +25,8 @@ function Header(props) {
     if (reading && settings.miniMode === '1') {
         return <aside className="mini-controls" aria-label="迷你阅读操作栏"
                       onClick={event => event.stopPropagation()}>
-            <div className="mini-drag-handle" aria-label="拖动迷你窗口" title="按住此处拖动窗口"
+            <div className="mini-drag-handle" aria-label="拖动迷你窗口"
+                 title={`当前章节：${state.currentBookChapterName}\n按住此处拖动窗口`}
                  style={{'--wails-draggable': 'drag'}}>
                 <HolderOutlined aria-hidden="true"/>
             </div>
@@ -58,7 +59,7 @@ function Header(props) {
 
     return <header className={`title ${reading ? 'title--reading' : 'title--library'}`}>
         <div className="title-brand" style={{'--wails-draggable': 'drag'}}
-             title={reading ? state.currentBookName : props.title}
+             title={reading ? `${state.currentBookName}\n当前章节：${state.currentBookChapterName}` : props.title}
              onDoubleClick={event => {
                  event.stopPropagation();
                  Window.ToggleMaximise()
