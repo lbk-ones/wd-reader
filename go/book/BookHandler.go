@@ -12,8 +12,6 @@ import (
 	url2 "net/url"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"wd-reader/go/book/epub/EpubBook"
@@ -55,16 +53,21 @@ func WrapperExceptionStr(err string) string {
 
 // GetFileCharset 获取文件字符集编码方式
 func GetFileCharset(fileName string) string {
-	bytes := make([]byte, 1024)
-	file, _ := os.Open(fileName)
-	_, err := file.Read(bytes)
+	file, err := os.Open(fileName)
 	if err != nil {
-		fmt.Println("error:", err)
+		return "UTF-8"
 	}
 	defer file.Close()
+	bytes, err := io.ReadAll(io.LimitReader(file, 1024))
+	if err != nil || len(bytes) == 0 {
+		return "UTF-8"
+	}
 
 	detector := chardet.NewTextDetector()
-	result, _ := detector.DetectBest(bytes)
+	result, err := detector.DetectBest(bytes)
+	if err != nil || result == nil {
+		return "UTF-8"
+	}
 
 	return result.Charset
 }
@@ -110,205 +113,31 @@ func GetBookListExtract() string {
 	return strings.Join(strs, "\n")
 }
 
-// GetChapterListByFileNameExtract  获取章节列表 抽离
-// 添加第二个参数来表示断章的方式 1 代表智能分章 2代表按段落数来进行分比如十段一章 3代表自定义正则分章
-func GetChapterListByFileNameExtract(_fileName string, splitType string, splitValue string) string {
-	path := GetAppPath()
-	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
-	if strings.HasSuffix(fileName, ".txt") {
-		var strs = make([]string, 0)
-		// 判断文件是否存在
-		_, err := os.Stat(fileName)
-		if os.IsNotExist(err) {
-			return WrapperException(err)
-		}
-		file, err := os.Open(fileName)
-		if err != nil {
-			return WrapperException(err)
-		}
-		defer func(file *os.File) {
-			err2 := file.Close()
-			if err2 != nil {
-				fmt.Println(err2)
-			}
-		}(file)
-		scanner := GetScanner(fileName, file)
-		unique := make(map[string]struct{})
-		var index int = 0
-		for scanner.Scan() {
-			text := scanner.Text()
-			//prefix := strings.HasPrefix(text, "  ")
-			//if prefix {
-			//	continue
-			//}
-			line := strings.TrimSpace(text)
-			//line := strings.ReplaceAll(text, " ", "")
-			if line == "" {
-				continue
-			}
-			index++
-			var findString string
-			// 自定义拆分方式
-			if splitType == "1" {
-				findString = constant.RegChapter.FindString(line)
-			} else if splitType == "2" {
-				if splitValue == "0" {
-					findString = constant.RegChapter.FindString(line)
-				} else {
-					atoi, err := strconv.Atoi(splitValue)
-					if err != nil {
-						return WrapperExceptionStr(err.Error())
-					}
-					if index >= atoi {
-						i := index % atoi
-						if i == 0 {
-							i2 := index / atoi
-							findString = strconv.FormatInt(int64(i2), 10) + "、"
-							mu.Lock()
-							strs = append(strs, findString)
-							mu.Unlock()
-							continue
-						} else {
-							continue
-						}
-					} else if index == 1 {
-						findString = "0、"
-						mu.Lock()
-						strs = append(strs, findString)
-						mu.Unlock()
-						continue
-					}
-				}
-			} else if splitType == "3" {
-				if splitValue != "" {
-					findString = regexp.MustCompile(splitValue).FindString(line)
-				} else {
-					findString = constant.RegChapter.FindString(line)
-				}
-			}
-			//findString := constant.RegChapter.FindString(line)
-			if findString != "" {
-				replaceNonSpace := strings.ReplaceAll(line, " ", "")
-				mu.Lock()
-				if _, exists := unique[replaceNonSpace]; !exists {
-					unique[replaceNonSpace] = struct{}{}
-					strs = append(strs, line)
-				}
-				mu.Unlock()
-			}
-		}
-		return strings.Join(strs, "\n")
-	}
-	return ""
-}
-
-// GetChapterContentByChpaterNameExtract  获取章节内容
-func GetChapterContentByChpaterNameExtract(_fileName string, chapterName string, splitType string, splitTypeValue string) string {
-
-	path := GetAppPath()
-	fileName := filepath.Join(path, constant.BOOK_PATH, _fileName)
-	_, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return WrapperException(err)
-	}
-	file, err := os.Open(fileName)
+// GetChapterListByFileNameExtract returns only chapters with readable bodies.
+func GetChapterListByFileNameExtract(fileName, splitType, splitValue string) string {
+	chapters, err := readBookChapters(fileName, splitType, splitValue)
 	if err != nil {
 		return WrapperException(err)
 	}
-	if chapterName == "" {
-		return WrapperExceptionStr(chapterName + " is not a chapter name")
+	names := make([]string, 0, len(chapters))
+	for _, chapter := range chapters {
+		names = append(names, chapter.Name)
 	}
-	defer file.Close()
-	scanner := GetScanner(fileName, file)
-	strs := make([]string, 0)
-	// intelligent split
-	if splitType == "1" || splitType == "3" {
-		if splitType == "1" || splitTypeValue == "" {
-			strs = intelligentSplit(chapterName, scanner, strs, constant.RegChapter)
-		} else {
-			reg2 := regexp.MustCompile(splitTypeValue)
-			strs = intelligentSplit(chapterName, scanner, strs, reg2)
-		}
-	} else if splitType == "2" {
-		strs = splitByLines(chapterName, scanner, strs, splitType, splitTypeValue)
-	}
-	if err := scanner.Err(); err != nil {
-		return WrapperExceptionStr(fmt.Sprintln(fmt.Errorf("error while scanning file: %w", err)))
-	}
-	return strings.Join(strs, "\n")
+	return strings.Join(names, "\n")
 }
 
-func splitByLines(chapterName string, scanner *bufio.Scanner, strs []string, splitType string, value string) []string {
-	linesPerSegment, _ := strconv.Atoi(value)
-	chapterIndx, _ := strconv.Atoi(strings.ReplaceAll(chapterName, "、", ""))
-
-	lineCount := 0
-	startLine := chapterIndx * linesPerSegment
-	endLine := startLine + linesPerSegment
-
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-		if lineCount >= startLine && lineCount < endLine {
-			strs = append(strs, line)
-		}
-		lineCount++
-		if lineCount >= endLine {
-			break
+// GetChapterContentByChpaterNameExtract resolves the same unique names as the directory.
+func GetChapterContentByChpaterNameExtract(fileName, chapterName, splitType, splitValue string) string {
+	chapters, err := readBookChapters(fileName, splitType, splitValue)
+	if err != nil {
+		return WrapperException(err)
+	}
+	for _, chapter := range chapters {
+		if chapter.Name == chapterName {
+			return strings.Join(chapter.Body, "\n")
 		}
 	}
-	return strs
-}
-
-// 智能拆段
-func intelligentSplit(chapterName string, scanner *bufio.Scanner, strs []string, regexp *regexp.Regexp) []string {
-	var start bool
-	lastLineNoAllSpace := strings.Replace(chapterName, " ", "", -1)
-	chapterNameNoSpace := strings.TrimSpace(chapterName)
-	var index int = 0
-	var lstIndex int = 0
-	htmlTags := []string{"<img", "<script", "<style"}
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || utils.ContainsPrefix(htmlTags, line) {
-			continue
-		}
-		lineNoAllSpace := strings.Replace(line, " ", "", -1)
-		index++
-		// 开始记录 跳过标题
-		if line == chapterNameNoSpace && !start {
-			start = true
-			lstIndex = index
-			continue
-		}
-		// 碰到下一个结束标识符
-		// 因为有些文本有重复章节名称 且除了空格都一样 所以这里要 去掉空格之后 再去比较 不等于才退出
-		findString := regexp.FindString(line)
-		// 两行临近这种也不记录 可能是错误的文本校准 只有文本相同了才跳过
-		// 不跳过
-		if start {
-			if findString != "" {
-				// 第二行重复跳出
-				b := lstIndex+1 == index && lastLineNoAllSpace == lineNoAllSpace
-				if b {
-					continue
-				} else {
-					break
-				}
-				// 第二行不重复 直接跳出
-				//b2 := index > lstIndex+1
-				//if b2 {
-				//	break
-				//}
-			}
-			mu.Lock()
-			strs = append(strs, line)
-			mu.Unlock()
-		}
-	}
-	return strs
+	return WrapperExceptionStr("章节不存在或没有正文，请重新选择章节")
 }
 
 // TransferFileFromFileSys  下载文件

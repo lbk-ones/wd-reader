@@ -426,29 +426,38 @@ function App() {
         });
     }
 
-    function goChapterByName(fileName, chapterName, cb = null) {
+    async function goChapterByName(fileName, chapterName, cb = null) {
         let splitType = getSplitType(fileName);
         let splitTypeValue = getSplitTypeValue(fileName);
-        GetChapterListByFileName(fileName, splitType, splitTypeValue).then(res => {
-            if (!hasError(res)) {
-                let strings = res.split("\n");
-                let firstChapter = isEmpty(chapterName) ? get(strings, "[0]", "") : chapterName;
-                GetChapterContentByChapterName(fileName, firstChapter, splitType, splitTypeValue).then(chapterContent => {
-                    if (!hasError(chapterContent)) {
-                        setCacheItem(fileName, firstChapter)
-                        setState({
-                            currentBookName: fileName,
-                            currentBookChapterList: strings,
-                            currentBookChapterName: firstChapter,
-                            currentBookChapterContent: chapterContent.split("\n").filter(Boolean)
-                        })
-                    }
-                    if (typeof cb === 'function') cb();
-                })
+        try {
+            const res = await GetChapterListByFileName(fileName, splitType, splitTypeValue);
+            if (hasError(res)) return;
+            const chapters = res.split("\n").filter(name => name.trim());
+            if (chapters.length === 0) {
+                message.info('未找到有正文的章节，可在阅读偏好中调整断章方式');
+                return;
             }
-
-
-        })
+            const selectedChapter = chapters.includes(chapterName) ? chapterName : chapters[0];
+            const chapterContent = await GetChapterContentByChapterName(fileName, selectedChapter, splitType, splitTypeValue);
+            if (hasError(chapterContent)) return;
+            if (chapterName && selectedChapter !== chapterName) {
+                // A filtered empty chapter must not restore an unrelated scroll position.
+                setCacheItem(CACHE_SCROLL_TOP + fileName, '0');
+                message.info('原章节已被过滤，已打开首个有效章节');
+            }
+            setCacheItem(fileName, selectedChapter);
+            setState({
+                currentBookName: fileName,
+                currentBookChapterList: chapters,
+                currentBookChapterName: selectedChapter,
+                currentBookChapterContent: chapterContent.split("\n").filter(Boolean)
+            });
+            if (typeof cb === 'function') cb();
+        } catch (error) {
+            message.error(`读取章节失败：${String(error)}`);
+        } finally {
+            setState({loadingBook: false});
+        }
     }
 
     function isAlwaysTop(_isAlwaysTop) {
