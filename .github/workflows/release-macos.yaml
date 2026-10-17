@@ -36,7 +36,7 @@ jobs:
           node scripts/set-version.mjs "$version"
       - name: Package DMG
         run: |
-          wails3 task darwin:package:dmg ARCH=${{ matrix.arch }} VERSION=${{ env.APP_VERSION }} DMG_FILES="build/dmg/fix-app,build/dmg/fix-app_zh"
+          wails3 task darwin:package:dmg ARCH=${{ matrix.arch }} VERSION=${{ env.APP_VERSION }} DMG_FILES="fix-app=build/dmg/fix-app,fix-app_zh=build/dmg/fix-app_zh"
           mv bin/wdreader.dmg "bin/WdReader_${APP_VERSION}_mac_${{ matrix.arch }}.dmg"
       - uses: softprops/action-gh-release@v2
         with:
