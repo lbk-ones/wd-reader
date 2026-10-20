@@ -1,8 +1,8 @@
+import {t, useI18n, localizeError} from '../../i18n/index.jsx';
 import {isEmpty} from "lodash-es";
 import {
     DeleteOutlined,
     BookOutlined,
-    ReadOutlined,
     DownloadOutlined,
     GithubOutlined,
     PlusOutlined,
@@ -27,6 +27,7 @@ const TIP = ["翻开一页，暂别喧嚣。", "每一段闲暇，都有书相�
  * @constructor
  */
 function BookList(props, ref) {
+    const {language} = useI18n();
 
     const state = props.state;
 
@@ -85,7 +86,8 @@ function BookList(props, ref) {
 
             ParseEpubToTxt(tem).then(res => {
                 if (res.startsWith("错误信息:")) {
-                    message.error(res)
+                    message.error(localizeError(res))
+                    props.setState({loadingBook: false});
                     return;
                 }
 
@@ -135,47 +137,43 @@ function BookList(props, ref) {
     const recentBooks = (getCacheItem("LastClickBook") || "").split(",").filter(Boolean);
 
     return isEmpty(state.currentBookChapterName) && props.display && isEmpty(state.errorInfo) ? (
-        <section className="book-list" aria-label="我的书架">
+        <section className="book-list" aria-label={t("我的书架")}>
             <div className="library-heading">
-                <div className="library-eyebrow">YOUR READING SPACE</div>
                 <div className="library-heading-row">
-                    <h1>我的书架<span className="library-count">{books.length}</span></h1>
+                    <h1>{t("我的书架")}<span className="library-count">{books.length}</span></h1>
                     <span className="library-version">v{state.version || 'dev'}</span>
+                    <div className="library-actions">
+                        <Button type="primary" size="small" icon={<PlusOutlined/>}
+                                aria-label={t("添加书籍")} title={t("添加书籍")} onClick={props.clickBookPlus}>
+                            <span className="library-add-label">{t("添加书籍")}</span>
+                        </Button>
+                        <Button className="library-download-button" size="small" icon={<DownloadOutlined/>} aria-label={t("图书下载")}
+                                title={t("图书下载")} onClick={() => props.onSelect({id: 'download'})}>
+                            <span className="library-download-label">{t("图书下载")}</span>
+                        </Button>
+                    </div>
                 </div>
-                <p>把片刻留给阅读。</p>
-                <div className="library-actions">
-                    <Button type="primary" icon={<PlusOutlined/>} onClick={props.clickBookPlus}>
-                        添加书籍
-                    </Button>
-                    <Button icon={<DownloadOutlined/>} onClick={() => props.onSelect({label: "去下载"})}>
-                        图书下载
-                    </Button>
-                </div>
-                <Input.Search className="library-search" allowClear placeholder="搜索书名或拼音首字母"
-                              aria-label="搜索书籍" onSearch={props.onSearch}/>
-            </div>
-            <div className="library-section-label">
-                <span><ReadOutlined/> 藏书一览</span>
-                <div className="library-view-actions">
-                    <span className="library-reading-count">{recentBooks.length ? recentBooks.length + ' 本阅读足迹' : '双击开始阅读'}</span>
-                    <div className="library-layout-switch" role="group" aria-label="书架布局">
-                        <button type="button" aria-label="列表布局" aria-pressed={libraryLayout === 'list'}
-                                title="切换为列表布局" onClick={() => changeLayout('list')}>
-                            <UnorderedListOutlined/><span>列表</span>
+                <div className="library-toolbar">
+                    <Input.Search className="library-search" allowClear placeholder={t("搜索书名或拼音首字母")}
+                                  aria-label={t("搜索书籍")} onSearch={props.onSearch}/>
+                    <div className="library-layout-switch" role="group" aria-label={t("书架布局")}>
+                        <button type="button" aria-label={t("列表布局")} aria-pressed={libraryLayout === 'list'}
+                                title={t("切换为列表布局")} onClick={() => changeLayout('list')}>
+                            <UnorderedListOutlined/>
                         </button>
-                        <button type="button" aria-label="矩阵布局" aria-pressed={libraryLayout === 'grid'}
-                                title="切换为矩阵布局" onClick={() => changeLayout('grid')}>
-                            <AppstoreOutlined/><span>矩阵</span>
+                        <button type="button" aria-label={t("矩阵布局")} aria-pressed={libraryLayout === 'grid'}
+                                title={t("切换为矩阵布局")} onClick={() => changeLayout('grid')}>
+                            <AppstoreOutlined/>
                         </button>
                     </div>
                 </div>
             </div>
-            <ul className={classNames('book-list-ul', {'book-list-ul--grid': libraryLayout === 'grid'})} aria-label="书籍列表">
+            <ul className={classNames('book-list-ul', {'book-list-ul--grid': libraryLayout === 'grid'})} aria-label={t("书籍列表")}>
                 {books.map((name, index) => {
                     const title = name.replace(/\.(txt|epub)$/i, '');
                     const isRecent = recentBooks[0] === name;
                     return <li key={name} className={classNames('library-book', {'library-book--recent': isRecent})}>
-                        <button className="library-book-open" title={'双击阅读：' + title}
+                        <button className="library-book-open" title={t("双击阅读：") + title}
                                 onDoubleClick={() => selectBookFun(name)}
                                 onKeyDown={event => {if (event.key === 'Enter') selectBookFun(name)}}>
                             <span className={'book-spine book-spine--' + index % 4} aria-hidden="true">
@@ -187,15 +185,15 @@ function BookList(props, ref) {
                                 <span className="library-book-meta">
                                     <span>{name.split('.').pop().toUpperCase()}</span>
                                     <span className="meta-dot">·</span>
-                                    <span>{isRecent ? '上次读到这里' : '双击开始阅读'}</span>
+                                    <span>{isRecent ? t("上次读到这里") : t("双击开始阅读")}</span>
                                 </span>
                             </span>
-                            {isRecent && <span className="reading-badge">在读</span>}
+                            {isRecent && <span className="reading-badge">{t("在读")}</span>}
                         </button>
-                        <button className="book-delete" aria-label={'删除 ' + title} title="删除书籍"
+                        <button className="book-delete" aria-label={t("删除 ") + title} title={t("删除书籍")}
                                 onClick={() => DeleteFile(name).then(res => {
                                     if (!props.hasError(res)) {
-                                        message.info('删除成功！');
+                                        message.info(t("删除成功！"));
                                         props.reloadBookList();
                                     }
                                 })}><DeleteOutlined/></button>
@@ -203,18 +201,18 @@ function BookList(props, ref) {
                 })}
                 {!books.length && <li className="library-empty">
                     <BookOutlined/>
-                    <h2>留一处安静的书架</h2>
-                    <p>添加一本书，或将文件拖入窗口。</p>
-                    <Button onClick={props.clickBookPlus}>添加第一本书</Button>
+                    <h2>{t("留一处安静的书架")}</h2>
+                    <p>{t("添加一本书，或将文件拖入窗口。")}</p>
+                    <Button onClick={props.clickBookPlus}>{t("添加第一本书")}</Button>
                 </li>}
             </ul>
             <footer className="library-footer">
-                <span className="library-quote" title={sc}>{sc || '翻开一页，暂别喧嚣。'}</span>
-                <button className="footer-icon" title="使用说明（F1）" aria-label="使用说明"
+                <span className="library-quote" title={language === 'en' ? t(TIP[0]) : sc}>{language === 'en' ? t(TIP[0]) : (sc || t(TIP[0]))}</span>
+                <button className="footer-icon" title={t("使用说明（F1）")} aria-label={t("使用说明")}
                         onClick={props.onOpenHelp}><QuestionCircleOutlined/></button>
-                <button className="footer-icon" title="项目主页" aria-label="项目主页"
+                <button className="footer-icon" title={t("项目主页")} aria-label={t("项目主页")}
                         onClick={() => Browser.OpenURL('https://github.com/lbk-ones/wd-reader')}><GithubOutlined/></button>
-                <button className="footer-icon" title="应用设置" aria-label="应用设置"
+                <button className="footer-icon" title={t("应用设置")} aria-label={t("应用设置")}
                         onClick={() => props.setState({sysSettingVisible: true})}><SettingOutlined/></button>
             </footer>
         </section>

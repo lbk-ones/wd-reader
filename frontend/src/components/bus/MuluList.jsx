@@ -1,3 +1,4 @@
+import {t, useI18n} from '../../i18n/index.jsx';
 import {findIndex} from "lodash-es";
 import {Input, InputNumber} from "antd";
 import {SearchOutlined} from "@ant-design/icons";
@@ -13,6 +14,7 @@ import {useTrackedEffect} from "ahooks";
  * @constructor
  */
 function MuluList(props) {
+    useI18n();
 
     // const [currentChapterList, setCurrentChapterList] = useState([])
 
@@ -63,7 +65,7 @@ function MuluList(props) {
                 top: 0,
                 backgroundColor: "#fff"
             }}>
-                <Input.Search allowClear={true} onSearch={props.onSearch} style={{flex: "2"}} placeholder={"搜索"}/>
+                <Input.Search allowClear={true} onSearch={props.onSearch} style={{flex: "2"}} placeholder={t("搜索")}/>
             </div>
             <div className={"mulu-modal-center"} onClick={(e) => {
                 e.stopPropagation()

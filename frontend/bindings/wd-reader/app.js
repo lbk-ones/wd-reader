@@ -128,10 +128,11 @@ export function LogError(message) {
 
 /**
  * OpenFileDialog uses the native Wails 3 file picker.
+ * @param {string} title
  * @returns {$CancellablePromise<string>}
  */
-export function OpenFileDialog() {
-    return $Call.ByName("main.App.OpenFileDialog");
+export function OpenFileDialog(title) {
+    return $Call.ByName("main.App.OpenFileDialog", title);
 }
 
 /**

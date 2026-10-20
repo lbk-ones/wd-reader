@@ -1,10 +1,18 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useLayoutEffect, useRef} from 'react';
 import "./ContextMenu.css"
 
 const ContextMenu = ({options, onSelect,fontSize=14}) => {
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
     const menuRef = useRef(null);
+
+    useLayoutEffect(() => {
+        if (!showMenu) return;
+        const {width, height} = menuRef.current.getBoundingClientRect();
+        const x = Math.max(8, Math.min(menuPosition.x, window.innerWidth - width - 8));
+        const y = Math.max(8, Math.min(menuPosition.y, window.innerHeight - height - 8));
+        if (x !== menuPosition.x || y !== menuPosition.y) setMenuPosition({x, y});
+    }, [showMenu, menuPosition.x, menuPosition.y, options]);
 
     useEffect(() => {
         const handleContextMenu = (e) => {
@@ -42,13 +50,15 @@ const ContextMenu = ({options, onSelect,fontSize=14}) => {
                 borderRadius: '4px',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                 zIndex: 1000,
-                width: '100px',
+                width: 'max-content',
+                minWidth: '120px',
+                maxWidth: 'calc(100vw - 16px)',
                 lineHeight:'25px' // 写死吧 不然会受外面的影响
             }}
         >
-            {options.map((option, index) => (
+            {options.map(option => (
                 <div
-                    key={index}
+                    key={option.id}
                     title={option.label}
                     className={'context-optional'}
                     style={{

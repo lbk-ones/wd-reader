@@ -3,7 +3,8 @@ import React from 'react'
 import {createRoot} from 'react-dom/client'
 import './style.css'
 import App from './App'
-import {App as AntdApp, ConfigProvider, message} from "antd";
+import {message} from "antd";
+import {I18nProvider} from './i18n/index.jsx';
 const container = document.getElementById('root')
 
 const root = createRoot(container)
@@ -15,7 +16,7 @@ message.config({
 
 root.render(
     <React.StrictMode>
-        <ConfigProvider
+        <I18nProvider
             theme={{
                 token: {
                     // Seed Token，影响范围大
@@ -30,9 +31,7 @@ root.render(
                 },
             }}
         >
-            <AntdApp component={false}>
-                <App/>
-            </AntdApp>
-        </ConfigProvider>
+            <App/>
+        </I18nProvider>
     </React.StrictMode>
 )

@@ -1,3 +1,5 @@
+import {t, useI18n, localizeError} from './i18n/index.jsx';
+import LanguageSelect from './i18n/LanguageSelect.jsx';
 import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
@@ -50,6 +52,7 @@ const CACHE_SCROLL_TOP = "scroll-top"
 
 
 function App() {
+    useI18n();
     const {modal} = AntdApp.useApp();
     const cacheCount = useSyncExternalStore(subscribeCacheChanges, getCacheCount);
     const [display, setDisplay] = useState(true)
@@ -83,7 +86,7 @@ function App() {
         leaveWindowHid: getCacheItem('leaveWindowHid') || '0',
         miniMode: getCacheItem('miniMode') || '0',
         miniRows: Math.min(4, Math.max(1, Number(getCacheItem('miniRows')) || 3)),
-        appTitle: getCacheItem('AppTitle') || '偷得浮生半日闲',
+        appTitle: getCacheItem('AppTitle') || '',
         splitMap: getSplitMap() // 拆分方式
     })
 
@@ -141,7 +144,7 @@ function App() {
             () => document.querySelector('.ant-modal-wrap'))) return;
         switch (event.key) {
             case 'F2':
-                handleSelect({label: '目录'});
+                handleSelect({id: 'contents'});
                 break;
             case 'F3':
                 if (pageContentRef.current) pageUp();
@@ -158,13 +161,13 @@ function App() {
             case 'F7': {
                 const autoPage = getSettingState().autoPage === '1' ? '0' : '1';
                 setAutoReadingMode('autoPage', autoPage === '1');
-                message.info(autoPage === '1' ? `自动翻页已开启，每 ${getSettingState().autoPageInterval} 秒翻页` : '自动翻页已关闭');
+                message.info(autoPage === '1' ? t("自动翻页已开启，每 {0} 秒翻页", {0: getSettingState().autoPageInterval}) : t("自动翻页已关闭"));
                 break;
             }
             case 'F9': {
                 const enabled = getSettingState().autoScroll !== '1';
                 setAutoReadingMode('autoScroll', enabled);
-                message.info(enabled ? '自动滚动已开启' : '自动滚动已关闭');
+                message.info(enabled ? t("自动滚动已开启") : t("自动滚动已关闭"));
                 break;
             }
             case 'F8':
@@ -172,7 +175,9 @@ function App() {
                 shortcutMiniBusyRef.current = true;
                 miniSize(getSettingState().miniRows, getSettingState().miniMode !== '1')
                     .catch(error => message.error(String(error)))
-                    .finally(() => { shortcutMiniBusyRef.current = false; });
+                    .finally(() => {
+                        shortcutMiniBusyRef.current = false;
+                    });
                 break;
         }
     });
@@ -189,7 +194,7 @@ function App() {
                     let Value = value[1];
                     api.info({
                         message: key,
-                        description: `${Value}`,
+                        description: localizeError(Value),
                         placement: "bottomRight"
                     });
                 })
@@ -198,7 +203,7 @@ function App() {
                     loadingBookTip: "加载中。。",
                 })
                 reloadBookList();
-                message.info("共成功:" + (allLength - errorLength) + "份文件")
+                message.info(t('成功导入 {count} 份文件', {count: allLength - errorLength}))
             } catch (e) {
 
             }
@@ -206,7 +211,7 @@ function App() {
     }
 
     function AddFleAndHandlerRes(paths) {
-        paths =  (paths || []).filter(Boolean)
+        paths = (paths || []).filter(Boolean)
         setState({
             loadingBook: true,
             loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增",
@@ -268,6 +273,7 @@ function App() {
                 exitMiniMode();
             }
         }
+
         document.addEventListener('keydown', handleReaderKeyDown);
         const saveReadingPosition = () => progressRef.current.save();
         window.addEventListener('pagehide', saveReadingPosition);
@@ -397,7 +403,7 @@ function App() {
         if (chapterIndex === current.currentBookChapterList.length - 1) {
             setCacheItem('autoPage', '0');
             setSettingState({autoPage: '0'});
-            message.info('已读完全书，自动翻页已关闭');
+            message.info(t("已读完全书，自动翻页已关闭"));
             return;
         }
         nextChpater();
@@ -434,7 +440,7 @@ function App() {
         if (index === current.currentBookChapterList.length - 1) {
             setAutoReadingMode('autoScroll', false);
             progressRef.current.save();
-            message.info('已读完全书，自动滚动已关闭');
+            message.info(t("已读完全书，自动滚动已关闭"));
             return;
         }
         const success = await nextChpater();
@@ -472,8 +478,8 @@ function App() {
                 })
             }
             api.info({
-                message: `提示`,
-                description: `${res}`,
+                message: t("提示"),
+                description: localizeError(res),
                 placement: "bottomRight"
             });
             return true;
@@ -495,7 +501,7 @@ function App() {
             if (hasError(res)) return;
             const chapters = res.split("\n").filter(name => name.trim());
             if (chapters.length === 0) {
-                message.info('未找到有正文的章节，可在阅读偏好中调整断章方式');
+                message.info(t("未找到有正文的章节，可在阅读偏好中调整断章方式"));
                 return;
             }
             const selectedChapter = chapters.includes(chapterName) ? chapterName : chapters[0];
@@ -506,7 +512,7 @@ function App() {
             if (chapterName && selectedChapter !== chapterName) {
                 // A filtered empty chapter must not restore an unrelated scroll position.
                 setCacheItem(CACHE_SCROLL_TOP + fileName, '0');
-                message.info('原章节已被过滤，已打开首个有效章节');
+                message.info(t("原章节已被过滤，已打开首个有效章节"));
             }
             setCacheItem(fileName, selectedChapter);
             setState({
@@ -518,7 +524,7 @@ function App() {
             if (typeof cb === 'function') cb();
             return true;
         } catch (error) {
-            message.error(`读取章节失败：${String(error)}`);
+            message.error(t("读取章节失败：{0}", {0: String(error)}));
         } finally {
             setState({loadingBook: false});
         }
@@ -612,6 +618,7 @@ function App() {
         setCacheItem('fontLineHeight', layout.fontLineHeight);
         setCacheItem('fontSize', layout.fontSize);
     }
+
     function nextChpater() {
         let currentBookChapterList = getState().currentBookChapterList;
         if (!isEmpty(currentBookChapterList)) {
@@ -678,51 +685,51 @@ function App() {
     }
 
     const handleSelect = (option) => {
-        if (option.label === '返回书架') {
+        if (option.id === 'library') {
             backBookList()
-        } else if (option.label === '下一章') {
+        } else if (option.id === 'next-chapter') {
             nextChpater();
-        } else if (option.label === '上一章') {
+        } else if (option.id === 'previous-chapter') {
             lastChpater();
-        } else if (option.label === '标题开关') {
+        } else if (option.id === 'title-bar') {
             toggleTitle()
-        } else if (option.label === '下一页') {
+        } else if (option.id === 'next-page') {
             pageDown();
-        } else if (option.label === '上一页') {
+        } else if (option.id === 'previous-page') {
             pageUp();
-        } else if (option.label === '设置') {
+        } else if (option.id === 'preferences') {
             setState({
                 settingVisible: !getState().settingVisible
             })
-        } else if (option.label === '目录') {
+        } else if (option.id === 'contents') {
             setState({
                 muluVisible: !getState().muluVisible
             })
             setTimeout(() => {
                 toCurrentChapterNameInList()
             }, 200)
-        } else if (option.label === '最小化') {
+        } else if (option.id === 'minimize') {
             Window.Minimise();
-        } else if (option.label === '使用说明') {
+        } else if (option.id === 'help') {
             openUsageGuide();
-        } else if (option.label === '退出系统') {
+        } else if (option.id === 'quit') {
             Application.Quit();
         }
     };
 
 
     const options = [
-        {label: '标题开关'},
-        {label: '设置',},
-        {label: '下一页'},
-        {label: '上一页'},
-        {label: '目录'},
-        {label: '下一章'},
-        {label: '上一章'},
-        {label: '返回书架'},
-        {label: '使用说明'},
-        {label: '最小化'},
-        {label: '退出系统'},
+        {id: 'title-bar', label: t("标题开关")},
+        {id: 'preferences', label: t("设置"),},
+        {id: 'next-page', label: t("下一页")},
+        {id: 'previous-page', label: t("上一页")},
+        {id: 'contents', label: t("目录")},
+        {id: 'next-chapter', label: t("下一章")},
+        {id: 'previous-chapter', label: t("上一章")},
+        {id: 'library', label: t("返回书架")},
+        {id: 'help', label: t("使用说明")},
+        {id: 'minimize', label: t("最小化")},
+        {id: 'quit', label: t("退出系统")},
 
     ];
 
@@ -939,7 +946,7 @@ function App() {
                 isAlwaysTop={useMemoizedFn(isAlwaysTop)}
                 settingstate={getSettingState()}
                 setSettingState={setSettingState}
-                title={getSettingState().appTitle}
+                title={getSettingState().appTitle || t('偷得浮生半日闲')}
                 reloadBookList={useMemoizedFn(reloadBookList)}
             />
 
@@ -957,14 +964,14 @@ function App() {
                 hasError={useMemoizedFn(hasError)}
                 clickBookToFirst={useMemoizedFn(clickBookToFirst)}
                 clickBookPlus={() => {
-                    OpenFileDialog().then(r => {
+                    OpenFileDialog(t("文件选择")).then(r => {
                         if (r) {
                             AddFleAndHandlerRes([r]);
                         }
                     }).catch(error => message.error(String(error)))
                 }}
                 onSelect={function (option) {
-                    if (option.label === '去下载') {
+                    if (option.id === 'download') {
                         setState({
                             downloadFromUrlVisible: true,
                             downloadFromUrlList: [null]
@@ -992,9 +999,9 @@ function App() {
                             })
                         }
                         if (searchSuccess) {
-                            message.success("查询到列表，已经置顶")
+                            message.success(t("查询到列表，已经置顶"))
                         } else {
-                            message.success("未查询到列表")
+                            message.success(t("未查询到列表"))
                         }
                     })
 
@@ -1072,7 +1079,7 @@ function App() {
                             behavior: "instant"
                         })
                     } else {
-                        message.error("no chapter")
+                        message.error(t('未找到章节'))
                     }
                 })}
                 onClickSearch={useMemoizedFn(() => {
@@ -1110,18 +1117,18 @@ function App() {
             />
 
 
-            <Spin spinning={getState().loadingBook} tip={getState().loadingBookTip} fullscreen/>
+            <Spin spinning={getState().loadingBook} tip={t(getState().loadingBookTip)} fullscreen/>
 
             {
                 getState().errorInfo && (
                     <div className={'fixed-txt-center color-red zIndex108'}>
                         <div className={"flex flex-column gap5 w-full align-item-center"}>
-                            <p style={{textAlign: 'center'}}>{getState().errorInfo}</p>
+                            <p style={{textAlign: 'center'}}>{localizeError(getState().errorInfo)}</p>
                             <Button size={"small"} className={'w-50'} onClick={() => {
                                 setState({
                                     errorInfo: ""
                                 })
-                            }}>知道了</Button>
+                            }}>{t("知道了")}</Button>
                         </div>
                     </div>
                 )
@@ -1129,7 +1136,7 @@ function App() {
 
 
             <Drawer
-                title="图书下载"
+                title={t("图书下载")}
                 placement={"top"}
                 // width={500}
                 onClose={function () {
@@ -1142,16 +1149,16 @@ function App() {
                 extra={
                     <Space>
                         <Button onClick={(e) => {
-                            message.info("已取消操作")
+                            message.info(t("已取消操作"))
                             setState({
                                 downloadFromUrlVisible: false,
                                 downloadFromUrlList: [null]
                             })
-                        }}>取消</Button>
+                        }}>{t("取消")}</Button>
                         <Button type="primary" onClick={(e) => {
                             let filter1 = getState().downloadFromUrlList.filter(Boolean);
                             if (isEmpty(filter1)) {
-                                message.error("请输入要下载的地址在提交")
+                                message.error(t("请输入要下载的地址在提交"))
                             } else {
                                 AddFleAndHandlerRes(filter1);
                             }
@@ -1161,13 +1168,11 @@ function App() {
                             })
                         }}
 
-                        >
-                            提交
-                        </Button>
+                        >{t("提交")}</Button>
                     </Space>
                 }
             >
-                <Alert className={"mb-10"} message="最好下载txt、epub格式，解析最快最稳定" type="info"/>
+                <Alert className={"mb-10"} message={t("最好下载txt、epub格式，解析最快最稳定")} type="info"/>
 
                 <p className={"mb-5"}>
                     <Space>
@@ -1206,7 +1211,7 @@ function App() {
                                               setState({
                                                   downloadFromUrlList
                                               })
-                                          }} placeholder={"请输入图书文件地址，点击提交即可下载"}/>
+                                          }} placeholder={t("请输入图书文件地址，点击提交即可下载")}/>
                         })
                     }
                 </div>
@@ -1214,26 +1219,26 @@ function App() {
 
                 <Alert
                     className={"mt-10 mb-10"}
-                    message={"内置下载地址(点击跳转)：强烈推荐Z-Lib世界最大电子图书馆（可能需要翻墙）"} type="info"/>
+                    message={t("内置下载地址(点击跳转)：强烈推荐Z-Lib世界最大电子图书馆（可能需要翻墙）")} type="info"/>
 
-                <p className={"flex flex-row gap5"}>
+                <p className={"flex flex-row flex-wrap gap5"}>
 
-                    <Button title={"zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网"} onClick={() => {
+                    <Button title={t("zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网")} onClick={() => {
                         Browser.OpenURL("https://www.bing.com/search?q=Z-Library")
                     }}>Z-Lib</Button>
                     {/*<Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {*/}
                     {/*    Browser.OpenURL("https://zxcsol.com/")*/}
                     {/*}}>知轩藏书</Button>*/}
-                    <Button title={"80电子书"} onClick={() => {
+                    <Button title={t("80电子书")} onClick={() => {
                         Browser.OpenURL("https://www.jiumodiary.com/")
-                    }}>鸠摩搜索</Button>
-                    <Button title={"顶点小说"} onClick={() => {
+                    }}>{t("鸠摩搜索")}</Button>
+                    <Button title={t("顶点小说")} onClick={() => {
                         Browser.OpenURL("https://www.najjdd.com/")
-                    }}>顶点小说</Button>
+                    }}>{t("顶点小说")}</Button>
 
                     <Button title={"epubor-converter"} onClick={() => {
                         Browser.OpenURL("https://s3.amazonaws.com/download.epubor.com.bk/epubor-converter.exe")
-                    }}>电子书格式转换器下载</Button>
+                    }}>{t("电子书格式转换器下载")}</Button>
                 </p>
 
             </Drawer>
@@ -1243,7 +1248,7 @@ function App() {
             {
                 display && (
                     <Drawer
-                        title="系统设置"
+                        title={t("系统设置")}
                         placement={"bottom"}
                         height={'80%'}
                         onClose={function () {
@@ -1255,21 +1260,24 @@ function App() {
                     >
                         <div className={"flex flex-column gap10"}>
 
-                            <Button onClick={openUsageGuide}>使用说明（F1）</Button>
+                            <LanguageSelect/>
 
-                            <span>自定义标题：<Input placeholder={"自定义应用标题"} value={getSettingState().appTitle}
-                                                    onChange={(e) => {
-                                                        let value = e.target.value;
+                            <Button onClick={openUsageGuide}>{t("使用说明（F1）")}</Button>
 
-                                                        setCacheItem("AppTitle", value)
-                                                        setSettingState({
-                                                            appTitle: value
-                                                        })
+                            <span>{t("自定义标题：")}<Input placeholder={t("自定义应用标题")}
+                                                           value={getSettingState().appTitle}
+                                                           onChange={(e) => {
+                                                               let value = e.target.value;
 
-                                                    }}/></span>
-                            <span title={state.booksPath}>工作目录: ***</span>
-                            <span title={window.location.href}>地址: ***</span>
-                            <span>缓存: {cacheCount}</span>
+                                                               setCacheItem("AppTitle", value)
+                                                               setSettingState({
+                                                                   appTitle: value
+                                                               })
+
+                                                           }}/></span>
+                            <span title={state.booksPath}>{t("工作目录: ***")}</span>
+                            <span title={window.location.href}>{t("地址: ***")}</span>
+                            <span>{t("缓存:")}{cacheCount}</span>
                             {/*<span>linux系统要切换到xorg(x11)显示协议才生效</span>*/}
                             {/*<span>windows/linux系统老板键：ctrl+space</span>*/}
                             {/*<span>Mac系统老板键：command+space</span>*/}
@@ -1277,23 +1285,23 @@ function App() {
                             <span>
                                 <Button size={"small"} onClick={function () {
                                     modal.confirm({
-                                        title: "警告！",
+                                        title: t("警告！"),
                                         type: 'warning',
-                                        okText: "我确定",
-                                        cancelText: "取消",
-                                        content: "清空缓存会丢失所有文本的阅读记录",
+                                        okText: t("我确定"),
+                                        cancelText: t("取消"),
+                                        content: t("清空缓存会丢失所有文本的阅读记录"),
                                         onOk: () => {
                                             progressRef.current.stop(false);
                                             clearCache();
                                             Window.ForceReload();
                                         }
                                     })
-                                }}>清空所有缓存</Button></span>
+                                }}>{t("清空所有缓存")}</Button></span>
                             <span><Button size={"small"} onClick={function () {
                                 progressRef.current.stop(false);
                                 clearReadingHistory();
                                 Window.ForceReload();
-                            }}>清除阅读记录</Button></span>
+                            }}>{t("清除阅读记录")}</Button></span>
 
                         </div>
                     </Drawer>

@@ -1,3 +1,5 @@
+import {t, useI18n} from '../../i18n/index.jsx';
+import LanguageSelect from '../../i18n/LanguageSelect.jsx';
 import {App as AntdApp, Button, Form, Input, InputNumber, Popover, Select, Switch, Tooltip} from "antd";
 import {
     CACHE_PREFIX,
@@ -18,6 +20,7 @@ import {calculateReadingLayout} from '../readingLayout.js';
 import {DEFAULT_READING_COLORS, READING_COLOR_PRESETS} from '../readingColors.js';
 
 function ContentSetting(props) {
+    useI18n();
     const {modal} = AntdApp.useApp();
 
     let state = props.state;
@@ -42,8 +45,9 @@ function ContentSetting(props) {
     return (
         <div className="setting-modal" role="dialog" aria-labelledby="reading-preferences-title">
             <header className="settings-header">
-                <h2 id="reading-preferences-title">阅读偏好</h2>
-                <button type="button" className="setting-modal-close" aria-label="关闭阅读偏好"
+                <h2 id="reading-preferences-title">{t("阅读偏好")}</h2>
+                <LanguageSelect compact/>
+                <button type="button" className="setting-modal-close" aria-label={t("关闭阅读偏好")}
                         onClick={() => setState({settingVisible: false})}>
                     <CloseOutlined/>
                 </button>
@@ -51,8 +55,6 @@ function ContentSetting(props) {
             <div className={"setting-modal-center"} onClick={(e) => {
                 e.stopPropagation();
             }}>
-
-
                 <Form
                     className="reading-settings-grid"
                     size="small"
@@ -73,8 +75,8 @@ function ContentSetting(props) {
                     // onFinishFailed={onFinishFailed}
                     autoComplete="off"
                 >
-                    <h3 className="settings-section-title">文字与配色</h3>
-                    <div className="settings-typography-presets settings-wide" role="group" aria-label="阅读字号与行高预设">
+                    <h3 className="settings-section-title">{t("文字与配色")}</h3>
+                    <div className="settings-typography-presets settings-wide" role="group" aria-label={t("阅读字号与行高预设")}>
                         {READING_TYPOGRAPHY_PRESETS.map(preset => {
                             const layout = calculateReadingLayout(settingState.newContentHeight, preset.fontSize,
                                 preset.lineHeight, settingState.miniMode === '1' ? line : 0);
@@ -83,16 +85,16 @@ function ContentSetting(props) {
                             return <button type="button" key={preset.name}
                                            className={`settings-typography-preset${active ? ' is-active' : ''}`}
                                            aria-pressed={!!active}
-                                           title={`${preset.name}：字号 ${preset.fontSize}px，行高 ${preset.lineHeight}px。行高会按窗口高度微调以保持整行翻页。`}
+                                           title={t("{0}：字号 {1}px，行高 {2}px。行高会按窗口高度微调以保持整行翻页。", {0: t(preset.name), 1: preset.fontSize, 2: preset.lineHeight})}
                                            onClick={() => props.calculateFontLines(preset.lineHeight, preset.fontSize,
                                                settingState.miniMode === '1' ? 120 : 0, settingState.miniMode === '1' ? line : 0)}>
-                                <span>{preset.name}</span>
+                                <span>{t(preset.name)}</span>
                                 <span className="settings-typography-values">{preset.fontSize} / {preset.lineHeight}</span>
                             </button>;
                         })}
                     </div>
-                    <Form.Item label="字体大小">
-                        <InputNumber aria-label="字体大小（像素）" style={{width: 64}}
+                    <Form.Item label={t("字体大小")}>
+                        <InputNumber aria-label={t("字体大小（像素）")} style={{width: 64}}
                                      value={Number(settingState.fontSize)}
                                      onChange={(value) => {
                                          if (value === null) return;
@@ -100,15 +102,15 @@ function ContentSetting(props) {
                                      }}/>
                     </Form.Item>
 
-                    <Form.Item label="行间距">
-                        <InputNumber aria-label="行高（像素）" style={{width: 64}}
+                    <Form.Item label={t("行间距")}>
+                        <InputNumber aria-label={t("行高（像素）")} style={{width: 64}}
                                      value={Number(settingState.fontLineHeight)}
                                      onChange={(value) => {
                                          if (value === null) return;
                                          props.calculateFontLines(value)
                                      }}/>
                     </Form.Item>
-                    <div className="settings-color-presets settings-wide" role="group" aria-label="阅读配色预设">
+                    <div className="settings-color-presets settings-wide" role="group" aria-label={t("阅读配色预设")}>
                         {READING_COLOR_PRESETS.map(preset => {
                             const active = settingState.transparentMode !== '1'
                                 && settingState.bgColor.toUpperCase() === preset.bgColor
@@ -117,21 +119,21 @@ function ContentSetting(props) {
                                            className={`settings-color-preset${active ? ' is-active' : ''}`}
                                            style={{backgroundColor: preset.bgColor, color: preset.fontColor}}
                                            aria-pressed={active}
-                                           aria-label={`${preset.name}配色`}
-                                           title={`${preset.name}：背景 ${preset.bgColor}，字体 ${preset.fontColor}。同时应用两种颜色并关闭透明模式。`}
+                                           aria-label={t("{0}配色", {0: t(preset.name)})}
+                                           title={t("{0}：背景 {1}，字体 {2}。同时应用两种颜色并关闭透明模式。", {0: t(preset.name), 1: preset.bgColor, 2: preset.fontColor})}
                                            onClick={() => {
                                                const patch = {bgColor: preset.bgColor, fontColor: preset.fontColor, transparentMode: '0'};
                                                Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
                                                setSettingState(patch);
                                            }}>
                                 <span className="settings-color-preview" aria-hidden="true">Aa</span>
-                                <span>{preset.name}</span>
+                                <span>{t(preset.name)}</span>
                             </button>;
                         })}
                     </div>
                     <Form.Item
                         className="settings-wide"
-                        label="背景色"
+                        label={t("背景色")}
                         name="背景色"
                         rules={[
                             {
@@ -160,19 +162,19 @@ function ContentSetting(props) {
                                     }}
                                 />
                             )
-                        }} trigger="click" title="背景颜色">
+                        }} trigger="click" title={t("背景颜色")}>
 
-                            <button type="button" className="settings-color-button" aria-label="选择背景色">
+                            <button type="button" className="settings-color-button" aria-label={t("选择背景色")}>
                                 <span className="settings-color-swatch" style={{backgroundColor: settingState.bgColor}}/>
                                 <span>{settingState.bgColor.toUpperCase()}</span>
-                                <span className="settings-color-edit">更改</span>
+                                <span className="settings-color-edit">{t("更改")}</span>
                             </button>
 
                         </Popover>
                     </Form.Item>
                     <Form.Item
                         className="settings-wide"
-                        label="字体颜色"
+                        label={t("字体颜色")}
                         name="字体颜色"
                         rules={[
                             {
@@ -202,20 +204,20 @@ function ContentSetting(props) {
                                     }}
                                 />
                             )
-                        }} trigger="click" title="字体颜色">
+                        }} trigger="click" title={t("字体颜色")}>
 
-                            <button type="button" className="settings-color-button" aria-label="选择字体颜色">
+                            <button type="button" className="settings-color-button" aria-label={t("选择字体颜色")}>
                                 <span className="settings-color-swatch" style={{backgroundColor: settingState.fontColor}}/>
                                 <span>{settingState.fontColor.toUpperCase()}</span>
-                                <span className="settings-color-edit">更改</span>
+                                <span className="settings-color-edit">{t("更改")}</span>
                             </button>
 
                         </Popover>
 
                     </Form.Item>
-                    <h3 className="settings-section-title">阅读与窗口</h3>
+                    <h3 className="settings-section-title">{t("阅读与窗口")}</h3>
                     <Form.Item
-                        label="点击翻页"
+                        label={t("点击翻页")}
                         name="clickPage"
                     >
                         <Switch size="small" checked={settingState.clickPage === '1'} onChange={value => {
@@ -227,7 +229,7 @@ function ContentSetting(props) {
                         }}/>
                     </Form.Item>
                     <Form.Item
-                        label="显示进度"
+                        label={t("显示进度")}
                         name="显示进度"
                     >
                         <Switch size="small" checked={settingState.showProgress === '1'} onChange={(value) => {
@@ -239,7 +241,7 @@ function ContentSetting(props) {
                         }}/>
                     </Form.Item>
                     <Form.Item
-                        label="窗口置顶"
+                        label={t("窗口置顶")}
                         name="窗口置顶"
                         rules={[
                             {
@@ -258,8 +260,8 @@ function ContentSetting(props) {
                         }}/>
                     </Form.Item>
                     <Form.Item
-                        label={<div>窗口隐藏 <Tooltip placement="left"
-                                                      title={<span>鼠标移入的时候才显示,<br/>移除变透明</span>}>
+                        label={<div>{t("窗口隐藏")}<Tooltip placement="left"
+                                                      title={<span>{t("鼠标移入的时候才显示,")}<br/>{t("移除变透明")}</span>}>
                             <ExclamationCircleOutlined/>
                         </Tooltip></div>}
                         name="窗口隐藏"
@@ -282,7 +284,7 @@ function ContentSetting(props) {
                         }}/>
                     </Form.Item>
                     <Form.Item
-                        label={<div>透明模式 <Tooltip placement="left" title={"透明模式会把字体变为白色"}>
+                        label={<div>{t("透明模式")}<Tooltip placement="left" title={t("透明模式会把字体变为白色")}>
                             <ExclamationCircleOutlined/>
                         </Tooltip></div>}
                         name="透明模式"
@@ -309,7 +311,7 @@ function ContentSetting(props) {
                     </Form.Item>
 
                     <Form.Item
-                        label="标题开关"
+                        label={t("标题开关")}
                         name="标题开关"
                         rules={[
                             {
@@ -324,7 +326,7 @@ function ContentSetting(props) {
                     </Form.Item>
 
                     <Form.Item
-                        label="迷你化"
+                        label={t("迷你化")}
                         rules={[
                             {
                                 required: false,
@@ -332,7 +334,7 @@ function ContentSetting(props) {
                             },
                         ]}
                     >
-                        <Switch size="small" aria-label="迷你化" checked={settingState.miniMode === '1'} onChange={(value) => {
+                        <Switch size="small" aria-label={t("迷你化")} checked={settingState.miniMode === '1'} onChange={(value) => {
                                     setState({
                                         settingVisible: false
                                     })
@@ -340,9 +342,9 @@ function ContentSetting(props) {
                                 }}
                         />
                     </Form.Item>
-                    <Form.Item label="迷你行数">
+                    <Form.Item label={t("迷你行数")}>
                         <InputNumber
-                            aria-label="迷你行数"
+                            aria-label={t("迷你行数")}
                             value={line}
                             min={1}
                             max={4}
@@ -362,15 +364,15 @@ function ContentSetting(props) {
 
                     </Form.Item>
 
-                    <h3 className="settings-section-title">自动阅读</h3>
-                    <Form.Item className="settings-wide settings-auto-page" label={<div>自动翻页 <Tooltip title="按设定间隔翻到下一页，章末自动进入下一章；打开设置或目录时暂停，与自动滚动互斥。F7 可快速开关。"><ExclamationCircleOutlined/></Tooltip></div>}>
+                    <h3 className="settings-section-title">{t("自动阅读")}</h3>
+                    <Form.Item className="settings-wide settings-auto-page" label={<div>{t("自动翻页")}<Tooltip title={t("按设定间隔翻到下一页，章末自动进入下一章；打开设置或目录时暂停，与自动滚动互斥。F7 可快速开关。")}><ExclamationCircleOutlined/></Tooltip></div>}>
                         <div className="flex gap3 flex-wrap" style={{alignItems: 'center'}}>
-                            <Switch size="small" aria-label="自动翻页" checked={settingState.autoPage === '1'}
+                            <Switch size="small" aria-label={t("自动翻页")} checked={settingState.autoPage === '1'}
                                     onChange={value => {
                                         props.setAutoReadingMode('autoPage', value);
                                     }}/>
-                            <span>每</span>
-                            <InputNumber aria-label="自动翻页间隔（秒）" min={1} max={3600} precision={0}
+                            <span>{t("每")}</span>
+                            <InputNumber aria-label={t("自动翻页间隔（秒）")} min={1} max={3600} precision={0}
                                          style={{width: 64}} value={settingState.autoPageInterval}
                                          onChange={value => {
                                              if (value === null || !Number.isFinite(Number(value))) return;
@@ -378,15 +380,15 @@ function ContentSetting(props) {
                                              setCacheItem('autoPageInterval', autoPageInterval);
                                              setSettingState({autoPageInterval});
                                          }}/>
-                            <span>秒</span>
+                            <span>{t("秒")}</span>
                         </div>
                     </Form.Item>
-                    <Form.Item className="settings-wide settings-auto-scroll" label={<div>自动滚动 <Tooltip title="与自动翻页互斥。打开设置或目录时暂停；手动滚动后暂缓 1.5 秒。F9 可快速开关。"><ExclamationCircleOutlined/></Tooltip></div>}>
+                    <Form.Item className="settings-wide settings-auto-scroll" label={<div>{t("自动滚动")}<Tooltip title={t("与自动翻页互斥。打开设置或目录时暂停；手动滚动后暂缓 1.5 秒。F9 可快速开关。")}><ExclamationCircleOutlined/></Tooltip></div>}>
                         <div className="flex gap3 flex-wrap" style={{alignItems: 'center'}}>
-                            <Switch size="small" aria-label="自动向下滚动" checked={settingState.autoScroll === '1'}
+                            <Switch size="small" aria-label={t("自动向下滚动")} checked={settingState.autoScroll === '1'}
                                     onChange={value => props.setAutoReadingMode('autoScroll', value)}/>
-                            <span>速度</span>
-                            <InputNumber aria-label="自动滚动速度（像素每秒）" min={5} max={100} precision={0}
+                            <span>{t("速度")}</span>
+                            <InputNumber aria-label={t("自动滚动速度（像素每秒）")} min={5} max={100} precision={0}
                                          style={{width: 64}} value={settingState.autoScrollSpeed}
                                          onChange={value => {
                                              if (value === null || !Number.isFinite(Number(value))) return;
@@ -394,17 +396,16 @@ function ContentSetting(props) {
                                              setCacheItem('autoScrollSpeed', autoScrollSpeed);
                                              setSettingState({autoScrollSpeed});
                                          }}/>
-                            <span>像素/秒</span>
+                            <span>{t("像素/秒")}</span>
                         </div>
                     </Form.Item>
-                    <h3 className="settings-section-title settings-split-title">断章方式
-                        <Tooltip title="默认智能识别章节。章节混乱时可切换为按段落数或自定义正则分章，修改后点击应用。">
+                    <h3 className="settings-section-title settings-split-title">{t("断章方式")}<Tooltip title={t("默认智能识别章节。章节混乱时可切换为按段落数或自定义正则分章，修改后点击应用。")}>
                             <ExclamationCircleOutlined/>
                         </Tooltip>
                     </h3>
                     <Form.Item className="settings-wide">
                         <div className={`settings-chapter-controls${splitMaElement === '2' ? ' is-paragraph' : ''}`}>
-                            <Select aria-label="断章方式" className="settings-split-method" value={splitMaElement} onChange={(value, option)=>{
+                            <Select aria-label={t("断章方式")} className="settings-split-method" value={splitMaElement} onChange={(value, option)=>{
                                 putSplitMap(currentBookName,value);
                                 let splitTypeValue
                                 if(value === '2') {
@@ -417,14 +418,14 @@ function ContentSetting(props) {
                                 })
                                 setCacheItem(currentBookName, "")
                             }}>
-                                <Select.Option key={"1"} value={"1"}>智能识别</Select.Option>
-                                <Select.Option key={"2"} value={"2"}>按段落</Select.Option>
-                                <Select.Option key={"3"} value={"3"}>自定义正则</Select.Option>
+                                <Select.Option key={"1"} value={"1"}>{t("智能识别")}</Select.Option>
+                                <Select.Option key={"2"} value={"2"}>{t("按段落")}</Select.Option>
+                                <Select.Option key={"3"} value={"3"}>{t("自定义正则")}</Select.Option>
                             </Select>
                             {
                                 splitMaElement === '3' && (
-                                    <Input allowClear className="settings-split-regex" aria-label="断章正则表达式"
-                                           placeholder={"请输入正则表达式"}
+                                    <Input allowClear className="settings-split-regex" aria-label={t("断章正则表达式")}
+                                           placeholder={t("请输入正则表达式")}
                                            value={getSplitTypeValue(currentBookName)}
                                            onChange={e=>{
                                                let value = e.target.value;
@@ -441,8 +442,8 @@ function ContentSetting(props) {
                                 splitMaElement === '2' && (
                                     <InputNumber
                                         className="settings-split-count"
-                                        aria-label="每章段落数"
-                                        addonAfter="段"
+                                        aria-label={t("每章段落数")}
+                                        addonAfter={t("段")}
                                         precision={0}
                                         value={Number(getSplitTypeValue(currentBookName))}
                                         min={10}
@@ -457,13 +458,13 @@ function ContentSetting(props) {
                                     />
                                 )
                             }
-                            <Button className="settings-split-apply" title="应用断章方式" aria-label="应用断章方式" onClick={()=>{
+                            <Button className="settings-split-apply" title={t("应用断章方式")} aria-label={t("应用断章方式")} onClick={()=>{
                                 modal.confirm({
-                                    title: "提示！",
+                                    title: t("提示！"),
                                     type: 'warning',
-                                    okText: "我确定",
-                                    cancelText: "取消",
-                                    content: "是否清空该本书的章节阅读历史",
+                                    okText: t("我确定"),
+                                    cancelText: t("取消"),
+                                    content: t("是否清空该本书的章节阅读历史"),
                                     onOk: () => {
 
                                         props.backBookList(()=>{
@@ -484,7 +485,7 @@ function ContentSetting(props) {
                                     }
                                 })
 
-                            }}>应用</Button>
+                            }}>{t("应用")}</Button>
 
                         </div>
 
@@ -496,7 +497,7 @@ function ContentSetting(props) {
                         style={{
                             marginTop:'5px'
                         }}
-                        label={"操作"}
+                        label={t("操作")}
                         className="settings-wide"
                         name="操作"
                         rules={[
@@ -558,9 +559,7 @@ function ContentSetting(props) {
                             setTimeout(()=>{
                                 props.calculateFontLines(lineHeight, fontSize)
                             },100)
-                        }}>
-                            恢复默认
-                        </Button>
+                        }}>{t("恢复默认")}</Button>
                     </Form.Item>
                 </Form>
 

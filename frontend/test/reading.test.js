@@ -304,7 +304,7 @@ test('clearing reading history removes all progress, retains preferences and not
     const utils = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
     const storage = {'Wd-LastClickBook': 'a.txt,b.txt', 'Wd-a.txt': '第一章',
         'Wd-b.txt': '第二章', 'Wd-scroll-topa.txt': '320', 'Wd-scroll-topdeleted.txt': '90',
-        'Wd-libraryLayout': 'grid', 'Wd-fontSize': '20', 'Wd-SplitMap': '{}', unrelated: 'keep'};
+        'Wd-libraryLayout': 'grid', 'Wd-fontSize': '20', 'Wd-language': 'en', 'Wd-SplitMap': '{}', unrelated: 'keep'};
     Object.defineProperty(storage, 'removeItem', {value(key) {delete this[key];}});
     const events = new EventTarget();
     const previous = globalThis.window;
@@ -314,8 +314,8 @@ test('clearing reading history removes all progress, retains preferences and not
     let notifications = 0;
     const unsubscribe = utils.subscribeCacheChanges(() => notifications++);
     utils.clearReadingHistory();
-    assert.deepEqual(Object.keys(storage).sort(), ['Wd-SplitMap', 'Wd-fontSize', 'Wd-libraryLayout', 'unrelated']);
-    assert.equal(utils.getCacheCount(), 3);
+    assert.deepEqual(Object.keys(storage).sort(), ['Wd-SplitMap', 'Wd-fontSize', 'Wd-language', 'Wd-libraryLayout', 'unrelated']);
+    assert.equal(utils.getCacheCount(), 4);
     assert.equal(notifications, 1);
     unsubscribe();
 });

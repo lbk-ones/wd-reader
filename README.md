@@ -4,6 +4,8 @@
 
 # wd-reader
 
+**简体中文** | [English](README.en.md)
+
 **偷得浮生半日闲，把片刻留给阅读。**
 
 一款轻巧、低干扰的跨平台桌面电子书阅读器。支持本地书架、迷你阅读、透明窗口与自动阅读，用自己喜欢的方式读完下一章。
@@ -32,6 +34,13 @@
 | 自动阅读 | 定时翻页或持续向下滚动，章末继续下一章，打开设置等面板时自动暂停 |
 | 阅读记录 | 自动保存当前章节、阅读位置和偏好，下次打开继续阅读 |
 | 顺手操作 | 点击翻页、滚轮阅读、右键菜单、常用快捷键，以及随时可用的内置使用说明 |
+| 中英文界面 | 首次启动跟随系统语言，可在应用设置或阅读偏好中切换简体中文 / English，选择自动保存 |
+
+### 界面语言 / Interface language
+
+在书架右下角打开 **应用设置 → 语言**，或使用 **阅读偏好标题旁的语言选择框**，即可切换简体中文和 English，无需重启。首次启动时，英文系统使用英文，其余系统默认使用中文。语言选择保存在本机；清除阅读记录会保留语言，清空所有缓存则恢复首次启动规则。
+
+Open **App settings → Language** from the library, or use the language selector beside the **Reading preferences** heading while reading. Choose **简体中文** or **English**; changes apply immediately and persist across restarts. Book titles, chapter names, text and custom window titles keep their original language. See [internationalization notes](docs/i18n.md) for development details.
 
 ## 下载与安装
 
@@ -48,6 +57,8 @@
 Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还需要系统具备相应运行依赖。macOS 构建目标为 12.0 及以上，当前打包任务使用 ad-hoc 签名，未配置 Developer ID 公证。
 
 ## 界面预览
+
+部分截图展示早期布局；当前版本的首页顶部为紧凑工具栏，默认 400px 窗口的矩阵书架显示三列，窄窗口会自动调整。
 
 ### 默认窗口大小
 

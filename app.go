@@ -34,9 +34,12 @@ func (a *App) Greet(name string) string {
 }
 
 // OpenFileDialog uses the native Wails 3 file picker.
-func (a *App) OpenFileDialog() (string, error) {
+func (a *App) OpenFileDialog(title string) (string, error) {
+	if title == "" {
+		title = "文件选择"
+	}
 	selection, err := a.application.Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
-		Title:          "文件选择",
+		Title:          title,
 		CanChooseFiles: true,
 		Window:         a.window,
 		Filters: []application.FileFilter{

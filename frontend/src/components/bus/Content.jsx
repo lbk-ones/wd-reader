@@ -1,3 +1,4 @@
+import {t, useI18n} from '../../i18n/index.jsx';
 import {findIndex, isEmpty} from "lodash-es";
 import ContextMenu from "../ContextMenu.jsx";
 import * as PropTypes from "prop-types";
@@ -5,6 +6,7 @@ import {forwardRef, useLayoutEffect} from "react";
 import {Tooltip} from "antd";
 
 const Content = (props, ref) => {
+    useI18n();
     const state = props.state;
     const settingState = props.settingState;
     const display = props.display;
@@ -65,7 +67,7 @@ const Content = (props, ref) => {
                             && (
                                 <header className={`reader-chapter${compactChapter ? ' reader-chapter--compact' : ''}`}>
                                     <div className="reader-chapter-index" aria-hidden="true">
-                                        {chapterIndex >= 0 ? `CHAPTER ${String(chapterIndex + 1).padStart(3, '0')}` : 'CHAPTER'}
+                                        {chapterIndex >= 0 ? `${t('章节')} ${String(chapterIndex + 1).padStart(3, '0')}` : t('章节')}
                                     </div>
                                     <h2 className="reader-chapter-title">{state.currentBookChapterName}</h2>
                                 </header>
@@ -100,14 +102,14 @@ const Content = (props, ref) => {
                                     backgroundColor: `${settingState.transparentMode !== "1" ? settingState.bgColor : "rgba(0,0,0,0)"}`
                                 }}>
                                     <a className={"text-indent0 h-100 cursor-point text-nowrap"}
-                                       onClick={props.lastChapter}>上一章</a>
+                                       onClick={props.lastChapter}>{t("上一章")}</a>
                                     <a className={"text-indent0 h-100 cursor-point text-nowrap"}
-                                       onClick={props.nextChapter}>下一章</a>
+                                       onClick={props.nextChapter}>{t("下一章")}</a>
                                     <span
                                         className={"book-content-div-footer-btn-txt cursor-point"}
-                                        title={state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
+                                        title={state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || t("无")}
                                         style={{width: "120px", overflow: "hidden"}}>
-                                        {state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || "无"}
+                                        {state.currentBookChapterList[findIndex(state.currentBookChapterList, e => e === state.currentBookChapterName) + 1] || t("无")}
                                     </span>
                                 </div>
                             )
@@ -131,33 +133,33 @@ const Content = (props, ref) => {
                     zIndex: 30,
                     backgroundColor: `${settingState.transparentMode !== "1" ? settingState.bgColor : "rgba(0,0,0,0)"}`
                 }}>
-                    <Tooltip title={previousChapterName ? `上一章：${previousChapterName}` : '已到全书首章'}>
+                    <Tooltip title={previousChapterName ? t("上一章：{0}", {0: previousChapterName}) : t("已到全书首章")}>
                         <span className="reader-chapter-nav-slot">
                             <button type="button" className="reader-chapter-nav" disabled={!previousChapterName}
-                                    onClick={props.lastChapter}>上一章</button>
+                                    onClick={props.lastChapter}>{t("上一章")}</button>
                         </span>
                     </Tooltip>
                     <div className="reader-chapter-summary">
                         <button type="button" className="reader-current-chapter"
-                                title={`当前章节：${state.currentBookChapterName}（点击打开目录）`}
-                                aria-label={`当前章节：${state.currentBookChapterName}，打开目录`}
-                                onClick={() => props.onSelect({label: '目录'})}>
+                                title={t("当前章节：{0}（点击打开目录）", {0: state.currentBookChapterName})}
+                                aria-label={t("当前章节：{0}，打开目录", {0: state.currentBookChapterName})}
+                                onClick={() => props.onSelect({label: t("目录")})}>
                             <span className="reader-chapter-summary-name">{state.currentBookChapterName}</span>
                         </button>
                         <span className="reader-chapter-position">{chapterIndex + 1}/{state.currentBookChapterList.length}</span>
                     </div>
-                    <Tooltip title={nextChapterName ? `下一章：${nextChapterName}` : '已到全书末章'}>
+                    <Tooltip title={nextChapterName ? t("下一章：{0}", {0: nextChapterName}) : t("已到全书末章")}>
                         <span className="reader-chapter-nav-slot">
                             <button type="button" className="reader-chapter-nav" disabled={!nextChapterName}
-                                    onClick={props.nextChapter}>下一章</button>
+                                    onClick={props.nextChapter}>{t("下一章")}</button>
                         </span>
                     </Tooltip>
                     {settingState.showProgress === '1' && (
                         <div className="reader-progress" role="progressbar"
-                             aria-label="全书章节进度" aria-valuemin={0} aria-valuemax={100}
+                             aria-label={t("全书章节进度")} aria-valuemin={0} aria-valuemax={100}
                              aria-valuenow={Math.round(chapterProgress * 10) / 10}
-                             aria-valuetext={`第 ${chapterIndex + 1} 章，共 ${state.currentBookChapterList.length} 章`}
-                             title={`章节进度 ${chapterIndex + 1}/${state.currentBookChapterList.length} · ${Math.round(chapterProgress)}%`}>
+                             aria-valuetext={t("第 {0} 章，共 {1} 章", {0: chapterIndex + 1, 1: state.currentBookChapterList.length})}
+                             title={t("章节进度 {0}/{1} · {2}%", {0: chapterIndex + 1, 1: state.currentBookChapterList.length, 2: Math.round(chapterProgress)})}>
                             <div className="reader-progress-track" aria-hidden="true"/>
                             <div className="reader-progress-fill" aria-hidden="true" style={{width: `${chapterProgress}%`}}/>
                         </div>

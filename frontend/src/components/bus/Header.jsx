@@ -1,3 +1,4 @@
+import {t, useI18n} from '../../i18n/index.jsx';
 import {memo} from 'react';
 import {isEmpty} from 'lodash-es';
 import {Application, Window} from '@wailsio/runtime';
@@ -19,20 +20,21 @@ import {
 import {setCacheItem} from '../Utils.jsx';
 
 function Header(props) {
+    useI18n();
     const {state, settingstate: settings} = props;
     const reading = !isEmpty(state.currentBookName);
     if (!props.display) return null;
     if (reading && settings.miniMode === '1') {
-        return <aside className="mini-controls" aria-label="迷你阅读操作栏"
+        return <aside className="mini-controls" aria-label={t("迷你阅读操作栏")}
                       onClick={event => event.stopPropagation()}>
-            <div className="mini-drag-handle" aria-label="拖动迷你窗口"
-                 title={`当前章节：${state.currentBookChapterName}\n按住此处拖动窗口`}
+            <div className="mini-drag-handle" aria-label={t("拖动迷你窗口")}
+                 title={t("当前章节：{0}\n按住此处拖动窗口", {0: state.currentBookChapterName})}
                  style={{'--wails-draggable': 'drag'}}>
                 <HolderOutlined aria-hidden="true"/>
             </div>
-            <button type="button" className="mini-control-button" aria-label="阅读设置" title="阅读设置"
+            <button type="button" className="mini-control-button" aria-label={t("阅读设置")} title={t("阅读设置")}
                     onClick={() => props.setState({settingVisible: true})}><SettingOutlined/></button>
-            <button type="button" className="mini-control-button" aria-label="退出迷你模式" title="退出迷你模式（Esc）"
+            <button type="button" className="mini-control-button" aria-label={t("退出迷你模式")} title={t("退出迷你模式（Esc）")}
                     onClick={props.exitMiniMode}><ExpandOutlined/></button>
         </aside>;
     }
@@ -59,7 +61,7 @@ function Header(props) {
 
     return <header className={`title ${reading ? 'title--reading' : 'title--library'}`}>
         <div className="title-brand" style={{'--wails-draggable': 'drag'}}
-             title={reading ? `${state.currentBookName}\n当前章节：${state.currentBookChapterName}` : props.title}
+             title={reading ? t("{0}\n当前章节：{1}", {0: state.currentBookName, 1: state.currentBookChapterName}) : props.title}
              onDoubleClick={event => {
                  event.stopPropagation();
                  Window.ToggleMaximise()
@@ -68,19 +70,19 @@ function Header(props) {
             <span
                 className="title-name">{reading ? state.currentBookName.replace(/\.(txt|epub)$/i, '') : props.title}</span>
         </div>
-        <nav className="window-controls" aria-label="窗口控制">
-            {reading && control('隐藏标题栏', <BorderInnerOutlined/>, props.toggleTitle)}
-            {reading && control('阅读设置', <SettingOutlined/>, () => props.setState({settingVisible: true}))}
-            {reading && control('返回书架', <DatabaseOutlined/>, () => props.backBookList())}
-            {reading && control('使用说明', <QuestionCircleOutlined/>, props.onOpenHelp)}
-            {control('离开窗口时隐藏',
+        <nav className="window-controls" aria-label={t("窗口控制")}>
+            {reading && control(t("隐藏标题栏"), <BorderInnerOutlined/>, props.toggleTitle)}
+            {reading && control(t("阅读设置"), <SettingOutlined/>, () => props.setState({settingVisible: true}))}
+            {reading && control(t("返回书架"), <DatabaseOutlined/>, () => props.backBookList())}
+            {reading && control(t("使用说明"), <QuestionCircleOutlined/>, props.onOpenHelp)}
+            {control(t("离开窗口时隐藏"),
                 <DisconnectOutlined/>, () => toggleSetting('leaveWindowHid'), settings.leaveWindowHid === '1')}
-            {control('窗口置顶', <PushpinOutlined/>, () => toggleSetting('isAlwaysTop'), settings.isAlwaysTop === '1')}
-            {!reading && control('刷新书架', <RedoOutlined/>, () => window.location.reload())}
+            {control(t("窗口置顶"), <PushpinOutlined/>, () => toggleSetting('isAlwaysTop'), settings.isAlwaysTop === '1')}
+            {!reading && control(t("刷新书架"), <RedoOutlined/>, () => window.location.reload())}
             <span className="window-controls-divider"/>
-            {control('最小化', <MinusOutlined/>, () => Window.Minimise())}
-            {control('切换窗口大小', <BorderOutlined/>, resizeWindow)}
-            {control('关闭应用', <CloseOutlined/>, () => Application.Quit(), false, 'window-button--close')}
+            {control(t("最小化"), <MinusOutlined/>, () => Window.Minimise())}
+            {control(t("切换窗口大小"), <BorderOutlined/>, resizeWindow)}
+            {control(t("关闭应用"), <CloseOutlined/>, () => Application.Quit(), false, 'window-button--close')}
         </nav>
     </header>;
 }
