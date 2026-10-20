@@ -16,5 +16,5 @@ This regenerates Windows resources, macOS plist files and Linux package metadata
 Regeneration also creates ignored iOS metadata; this project only configures desktop builds.
 
 `build/appicon.png` remains the source for the application icons.
-The desktop tasks are based on the Wails v3.0.0-beta.29 template.
+The desktop tasks originated from the Wails v3.0.0-beta.29 template and are verified with v3.0.0-beta.33.
 See `docs/wails3-migration.md` for platform requirements and test coverage.

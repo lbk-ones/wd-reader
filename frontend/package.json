@@ -13,6 +13,7 @@
   "dependencies": {
     "@ant-design/colors": "^7.1.0",
     "@ant-design/icons": "^5.5.2",
+    "@wailsio/runtime": "3.0.0-beta.33",
     "ahooks": "^3.8.4",
     "antd": "^5.22.7",
     "classnames": "^2.5.1",
@@ -22,8 +23,7 @@
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-color": "^2.19.3",
-    "react-dom": "^18.2.0",
-    "@wailsio/runtime": "3.0.0-beta.29"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.17",

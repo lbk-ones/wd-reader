@@ -11,7 +11,7 @@
 [![Release](https://img.shields.io/github/v/release/lbk-ones/wd-reader?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/lbk-ones/wd-reader/total?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-456653?style=flat-square)
-![Wails](https://img.shields.io/badge/Wails-v3.0.0--beta.29-DF0000?style=flat-square)
+![Wails](https://img.shields.io/badge/Wails-v3.0.0--beta.33-DF0000?style=flat-square)
 
 [下载应用](https://github.com/lbk-ones/wd-reader/releases) · [界面预览](#界面预览) · [开始阅读](#开始阅读) · [开发与构建](#开发与构建) · [反馈问题](https://github.com/lbk-ones/wd-reader/issues)
 
@@ -179,11 +179,11 @@ Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还
 
 ## 开发与构建
 
-项目使用 **Go + Wails 3 + React + Ant Design + Vite**。Wails Go 模块、CLI 与前端 runtime 固定在 `v3.0.0-beta.29`，开发时请保持一致。
+项目使用 **Go + Wails 3 + React + Ant Design + Vite**。Wails Go 模块、CLI 与前端 runtime 固定在 `v3.0.0-beta.33`，开发时请保持一致。
 
 ### 环境要求
 
-- Go **1.25+**。
+- Go **1.26+**。
 - Node.js **24 LTS** 与 npm。
 - `wails3` CLI，并将 Go 的 bin 目录加入 `PATH`。
 - Windows：WebView2 Runtime。
@@ -195,7 +195,7 @@ Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还
 ```sh
 git clone https://github.com/lbk-ones/wd-reader.git
 cd wd-reader
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.29
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.33
 wails3 dev
 ```
 

@@ -11,22 +11,6 @@ export default defineConfig({
     },
     plugins: [
         react(),
-        {
-            name: 'wails-dev-readiness',
-            configureServer(server) {
-                // Wails 3's startup probe has no Accept header. Vite 3's SPA
-                // fallback returns 404 for it, preventing the native app launch.
-                // Answer only that probe; browsers keep the normal HTML/HMR flow.
-                server.middlewares.use((req, res, next) => {
-                    if (req.method === 'GET' && req.url === '/' && !req.headers.accept) {
-                        res.writeHead(200, {'Content-Type': 'text/plain'});
-                        res.end('ready\n');
-                        return;
-                    }
-                    next();
-                });
-            }
-        }
     ]
 // ,
 //     build: {

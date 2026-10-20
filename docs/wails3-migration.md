@@ -1,10 +1,10 @@
 # Wails 3 migration
 
-Migration target: Wails **v3.0.0-beta.29**, verified against the Go module proxy and npm on 2026-10-15.
+Migration target: Wails **v3.0.0-beta.33**, verified against the Go module proxy and npm on 2026-10-20.
 This is a beta release. The Go module, CLI used by CI, and `@wailsio/runtime` are pinned to the same release.
 
 Official references:
-- https://github.com/wailsapp/wails/releases/tag/v3.0.0-beta.29
+- https://github.com/wailsapp/wails/releases/tag/v3.0.0-beta.33
 - https://v3.wails.io/migration/v2-to-v3/
 
 ## Feature mapping
@@ -30,31 +30,29 @@ The inactive root `server.go` file service is retained and still not started. Re
 ## Development
 
 Requirements:
-- Go 1.25 or newer (local validation used Go 1.26.9).
-- Node.js 24 LTS and npm (local validation used Node 24.18).
-- Wails CLI v3.0.0-beta.29 on PATH.
+- Go 1.26 or newer (beta.33 requires Go 1.26.0; upgrade validation used Go 1.26.0).
+- Node.js 24 LTS and npm recommended (upgrade validation used Node 22.22.3 and npm 10.9.8).
+- Wails CLI v3.0.0-beta.33 on PATH.
 - Windows: WebView2 Runtime.
 - macOS: Xcode command-line tools; the Wails 3 build template targets macOS 12+.
 - Linux: GTK4, WebKitGTK 6, pkg-config and a C compiler. Ubuntu 24.04 CI installs `libgtk-4-dev libwebkitgtk-6.0-dev libx11-dev libfuse2t64`.
 
 ```sh
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.29
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.33
 wails3 dev
 wails3 build
 ```
 
-Go and CLI binaries must be on PATH. On this Windows workstation they are installed at
-`C:/Users/bokun/sdk/go1.26.9/bin` and `C:/Users/bokun/go/bin`.
+Go and CLI binaries must be on PATH. Go can download the required toolchain
+automatically; the Wails CLI is installed in `$(go env GOPATH)/bin` by default.
 
 A fresh build installs frontend dependencies and regenerates bindings automatically.
 Bindings use method names, so they are readable and do not depend on opaque numeric IDs.
 The existing React, Ant Design and Vite versions were retained to avoid unrelated UI migrations.
 The existing Vite build emits Ant Design `use client` and bundle-size warnings; these do not prevent the build.
 
-`vite.config.js` includes a development-only readiness middleware for Wails 3's
-headerless GET `/` probe. Vite 3 otherwise responds with 404 because the probe
-has no Accept header, so Wails times out before launching the native window.
-Normal browser HTML requests and HMR still use Vite's default handlers.
+Wails beta.33 uses a TCP probe for frontend readiness. The previous Vite
+headerless-GET readiness middleware is no longer needed and has been removed.
 The Vite listener is explicitly bound to `127.0.0.1`, matching the Wails
 development proxy's IPv4 connection. Its port follows `WAILS_VITE_PORT`, so
 `wails3 dev -port ...` continues to work.
@@ -84,6 +82,17 @@ Wails' global shortcut backend requires platform support; Linux Wayland support 
 - The conversion server and its current HTTP URL are retained. Remote format conversion availability is outside Wails' control.
 
 ## Verification
+
+### beta.33 upgrade (2026-10-20)
+
+- `go mod tidy`, `go test ./...` and `go vet ./...`: passed on Windows amd64.
+- `npm test`: all 13 tests passed; `npm run build`: passed with the existing warnings.
+- `wails3 version`: v3.0.0-beta.33; binding generation, `wails3 build VERSION=dev` and `wails3 build DEV=true`: passed.
+- Windows arm64: `CGO_ENABLED=0 GOARCH=arm64 go build -tags production -trimpath`: passed (compile only).
+- beta.29 and beta.33 common Taskfile templates were compared; no build-task changes were required.
+- Native UI interaction, full `wails3 dev` startup, macOS/Linux builds and installers were not revalidated during this upgrade.
+
+### Original beta.29 migration
 
 - `go test ./...`: passed, including the available AZW3 extraction fixture; the existing conversion test skips if its expected source file is absent.
 - `go vet ./...`: passed.
