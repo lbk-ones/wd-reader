@@ -11,6 +11,10 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * AddFile 添加文件
  * @param {string[]} name
@@ -18,6 +22,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
  */
 export function AddFile(name) {
     return $Call.ByName("main.App.AddFile", name);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function CloseMiniMenu() {
+    return $Call.ByName("main.App.CloseMiniMenu");
 }
 
 /**
@@ -86,6 +97,16 @@ export function GetChapterListByFileName(_fileName, splitType, splitValue) {
 }
 
 /**
+ * GetMiniMenuState also handles the first load before frontend event listeners exist.
+ * @returns {$CancellablePromise<$models.MiniMenuState>}
+ */
+export function GetMiniMenuState() {
+    return $Call.ByName("main.App.GetMiniMenuState").then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
  * GetScOne 诗词获取
  * @returns {$CancellablePromise<string>}
  */
@@ -136,6 +157,19 @@ export function OpenFileDialog(title) {
 }
 
 /**
+ * OpenMiniMenu opens a reusable native window outside the 120px mini reader.
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {string} language
+ * @param {string} bookName
+ * @param {string} chapterName
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenMiniMenu(clientX, clientY, language, bookName, chapterName) {
+    return $Call.ByName("main.App.OpenMiniMenu", clientX, clientY, language, bookName, chapterName);
+}
+
+/**
  * ParseEpubToTxt 解析epub文件
  * @param {string} filename
  * @returns {$CancellablePromise<string>}
@@ -143,3 +177,15 @@ export function OpenFileDialog(title) {
 export function ParseEpubToTxt(filename) {
     return $Call.ByName("main.App.ParseEpubToTxt", filename);
 }
+
+/**
+ * SelectMiniMenuAction closes before sending a validated command back to the reader.
+ * @param {string} id
+ * @returns {$CancellablePromise<void>}
+ */
+export function SelectMiniMenuAction(id) {
+    return $Call.ByName("main.App.SelectMiniMenuAction", id);
+}
+
+// Private type creation functions
+const $$createType0 = $models.MiniMenuState.createFrom;

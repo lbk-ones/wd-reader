@@ -53,6 +53,7 @@ func main() {
 		// Keep the v2 origin so existing localStorage settings and progress remain addressable.
 		startURL = "wails://wails/"
 	}
+	service.miniMenuURL = startURL + "?view=mini-menu"
 	service.window = app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "reader",
 		Title:            "wd-reader",
@@ -73,8 +74,15 @@ func main() {
 	service.window.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
 		service.window.EmitEvent("files-dropped", event.Context().DroppedFiles())
 	})
+	service.window.OnWindowEvent(events.Common.WindowMinimise, func(_ *application.WindowEvent) {
+		service.CloseMiniMenu()
+	})
+	service.window.OnWindowEvent(events.Common.WindowHide, func(_ *application.WindowEvent) {
+		service.CloseMiniMenu()
+	})
 	// Wails 3 owns registration and unregisters shortcuts during shutdown.
 	if err := app.GlobalShortcut.Register("CmdOrCtrl+Space", func() {
+		service.CloseMiniMenu()
 		if service.window.IsMinimised() {
 			service.window.UnMinimise()
 			service.window.Focus()

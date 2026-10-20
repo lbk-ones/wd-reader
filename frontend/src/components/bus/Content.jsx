@@ -116,7 +116,8 @@ const Content = (props, ref) => {
                         }
 
 
-                        <ContextMenu options={props.options} onSelect={props.onSelect}/>
+                        <ContextMenu options={props.options} onSelect={props.onSelect}
+                                     onOpenWindow={settingState.miniMode === '1' ? props.onOpenMenuWindow : undefined}/>
                     </div>
                 </div>
 

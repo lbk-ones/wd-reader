@@ -5,6 +5,7 @@ import './style.css'
 import App from './App'
 import {message} from "antd";
 import {I18nProvider} from './i18n/index.jsx';
+import MiniReaderMenu from './components/MiniReaderMenu.jsx';
 const container = document.getElementById('root')
 
 const root = createRoot(container)
@@ -31,7 +32,7 @@ root.render(
                 },
             }}
         >
-            <App/>
+            {new URLSearchParams(window.location.search).get('view') === 'mini-menu' ? <MiniReaderMenu/> : <App/>}
         </I18nProvider>
     </React.StrictMode>
 )

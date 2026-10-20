@@ -1,4 +1,5 @@
 export default {
+    '迷你模式下右键打开独立操作窗口，所有菜单项完整显示。翻页和切章保持迷你模式，目录、设置等面板会先恢复正常窗口；按 Esc 或点击其他窗口关闭菜单。': 'In mini mode, right-click to open all actions in a separate window. Page and chapter navigation keep mini mode; contents, preferences and other panels restore the normal window first. Press Esc or focus another window to close the menu.',
     '开始阅读': 'Getting started',
     '把书放进书架': 'Add books to your library',
     '点击“添加书籍”选择文件，或把本地文件拖入窗口。优先使用 TXT、EPUB、MOBI、AZW、AZW3；其他格式需要联网解析转换，大文件可能需要稍等。': 'Click Add books or drag local files into the window. TXT, EPUB, MOBI, AZW and AZW3 are recommended. Other formats need online conversion; larger files may take longer.',

@@ -46,13 +46,15 @@ import {turnReaderPage} from "./components/readingPagination.js";
 import {createAutoScroll} from "./components/autoScroll.js";
 import {DEFAULT_READING_TYPOGRAPHY} from "./components/readingTypography.js";
 import {DEFAULT_READING_COLORS} from "./components/readingColors.js";
+import {runMiniMenuAction} from './components/readerMenu.js';
+import {CloseMiniMenu, OpenMiniMenu} from '../bindings/wd-reader/app.js';
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
 
 
 function App() {
-    useI18n();
+    const {language} = useI18n();
     const {modal} = AntdApp.useApp();
     const cacheCount = useSyncExternalStore(subscribeCacheChanges, getCacheCount);
     const [display, setDisplay] = useState(true)
@@ -114,7 +116,8 @@ function App() {
         lastSearchMulu: -1,
         lastSearchMuluName: "",
         gotoMuluIndexSearchVisible: false,
-        oneLine: false
+        oneLine: false,
+        miniMenuOpen: false,
     })
 
 
@@ -254,6 +257,15 @@ function App() {
         const offFileDrop = Events.On("files-dropped", event => {
             AddFleAndHandlerRes(event.data);
         });
+        const offMiniAction = Events.On('mini-menu-action', event => {
+            handleMiniMenuAction(event.data);
+        });
+        const offMiniClosed = Events.On('mini-menu-closed', () => {
+            setState({miniMenuOpen: false});
+            if (getSettingState().leaveWindowHid === '1' && !appRef.current?.matches(':hover')) {
+                setDisplay(false);
+            }
+        });
 
         function handleReaderKeyDown(event) {
             if (event.key === 'F1') {
@@ -288,6 +300,9 @@ function App() {
             window.removeEventListener("error", handlerError)
             window.removeEventListener("unhandledrejection", unhandledrejection)
             offFileDrop()
+            offMiniAction();
+            offMiniClosed();
+            CloseMiniMenu().catch(() => {});
             document.removeEventListener('keydown', handleReaderKeyDown)
             window.removeEventListener('pagehide', saveReadingPosition);
             window.removeEventListener('beforeunload', saveReadingPosition);
@@ -416,14 +431,14 @@ function App() {
     useEffect(() => {
         if (settingState.autoPage !== '1' || !display || !state.currentBookChapterName
             || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
-            || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible) return;
+            || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible || state.miniMenuOpen) return;
 
         autoPageTimerRef.current.start(settingState.autoPageInterval * 1000);
         return () => autoPageTimerRef.current.stop();
     }, [settingState.autoPage, settingState.autoPageInterval, display, state.currentBookName,
         state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
         state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible,
-        state.gotoMuluIndexSearchVisible, advanceAutoPage]);
+        state.gotoMuluIndexSearchVisible, state.miniMenuOpen, advanceAutoPage]);
 
     const canAutoScroll = useMemoizedFn(() => {
         const current = getState();
@@ -431,7 +446,7 @@ function App() {
             && !!current.currentBookChapterName && !current.loadingBook
             && !current.settingVisible && !current.muluVisible && !current.helpVisible
             && !current.sysSettingVisible && !current.downloadFromUrlVisible
-            && !current.gotoMuluIndexSearchVisible && !document.querySelector('.ant-modal-wrap');
+            && !current.gotoMuluIndexSearchVisible && !current.miniMenuOpen && !document.querySelector('.ant-modal-wrap');
     });
     const advanceAutoScrollChapter = useMemoizedFn(async () => {
         const current = getState();
@@ -459,7 +474,7 @@ function App() {
     useEffect(() => {
         if (settingState.autoScroll !== '1' || !display || !state.currentBookChapterName
             || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
-            || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible) return;
+            || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible || state.miniMenuOpen) return;
         autoScrollRef.current.start(settingState.autoScrollSpeed);
         return () => {
             autoScrollRef.current.stop();
@@ -467,7 +482,7 @@ function App() {
         };
     }, [settingState.autoScroll, settingState.autoScrollSpeed, display, state.currentBookName,
         state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
-        state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible, state.gotoMuluIndexSearchVisible]);
+        state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible, state.gotoMuluIndexSearchVisible, state.miniMenuOpen]);
 
     function hasError(res, displayError = true) {
         if (res.startsWith("错误信息:")) {
@@ -651,9 +666,9 @@ function App() {
     }
 
 
-    function toggleTitle() {
+    function toggleTitle(visible) {
         let showTitle = getState().showTitle;
-        let b = !showTitle;
+        let b = typeof visible === 'boolean' ? visible : !showTitle;
         setCacheItem("标题开关", b);
         setState({
             showTitle: b
@@ -716,6 +731,31 @@ function App() {
             Application.Quit();
         }
     };
+
+    const openMiniMenu = useMemoizedFn(async (x, y) => {
+        setState({miniMenuOpen: true});
+        setDisplay(true);
+        autoPageTimerRef.current.stop();
+        pauseAutoScroll();
+        try {
+            await OpenMiniMenu(x, y, language, getState().currentBookName, getState().currentBookChapterName);
+        } catch (error) {
+            setState({miniMenuOpen: false});
+            message.error(String(error));
+        }
+    });
+
+    const handleMiniMenuAction = useMemoizedFn(async id => {
+        try {
+            setDisplay(true);
+            await runMiniMenuAction(id, {
+                isMiniMode: getSettingState().miniMode === '1',
+                restoreWindow: () => miniSize(getSettingState().miniRows, false),
+                showTitle: () => toggleTitle(true),
+                dispatch: action => handleSelect({id: action}),
+            });
+        } catch (error) { message.error(String(error)); }
+    });
 
 
     const options = [
@@ -928,7 +968,7 @@ function App() {
              }}
              onMouseLeave={() => {
                  let leaveWindowHid = getSettingState().leaveWindowHid;
-                 if (leaveWindowHid === '1' && !getState().helpVisible) {
+                 if (leaveWindowHid === '1' && !getState().helpVisible && !getState().miniMenuOpen) {
                      setDisplay(false)
                  }
              }}
@@ -1043,6 +1083,7 @@ function App() {
                 }}
                 options={options}
                 onSelect={handleSelect}
+                onOpenMenuWindow={openMiniMenu}
             />
 
             {/*content setting*/}

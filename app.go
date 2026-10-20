@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"wd-reader/go/book"
 	"wd-reader/go/book/epub/EpubBook"
 	"wd-reader/go/constant"
@@ -19,8 +20,12 @@ import (
 
 // App struct
 type App struct {
-	application *application.App
-	window      *application.WebviewWindow
+	application    *application.App
+	window         *application.WebviewWindow
+	miniMenuMu     sync.Mutex
+	miniMenuWindow *application.WebviewWindow
+	miniMenuURL    string
+	miniMenuState  MiniMenuState
 }
 
 // NewApp creates a new App application struct

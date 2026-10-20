@@ -1,4 +1,10 @@
 export default {
+    '阅读操作': 'Reading actions',
+    '关闭操作窗口': 'Close reading actions',
+    '选择一项操作继续阅读': 'Choose an action to continue reading',
+    '翻页与章节': 'Pages and chapters',
+    '更多操作': 'More actions',
+    '关闭后继续阅读': 'Close to continue reading',
     '偷得浮生半日闲': 'A quiet moment to read',
     '标题开关': 'Title bar',
     '加载中。。': 'Loading…',

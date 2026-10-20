@@ -155,6 +155,7 @@ TXT and EPUB are recommended for everyday reading. This reader focuses on text; 
 ### Mini mode, transparency and hiding
 
 - **Mini reader:** choose 1–4 lines in preferences and enable Mini mode. Drag the six-dot handle to move the window; press `Esc` or click the expand icon to exit.
+- **Mini context menu:** right-click the text to open all actions in a separate always-on-top window. Page and chapter navigation keep mini mode; contents, preferences and other panels restore the normal window. Press `Esc` or focus another window to dismiss the menu.
 - **Transparent mode:** use a transparent background and white text over other windows. Choosing a color preset turns transparency off.
 - **Auto hide:** hide reading content when the pointer leaves the window and reveal it when the pointer returns.
 - **Hidden title bar:** right-click the text and choose Title bar to restore it, or Preferences to reopen settings.

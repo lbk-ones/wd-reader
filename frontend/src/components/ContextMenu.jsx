@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useLayoutEffect, useRef} from 'react';
 import "./ContextMenu.css"
 
-const ContextMenu = ({options, onSelect,fontSize=14}) => {
+const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
     const menuRef = useRef(null);
@@ -17,6 +17,12 @@ const ContextMenu = ({options, onSelect,fontSize=14}) => {
     useEffect(() => {
         const handleContextMenu = (e) => {
             e.preventDefault();
+            if (onOpenWindow) {
+                e.stopPropagation();
+                setShowMenu(false);
+                onOpenWindow(Math.round(e.clientX), Math.round(e.clientY));
+                return;
+            }
             setShowMenu(true);
             setMenuPosition({x: e.clientX, y: e.clientY});
         };
@@ -35,7 +41,7 @@ const ContextMenu = ({options, onSelect,fontSize=14}) => {
             parentNode.removeEventListener('contextmenu', handleContextMenu);
             parentNode.removeEventListener('click', handleClick);
         };
-    }, []);
+    }, [onOpenWindow]);
 
     return (
         <div
@@ -53,7 +59,7 @@ const ContextMenu = ({options, onSelect,fontSize=14}) => {
                 width: 'max-content',
                 minWidth: '120px',
                 maxWidth: 'calc(100vw - 16px)',
-                lineHeight:'25px' // 写死吧 不然会受外面的影响
+                lineHeight: '25px' // 写死吧 不然会受外面的影响
             }}
         >
             {options.map(option => (
@@ -71,16 +77,14 @@ const ContextMenu = ({options, onSelect,fontSize=14}) => {
                         whiteSpace: 'nowrap',
                         textAlign: 'center',
                         textIndent: 0,
-                        ...(function (){
+                        ...(function () {
 
-                            if(fontSize){
-                                return  {
+                            if (fontSize) {
+                                return {
                                     fontSize
                                 }
                             }
-                            return {
-
-                            }
+                            return {}
                         })()
                     }}
                     onClick={(e) => {
