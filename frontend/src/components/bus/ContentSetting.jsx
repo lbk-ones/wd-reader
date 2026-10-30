@@ -18,6 +18,7 @@ import {Window} from "@wailsio/runtime";
 import {DEFAULT_READING_TYPOGRAPHY, READING_TYPOGRAPHY_PRESETS} from '../readingTypography.js';
 import {calculateReadingLayout} from '../readingLayout.js';
 import {DEFAULT_READING_COLORS, READING_COLOR_PRESETS} from '../readingColors.js';
+import {CHAPTER_REGEX_PRESETS} from '../chapterRegexPresets.js';
 
 function ContentSetting(props) {
     useI18n();
@@ -423,7 +424,14 @@ function ContentSetting(props) {
                                 <Select.Option key={"3"} value={"3"}>{t("自定义正则")}</Select.Option>
                             </Select>
                             {
-                                splitMaElement === '3' && (
+                                splitMaElement === '3' && (<>
+                                    <Select className="settings-split-preset" aria-label={t("正则预设")}
+                                            placeholder={t("选择正则预设")} value={null}
+                                            onChange={value => {
+                                                const splitMap = setSplitTypeValue(currentBookName, value);
+                                                setSettingState({splitMap});
+                                            }}
+                                            options={CHAPTER_REGEX_PRESETS.map(preset => ({value: preset.pattern, label: t(preset.label)}))}/>
                                     <Input allowClear className="settings-split-regex" aria-label={t("断章正则表达式")}
                                            placeholder={t("请输入正则表达式")}
                                            value={getSplitTypeValue(currentBookName)}
@@ -435,7 +443,7 @@ function ContentSetting(props) {
                                                })
                                            }}
                                     />
-                                )
+                                </>)
                             }
 
                             {

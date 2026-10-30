@@ -9,6 +9,26 @@ import {calculatePageTurn, turnReaderPage} from '../src/components/readingPagina
 import {createAutoScroll} from '../src/components/autoScroll.js';
 import {READING_TYPOGRAPHY_PRESETS, DEFAULT_READING_TYPOGRAPHY} from '../src/components/readingTypography.js';
 import {READING_COLOR_PRESETS, DEFAULT_READING_COLORS} from '../src/components/readingColors.js';
+import {CHAPTER_REGEX_PRESETS} from '../src/components/chapterRegexPresets.js';
+
+test('chapter regex presets recognize their intended headings', () => {
+    const [chapterOnly, chapter, volume, both, english] = CHAPTER_REGEX_PRESETS.map(({pattern}) => new RegExp(pattern));
+    assert(chapterOnly.test('第一章 开始'));
+    for (const title of ['第一卷', '第 12 节', '第两百回']) assert(!chapterOnly.test(title));
+    for (const title of ['第一章 开始', '第 12 节', '第两百回']) {
+        assert(chapter.test(title));
+        assert(both.test(title));
+        assert(!volume.test(title));
+    }
+    for (const title of ['第一卷 开端', '第 2 部']) {
+        assert(volume.test(title));
+        assert(both.test(title));
+        assert(!chapter.test(title));
+    }
+    assert(english.test('Chapter 12 The beginning'));
+    assert(!english.test('This is Chapter 12'));
+    assert(!both.test('正文提到第一章'));
+});
 
 test('reading color pairs have strong contrast for both light and dark backgrounds', () => {
     const luminance = color => {
@@ -175,6 +195,22 @@ test('DOM page turns use real paragraph offsets and do not accumulate chapter-en
     assert.equal(content.style.paddingBottom, '13px');
     turnReaderPage(content, 30, -1);
     assert.equal(content.scrollTop, 390);
+});
+
+test('page turns preserve viewport height and align the last page with a partial viewport', () => {
+    const content = {scrollTop: 0, clientHeight: 286, clientTop: 0,
+        style: {height: '300px', paddingBottom: '0px'},
+        get scrollHeight() {return 977 + parseFloat(this.style.paddingBottom);},
+        getBoundingClientRect: () => ({top: 0}),
+        querySelector: () => ({getBoundingClientRect: () => ({top: 90 - content.scrollTop})}),
+        scrollTo({top}) {this.scrollTop = Math.min(top, this.scrollHeight - this.clientHeight);},
+    };
+    for (let i = 0; i < 5; i++) turnReaderPage(content, 30, 1);
+    assert.equal(content.style.height, '300px');
+    assert.equal(content.scrollTop, 720);
+    assert.equal(content.style.paddingBottom, '29px');
+    turnReaderPage(content, 30, -1);
+    assert.equal(content.scrollTop, 450);
 });
 
 function clock(repeat = false) {

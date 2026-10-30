@@ -2,7 +2,7 @@ export function calculatePageTurn({scrollTop, viewportHeight, contentHeight, lin
     if (![scrollTop, viewportHeight, contentHeight, lineHeight, origin].every(Number.isFinite)
         || lineHeight <= 0 || viewportHeight < lineHeight) return null;
     const pageHeight = Math.floor(viewportHeight / lineHeight) * lineHeight;
-    const overflow = Math.max(0, contentHeight - pageHeight);
+    const overflow = Math.max(0, contentHeight - viewportHeight);
     // Allow the last page to reach a line boundary instead of having the
     // browser clamp an aligned target back to a fractional line at chapter end.
     const maxTop = overflow > 0
@@ -28,7 +28,6 @@ export function turnReaderPage(content, lineHeight, direction) {
     const turn = calculatePageTurn({scrollTop, viewportHeight: content.clientHeight,
         contentHeight: content.scrollHeight - oldPadding, lineHeight: Number(lineHeight), origin, direction});
     if (!turn) return;
-    content.style.height = `${turn.pageHeight}px`;
     content.style.paddingBottom = `${turn.paddingBottom}px`;
     content.scrollTo({top: turn.top, behavior: 'instant'});
 }
