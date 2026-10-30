@@ -204,6 +204,15 @@ func TransferFileFromFileSys(name []string) string {
 			joinOutputPath := strings.Replace(join, ".epub", ".txt", -1)
 			if base != "." {
 				CopyFileToOtherPath(ht, join, resJsonMap)
+				if _, failed := resJsonMap[ht]; failed {
+					continue
+				}
+				if ext == ".txt" {
+					if err := RecordImport(base, base); err != nil {
+						resJsonMap[ht] = fmt.Sprint(err)
+						continue
+					}
+				}
 				if ext == ".epub" {
 					epub, err := EpubBook.ParseEpub(join, joinOutputPath)
 					if err != nil {
@@ -212,6 +221,14 @@ func TransferFileFromFileSys(name []string) string {
 					}
 					err = epub.WriteEpub()
 					if err != nil {
+						resJsonMap[ht] = fmt.Sprint(err)
+						continue
+					}
+					if err = CaptureEPUBMetadata(join, filepath.Base(joinOutputPath)); err != nil {
+						resJsonMap[ht] = fmt.Sprint(err)
+						continue
+					}
+					if err = RecordImport(filepath.Base(joinOutputPath), base); err != nil {
 						resJsonMap[ht] = fmt.Sprint(err)
 						continue
 					}
@@ -248,6 +265,17 @@ func TransferFileFromFileSys(name []string) string {
 						continue
 					}
 					log.Logger.Info("Saved to ", filepath.Base(outPath), " bytes length is:", len(text))
+					if reader.MobiBook != nil && reader.MobiBook.Headers != nil && reader.MobiBook.Headers.ExthHeader != nil && reader.MobiBook.Headers.ExthHeader.ExthRow != nil {
+						meta := reader.MobiBook.Headers.ExthHeader.ExthRow
+						if err = CaptureMOBIMetadata(filepath.Base(outPath), meta.Title, meta.Creator, meta.Description); err != nil {
+							resJsonMap[ht] = fmt.Sprint(err)
+							continue
+						}
+					}
+					if err = RecordImport(filepath.Base(outPath), base); err != nil {
+						resJsonMap[ht] = fmt.Sprint(err)
+						continue
+					}
 					DeleteFile(base)
 				}
 			} else {
@@ -352,9 +380,18 @@ func parseOtherFile(name []string, resJsonMap map[string]string) string {
 			epub, err := EpubBook.ParseEpub(newName, joinOutputPath)
 			if err != nil {
 				resJsonMap[newName] = fmt.Sprint(err)
+				continue
 			}
 			err = epub.WriteEpub()
 			if err != nil {
+				resJsonMap[originName] = fmt.Sprint(err)
+				continue
+			}
+			if err = CaptureEPUBMetadata(newName, filepath.Base(joinOutputPath)); err != nil {
+				resJsonMap[originName] = fmt.Sprint(err)
+				continue
+			}
+			if err = RecordImport(filepath.Base(joinOutputPath), originName); err != nil {
 				resJsonMap[originName] = fmt.Sprint(err)
 				continue
 			}

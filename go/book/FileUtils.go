@@ -65,6 +65,12 @@ func DownLoadFile(url string, reMap map[string]string) {
 		fmt.Println("Error copying content:", err)
 		return
 	}
+	if ext := strings.ToLower(path.Ext(name)); ext == ".txt" || ext == ".epub" {
+		if err = RecordImport(name, name); err != nil {
+			reMap[url] = WrapperException(err)
+			return
+		}
+	}
 
 	log.Logger.Info("file downloaded successfully.", url)
 }

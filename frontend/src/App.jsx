@@ -1018,33 +1018,13 @@ function App() {
                         })
                     }
                 }}
-                onSearch={(_value, e) => {
+                onSearch={(_value, metadataMatches = []) => {
                     let value = trim(_value)
-                    reloadBookList(() => {
-                        if (!value) {
-                            return
-                        }
-                        let searchByInitials1 = searchByInitials(value.toLowerCase(), getState().currentBookList);
-                        let searchSuccess = false;
-                        if (!isEmpty(searchByInitials1)) {
-                            searchSuccess = true;
-                            searchByInitials1.forEach(et => {
-                                clickBookToFirst(et.name)
-                            })
-                        } else {
-                            let filter1 = filter(getState().currentBookList, e => e.indexOf(value) >= 0);
-                            searchSuccess = !isEmpty(filter1);
-                            filter1.forEach(e => {
-                                clickBookToFirst(e)
-                            })
-                        }
-                        if (searchSuccess) {
-                            message.success(t("查询到列表，已经置顶"))
-                        } else {
-                            message.success(t("未查询到列表"))
-                        }
-                    })
-
+                    if (!value) return [];
+                    const names = getState().currentBookList;
+                    const initials = searchByInitials(value.toLowerCase(), names).map(item => item.name);
+                    const direct = names.filter(name => name.toLowerCase().includes(value.toLowerCase()));
+                    return [...new Set([...metadataMatches, ...initials, ...direct])];
                 }}
             />
 

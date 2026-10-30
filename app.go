@@ -78,6 +78,26 @@ func (a *App) GetBooksPath() string {
 	return filepath.Join(book.GetAppPath(), constant.BOOK_PATH)
 }
 
+func (a *App) GetBookMetadata() ([]book.BookMetadata, error) { return book.ListMetadata() }
+func (a *App) UpdateBookMetadata(id, title string, authors []string, description string) error {
+	return book.UpdateMetadata(id, title, authors, description)
+}
+func (a *App) GetBookCover(id string) (string, error) { return book.CoverData(id) }
+func (a *App) RemoveBookCover(id string) error        { return book.SetCover(id, "") }
+func (a *App) ChooseBookCover(id string) (bool, error) {
+	name, err := a.application.Dialog.OpenFileWithOptions(&application.OpenFileDialogOptions{
+		Title: "选择封面", CanChooseFiles: true, Window: a.window,
+		Filters: []application.FileFilter{{DisplayName: "图片", Pattern: "*.jpg;*.jpeg;*.png;*.gif"}},
+	}).PromptForSingleSelection()
+	if err != nil && err.Error() == "cancelled by user" {
+		return false, nil
+	}
+	if err != nil || name == "" {
+		return false, err
+	}
+	return true, book.SetCover(id, name)
+}
+
 // GetVersion 获取版本
 func (a *App) GetVersion() string {
 	return version
@@ -99,6 +119,9 @@ func (a *App) ParseEpubToTxt(filename string) string {
 	}
 	err = epub.WriteEpub()
 	if err != nil {
+		return book.WrapperException(err)
+	}
+	if err = book.CaptureEPUBMetadata(bookPath, filepath.Base(txtOutputPath)); err != nil {
 		return book.WrapperException(err)
 	}
 	return "解析成功"
@@ -156,6 +179,11 @@ func (*App) AddFile(name []string) string {
 func (*App) DeleteFile(name string) string {
 	var str string
 	str = book.DeleteFile(name)
+	if !strings.HasPrefix(str, constant.ERROR_PREFIX) {
+		if err := book.RemoveMetadata(name); err != nil {
+			return book.WrapperException(err)
+		}
+	}
 	return str
 }
 

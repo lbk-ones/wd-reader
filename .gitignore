@@ -7,4 +7,6 @@ build/bin
 node_modules
 frontend/dist
 log
+/book-data/
+/books/book-data/
 *.iml

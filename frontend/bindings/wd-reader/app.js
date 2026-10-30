@@ -13,6 +13,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as book$0 from "./go/book/models.js";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
 /**
@@ -22,6 +26,14 @@ import * as $models from "./models.js";
  */
 export function AddFile(name) {
     return $Call.ByName("main.App.AddFile", name);
+}
+
+/**
+ * @param {string} id
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function ChooseBookCover(id) {
+    return $Call.ByName("main.App.ChooseBookCover", id);
 }
 
 /**
@@ -58,11 +70,28 @@ export function GetAppPath() {
 }
 
 /**
+ * @param {string} id
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetBookCover(id) {
+    return $Call.ByName("main.App.GetBookCover", id);
+}
+
+/**
  * GetBookList 获取文件列表
  * @returns {$CancellablePromise<string>}
  */
 export function GetBookList() {
     return $Call.ByName("main.App.GetBookList");
+}
+
+/**
+ * @returns {$CancellablePromise<book$0.BookMetadata[]>}
+ */
+export function GetBookMetadata() {
+    return $Call.ByName("main.App.GetBookMetadata").then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType1($result);
+    }));
 }
 
 /**
@@ -102,7 +131,7 @@ export function GetChapterListByFileName(_fileName, splitType, splitValue) {
  */
 export function GetMiniMenuState() {
     return $Call.ByName("main.App.GetMiniMenuState").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType0($result);
+        return $$createType2($result);
     }));
 }
 
@@ -179,6 +208,14 @@ export function ParseEpubToTxt(filename) {
 }
 
 /**
+ * @param {string} id
+ * @returns {$CancellablePromise<void>}
+ */
+export function RemoveBookCover(id) {
+    return $Call.ByName("main.App.RemoveBookCover", id);
+}
+
+/**
  * SelectMiniMenuAction closes before sending a validated command back to the reader.
  * @param {string} id
  * @returns {$CancellablePromise<void>}
@@ -187,5 +224,18 @@ export function SelectMiniMenuAction(id) {
     return $Call.ByName("main.App.SelectMiniMenuAction", id);
 }
 
+/**
+ * @param {string} id
+ * @param {string} title
+ * @param {string[]} authors
+ * @param {string} description
+ * @returns {$CancellablePromise<void>}
+ */
+export function UpdateBookMetadata(id, title, authors, description) {
+    return $Call.ByName("main.App.UpdateBookMetadata", id, title, authors, description);
+}
+
 // Private type creation functions
-const $$createType0 = $models.MiniMenuState.createFrom;
+const $$createType0 = book$0.BookMetadata.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = $models.MiniMenuState.createFrom;

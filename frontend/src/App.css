@@ -440,17 +440,25 @@
     background: #ffffff35;
 }
 
-.book-spine > span:first-child {
-    font-family: "Songti SC", "SimSun", serif;
-    font-size: 16px;
+.default-book-cover {
+    position: absolute;
+    inset: 5px 4px 5px 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-block: 1px solid #ffffff55;
 }
 
-.book-spine > .anticon {
-    position: absolute;
-    right: 4px;
-    bottom: 4px;
-    font-size: 7px;
-    opacity: .5;
+.default-book-cover-title {
+    display: block;
+    width: 100%;
+    font-family: "Songti SC", "SimSun", serif;
+    font-size: 10px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-align: center;
+    overflow-wrap: anywhere;
+    word-break: break-all;
 }
 
 .book-spine--0 {
@@ -474,7 +482,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 4px;
 }
 
 .library-book-title {
@@ -488,9 +496,29 @@
 
 .library-book-meta {
     display: flex;
+    min-width: 0;
     gap: 6px;
     align-items: center;
     font-size: 9px;
+    color: #92998f;
+}
+
+.library-book-author, .library-book-hint {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.library-book-import-date {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    padding-right: 4px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 9px;
+    line-height: 14px;
     color: #92998f;
 }
 
@@ -512,7 +540,7 @@
     flex-shrink: 0;
 }
 
-.book-delete {
+.book-delete, .book-edit {
     appearance: none;
     background: none;
     border: 0;
@@ -523,9 +551,18 @@
     font-size: 12px;
     color: #9aa394;
     margin-left: 5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
 }
 
-.book-delete:hover {
+.library-book:hover .book-delete, .library-book:hover .book-edit,
+.library-book:focus-within .book-delete, .library-book:focus-within .book-edit {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.book-delete:hover, .book-edit:hover {
     background: #f3e6df;
     color: #a45c4e;
 }
@@ -592,6 +629,10 @@
     overflow-wrap: anywhere;
     min-width: 0;
 }
+
+.book-cover { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.book-metadata-form { display: grid; gap: 12px; }
+.book-metadata-form label { display: grid; gap: 4px; }
 
 .book-content-div-footer-btn {
     position: relative;
@@ -1255,7 +1296,7 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
 .book-list-ul--grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr));
-    grid-auto-rows: minmax(174px, max-content);
+    grid-auto-rows: minmax(190px, auto);
     align-content: start;
     gap: 8px;
     padding-top: 4px;
@@ -1267,7 +1308,7 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
     align-items: stretch;
     min-width: 0;
     min-height: 0;
-    padding: 7px;
+    padding: 9px 9px 12px;
     border: 1px solid var(--line);
     background: #fffefa;
 }
@@ -1307,20 +1348,14 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
     left: 7px;
 }
 
-.book-list-ul--grid .book-spine > span:first-child {
-    font-size: 30px;
-    opacity: .9;
-}
-
-.book-list-ul--grid .book-spine > .anticon {
-    right: 10px;
-    bottom: 8px;
-    font-size: 12px;
-    opacity: .45;
+.book-list-ul--grid .default-book-cover {
+    inset: 14px 10px 12px 14px;
 }
 
 .book-list-ul--grid .library-book-info {
     flex: none;
+    width: 100%;
+    min-width: 0;
     gap: 5px;
 }
 
@@ -1342,7 +1377,7 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
 }
 
 .book-list-ul--grid .library-book-meta .meta-dot,
-.book-list-ul--grid .library-book-meta > span:last-child {
+.book-list-ul--grid .library-book-hint {
     display: none;
 }
 
@@ -1357,7 +1392,7 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
     padding: 1px 4px;
 }
 
-.book-list-ul--grid .book-delete {
+.book-list-ul--grid .book-delete, .book-list-ul--grid .book-edit {
     position: absolute;
     top: 11px;
     right: 11px;
@@ -1366,10 +1401,20 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
     border-radius: 5px;
     background: #fffefad9;
     color: #65735e;
-    opacity: 1;
 }
 
-.book-list-ul--grid .book-delete:hover {
+@media (hover: none) {
+    .book-delete, .book-edit {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+.book-list-ul--grid .book-edit {
+    right: 37px;
+}
+
+.book-list-ul--grid .book-delete:hover, .book-list-ul--grid .book-edit:hover {
     background: #fff4ed;
     color: #a45c4e;
 }
