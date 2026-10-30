@@ -71,7 +71,7 @@ func TestParseReadableChapters(t *testing.T) {
 		},
 		{
 			name: "chapter and volume regex preset", splitType: "3",
-			splitValue: "^第[ 　]*[0-9零〇一二三四五六七八九十百千万两壹贰叁肆伍陆柒捌玖拾佰仟]+[ 　]*[章节回卷部]",
+			splitValue: "^第[ 　]*[0-9零〇一二三四五六七八九十百千万两壹贰叁肆伍陆柒捌玖拾佰仟]+[ 　]*[章卷]",
 			text:       "第一卷 开篇\n卷的介绍。\n第 2 章 故事\n正文。",
 			want:       []readableChapter{{"第一卷 开篇", []string{"卷的介绍。"}}, {"第 2 章 故事", []string{"正文。"}}},
 		},
@@ -103,7 +103,7 @@ func TestUTF16BookChapters(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 	t.Setenv("HOME", dir)
-	bookDir := filepath.Join(GetAppPath(), constant.BOOK_PATH)
+	bookDir := ParsePath()
 	if err := os.MkdirAll(bookDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestChapterDirectoryAndContentAgree(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 	t.Setenv("HOME", dir)
-	bookDir := filepath.Join(GetAppPath(), constant.BOOK_PATH)
+	bookDir := ParsePath()
 	if err := os.MkdirAll(bookDir, 0755); err != nil {
 		t.Fatal(err)
 	}

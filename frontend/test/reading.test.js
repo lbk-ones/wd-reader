@@ -17,14 +17,14 @@ test('chapter regex presets recognize their intended headings', () => {
     for (const title of ['第一卷', '第 12 节', '第两百回']) assert(!chapterOnly.test(title));
     for (const title of ['第一章 开始', '第 12 节', '第两百回']) {
         assert(chapter.test(title));
-        assert(both.test(title));
         assert(!volume.test(title));
     }
     for (const title of ['第一卷 开端', '第 2 部']) {
         assert(volume.test(title));
-        assert(both.test(title));
         assert(!chapter.test(title));
     }
+    for (const title of ['第一章 开始', '第一卷 开端']) assert(both.test(title));
+    for (const title of ['第 12 节', '第两百回', '第 2 部']) assert(!both.test(title));
     assert(english.test('Chapter 12 The beginning'));
     assert(!english.test('This is Chapter 12'));
     assert(!both.test('正文提到第一章'));

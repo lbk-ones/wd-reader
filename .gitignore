@@ -7,6 +7,9 @@ build/bin
 node_modules
 frontend/dist
 log
-/book-data/
-/books/book-data/
+#/book-data/
+#/books/book-data/
+#/books/meta-data/
+#/books/parse/
+#/books/pure/
 *.iml

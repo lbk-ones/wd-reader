@@ -116,7 +116,7 @@ func parseReadableChapters(scanner *bufio.Scanner, splitType, splitValue string)
 }
 
 func readBookChapters(fileName, splitType, splitValue string) ([]readableChapter, error) {
-	path := filepath.Join(GetAppPath(), constant.BOOK_PATH, fileName)
+	path := filepath.Join(ParsePath(), fileName)
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

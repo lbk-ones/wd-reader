@@ -1,4 +1,4 @@
-import {t, useI18n, localizeError} from '../../i18n/index.jsx';
+import {t, useI18n} from '../../i18n/index.jsx';
 import {isEmpty} from "lodash-es";
 import {
     DeleteOutlined,
@@ -10,16 +10,19 @@ import {
     QuestionCircleOutlined,
     AppstoreOutlined,
     UnorderedListOutlined,
-    EditOutlined
+    EditOutlined,
+    FolderOpenOutlined,
+    ImportOutlined
 } from "@ant-design/icons";
-import {Button, Input, Modal, message} from "antd";
-import {getCacheItem, setCacheItem} from "../Utils";
+import {Button, Drawer, Input, Modal, message} from "antd";
+import {getCacheItem, setCacheItem, getSplitMap, putSplitMap} from "../Utils";
 import classNames from "classnames";
-import {DeleteEpubFile, DeleteFile, GetScOne, ParseEpubToTxt} from "../../../bindings/wd-reader/app";
-import {forwardRef, useEffect, useImperativeHandle, useState} from "react";
+import {DeleteFile, GetScOne} from "../../../bindings/wd-reader/app";
+import {forwardRef, useEffect, useImperativeHandle, useMemo, useState} from "react";
 import {Browser, Call} from "@wailsio/runtime";
-import {sortBooksByImportTime} from '../bookSorting.js';
+import {sortBooksByLastOpened} from '../bookSorting.js';
 import DefaultBookCover from '../DefaultBookCover.jsx';
+import {indexOriginalName, matchesOriginalName} from '../librarySearch.js';
 
 const TIP = ["翻开一页，暂别喧嚣。", "每一段闲暇，都有书相伴。", "慢慢读，世界会安静下来。"]
 
@@ -40,6 +43,47 @@ function BookList(props, ref) {
     const [covers, setCovers] = useState({});
     const [editing, setEditing] = useState(null);
     const [searchMatches, setSearchMatches] = useState(null);
+    const [libraryOpen, setLibraryOpen] = useState(false);
+    const [originals, setOriginals] = useState([]);
+    const [libraryQuery, setLibraryQuery] = useState('');
+    const [missingOpen, setMissingOpen] = useState(false);
+    const [missingBooks, setMissingBooks] = useState([]);
+    const indexedOriginals = useMemo(() => originals.map(item => ({item, index: indexOriginalName(item.name)})), [originals]);
+    const visibleOriginals = useMemo(() => indexedOriginals.filter(({index}) => matchesOriginalName(index, libraryQuery))
+        .map(({item}) => item), [indexedOriginals, libraryQuery]);
+
+    async function loadOriginals() {
+        try { setOriginals(await Call.ByName('main.App.ListOriginalBooks')); }
+        catch (error) { message.error(String(error)); }
+    }
+    async function loadMissing() {
+        try { setMissingBooks(await Call.ByName('main.App.ListMissingBooks')); }
+        catch (error) { message.error(String(error)); }
+    }
+    async function relinkMissing(item, name) {
+        try {
+            await Call.ByName('main.App.RelinkMissingBook', item.id, name);
+            for (const prefix of ['', 'scroll-top']) {
+                const value = getCacheItem(prefix + item.fileName);
+                if (value !== null && getCacheItem(prefix + name) === null) setCacheItem(prefix + name, value);
+            }
+            const split = getSplitMap();
+            for (const suffix of ['', '-Value']) {
+                if (split[item.fileName + suffix] !== undefined && split[name + suffix] === undefined)
+                    putSplitMap(name + suffix, split[item.fileName + suffix]);
+            }
+            props.reloadBookList(); await loadMissing(); await loadOriginals();
+            message.success(t('已关联书籍文件'));
+        } catch (error) { message.error(String(error)); }
+    }
+    async function restoreOriginal(item) {
+        try {
+            await Call.ByName('main.App.RestoreOriginalBook', item.name, item.inShelf);
+            props.reloadBookList();
+            await loadOriginals();
+            message.success(t('已重新导入书架'));
+        } catch (error) { message.error(String(error)); }
+    }
 
     async function loadMetadata() {
         try {
@@ -50,7 +94,8 @@ function BookList(props, ref) {
                 catch { return [book.id, '']; }
             }));
             setCovers(Object.fromEntries(images));
-        } catch (error) { message.error(String(error)); }
+            return books;
+        } catch (error) { message.error(String(error)); return []; }
     }
     useEffect(() => { loadMetadata(); }, [state.currentBookList]);
 
@@ -79,47 +124,13 @@ function BookList(props, ref) {
         props.setState({
             loadingBook: true
         })
-        if (tem.endsWith("epub")) {
-
-            ParseEpubToTxt(tem).then(res => {
-                if (res.startsWith("错误信息:")) {
-                    message.error(localizeError(res))
-                    props.setState({loadingBook: false});
-                    return;
-                }
-
-                let s = tem.replace(".epub", ".txt");
-                let item = getCacheItem(tem);
-                props.reloadBookList(() => {
-                    props.goChapterByName(s, item, () => {
-                        props.setState({
-                            loadingBook: false
-                        })
-                        DeleteEpubFile(tem).then(res => {
-                            // hasError(tem)
-                            console.log(res)
-                        })
-                        props.beginRecordTop(tem)
-
-                        props.calculateFontLines()
-                    });
-                })
-
-            })
-        } else {
-            let item = getCacheItem(tem);
-            console.log('item', item)
-            console.log('tem', tem)
-            props.goChapterByName(tem, item, () => {
-                props.beginRecordTop(tem)
-
-                props.setState({
-                    loadingBook: false
-
-                })
-                props.calculateFontLines()
-            });
-        }
+        let item = getCacheItem(tem);
+        props.goChapterByName(tem, item, () => {
+            Call.ByName('main.App.RecordBookOpened', tem).then(loadMetadata).catch(error => message.error(String(error)));
+            props.beginRecordTop(tem)
+            props.setState({loadingBook: false})
+            props.calculateFontLines()
+        });
     }
 
     useImperativeHandle(ref, () => ({
@@ -127,10 +138,16 @@ function BookList(props, ref) {
             if (tem) {
                 selectBookFun(tem)
             }
-        }
+        },
+        editImportedBook: async (name) => {
+            const books = await loadMetadata();
+            const book = books.find(item => item.fileName === name);
+            if (book) setEditing({...book, authorsText: (book.authors || []).join('、')});
+            else message.error(t('无法读取导入书籍的信息'));
+        },
     }))
 
-    const allBooks = sortBooksByImportTime((state.currentBookList || []).filter(Boolean), metadata);
+    const allBooks = sortBooksByLastOpened((state.currentBookList || []).filter(Boolean), metadata);
     const books = searchMatches === null ? allBooks : allBooks.filter(name => searchMatches.includes(name));
     const recentBooks = (getCacheItem("LastClickBook") || "").split(",").filter(Boolean);
 
@@ -145,6 +162,9 @@ function BookList(props, ref) {
                                 aria-label={t("添加书籍")} title={t("添加书籍")} onClick={props.clickBookPlus}>
                             <span className="library-add-label">{t("添加书籍")}</span>
                         </Button>
+                        <Button className="library-originals-button" size="small" icon={<FolderOpenOutlined/>}
+                                aria-label={t('我的书库')} title={t('我的书库')}
+                                onClick={() => { setLibraryOpen(true); loadOriginals(); }}><span className="library-originals-label">{t('我的书库')}</span></Button>
                         <Button className="library-download-button" size="small" icon={<DownloadOutlined/>} aria-label={t("图书下载")}
                                 title={t("图书下载")} onClick={() => props.onSelect({id: 'download'})}>
                             <span className="library-download-label">{t("图书下载")}</span>
@@ -217,6 +237,63 @@ function BookList(props, ref) {
                     <Button onClick={props.clickBookPlus}>{t("添加第一本书")}</Button>
                 </li>}
             </ul>
+            <Drawer className="original-library-drawer" title={t('我的书库')} open={libraryOpen} onClose={() => { setLibraryOpen(false); setLibraryQuery(''); }} width="min(420px, 100vw)">
+                <p className="original-library-description">{t('这里保存导入时的原文件，可重新导入书架。')}</p>
+                <Button className="missing-library-open" size="small" onClick={() => { setMissingOpen(true); loadMissing(); }}>{t('管理缺失书籍')}</Button>
+                <Input.Search className="original-library-search" allowClear value={libraryQuery}
+                              aria-label={t('搜索文件名、首拼或全拼')} placeholder={t('搜索文件名、首拼或全拼')}
+                              onChange={event => setLibraryQuery(event.target.value)}/>
+                <ul className="original-library-list">
+                    {visibleOriginals.map(item => <li key={item.name} className="original-library-item">
+                        <span className="original-library-name" title={item.name}>{item.name}</span>
+                        <span className="original-library-actions">
+                        <Button size="small" icon={<ImportOutlined/>} aria-label={t('重新导入')} title={t('重新导入')} onClick={() => item.inShelf ? Modal.confirm({
+                            title: t('书架已有此书'), content: t('重新导入将替换书架中的解析文件，是否继续？'),
+                            okText: t('我确定'), cancelText: t('取消'), onOk: () => restoreOriginal(item)
+                        }) : restoreOriginal(item)}><span className="original-library-action-label">{t('重新导入')}</span></Button>
+                        <Button size="small" danger icon={<DeleteOutlined/>} aria-label={t('删除原文件')} title={t('删除原文件')} onClick={() => Modal.confirm({
+                            title: t('删除原文件'), content: t('删除后将无法从书库恢复此原文件，书架中的书不会删除。'),
+                            okText: t('删除'), cancelText: t('取消'), onOk: async () => {
+                                try { await Call.ByName('main.App.DeleteOriginalBook', item.name); await loadOriginals(); }
+                                catch (error) { message.error(String(error)); }
+                            }
+                        })}><span className="original-library-action-label">{t('删除')}</span></Button>
+                        </span>
+                    </li>)}
+                    {!originals.length && <li className="library-empty">{t('书库暂无原文件')}</li>}
+                    {originals.length > 0 && !visibleOriginals.length && <li className="library-empty">{t('没有找到匹配的书籍')}</li>}
+                </ul>
+            </Drawer>
+            <Drawer className="original-library-drawer" title={t('管理缺失书籍')} open={missingOpen}
+                    onClose={() => setMissingOpen(false)} width="min(420px, 100vw)">
+                <p className="original-library-description">{t('以下记录的阅读文件已缺失。可从原件恢复，或关联内容相同的文件。')}</p>
+                <ul className="missing-library-list">
+                    {missingBooks.map(item => <li className="missing-library-item" key={item.id}>
+                        <div className="missing-library-title" title={item.title}>{item.title || item.fileName}</div>
+                        <div className="missing-library-filename" title={item.fileName}>{item.fileName}</div>
+                        <div className="missing-library-actions">
+                            {item.canRestore && <Button size="small" onClick={async () => {
+                                try { await Call.ByName('main.App.RestoreOriginalBook', item.originalName, false); props.reloadBookList(); await loadMissing(); await loadOriginals(); message.success(t('已重新导入书架')); }
+                                catch (error) { message.error(String(error)); }
+                            }}>{t('从原件恢复')}</Button>}
+                            <Button size="small" danger onClick={() => Modal.confirm({title: t('删除缺失记录'),
+                                content: t('将删除该书的元信息和封面，不删除原文件。'), okText: t('删除'), cancelText: t('取消'),
+                                onOk: async () => { try { await Call.ByName('main.App.DeleteMissingBook', item.id); await loadMissing(); } catch (error) { message.error(String(error)); } }
+                            })}>{t('删除记录')}</Button>
+                        </div>
+                        {item.candidates.length > 0 && <div className="missing-library-candidates">
+                            <span>{t('内容相同的候选文件')}</span>
+                            {item.candidates.map(name => <div className="missing-library-candidate" key={name}>
+                                <span title={name}>{name}</span><Button size="small" onClick={() => Modal.confirm({
+                                    title: t('关联书籍文件'), content: t('将此缺失记录关联到 {0}？', {0: name}),
+                                    okText: t('我确定'), cancelText: t('取消'), onOk: () => relinkMissing(item, name)
+                                })}>{t('关联')}</Button>
+                            </div>)}
+                        </div>}
+                    </li>)}
+                    {!missingBooks.length && <li className="library-empty">{t('没有缺失的书籍')}</li>}
+                </ul>
+            </Drawer>
             <Modal title={t('编辑书籍信息')} open={!!editing} okText={t('保存')} cancelText={t('取消')}
                    onCancel={() => setEditing(null)} onOk={async () => {
                        try {

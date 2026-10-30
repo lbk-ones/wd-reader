@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"wd-reader/go/book"
-	"wd-reader/go/book/epub/EpubBook"
 	"wd-reader/go/constant"
 	"wd-reader/go/log"
 	"wd-reader/go/server"
@@ -79,6 +77,7 @@ func (a *App) GetBooksPath() string {
 }
 
 func (a *App) GetBookMetadata() ([]book.BookMetadata, error) { return book.ListMetadata() }
+func (a *App) RecordBookOpened(name string) error            { return book.RecordBookOpened(name) }
 func (a *App) UpdateBookMetadata(id, title string, authors []string, description string) error {
 	return book.UpdateMetadata(id, title, authors, description)
 }
@@ -109,19 +108,7 @@ func (a *App) GetServerUrl() string {
 
 // ParseEpubToTxt 解析epub文件
 func (a *App) ParseEpubToTxt(filename string) string {
-	book.CheckBooksPath()
-	path := book.GetAppPath()
-	bookPath := filepath.Join(path, constant.BOOK_PATH, filename)
-	txtOutputPath := strings.Replace(bookPath, ".epub", ".txt", -1)
-	epub, err := EpubBook.ParseEpub(bookPath, txtOutputPath)
-	if err != nil {
-		return book.WrapperException(err)
-	}
-	err = epub.WriteEpub()
-	if err != nil {
-		return book.WrapperException(err)
-	}
-	if err = book.CaptureEPUBMetadata(bookPath, filepath.Base(txtOutputPath)); err != nil {
+	if _, err := book.ImportOriginal(filename, false); err != nil {
 		return book.WrapperException(err)
 	}
 	return "解析成功"
@@ -129,13 +116,7 @@ func (a *App) ParseEpubToTxt(filename string) string {
 
 // DeleteEpubFile 删除文件
 func (a *App) DeleteEpubFile(filename string) string {
-	dir := book.GetAppPath()
-	join := filepath.Join(dir, constant.BOOK_PATH, filename)
-	err := os.Remove(join)
-	if err != nil {
-		return book.WrapperException(err)
-	}
-	return "ok"
+	return book.DeleteFile(filename)
 }
 
 // GetBookList 获取文件列表
@@ -171,9 +152,19 @@ func (a *App) GetChapterContentByChapterName(_fileName string, chapterName strin
 // AddFile 添加文件
 func (*App) AddFile(name []string) string {
 	var str string
-	str = book.TransferFileFromFileSys(name)
+	str = book.ImportFiles(name)
 	return str
 }
+
+func (a *App) ListOriginalBooks() ([]book.LibraryOriginal, error) { return book.ListOriginals() }
+func (a *App) ListMissingBooks() ([]book.MissingBook, error)      { return book.ListMissingBooks() }
+func (a *App) RelinkMissingBook(id, target string) error          { return book.RelinkMissingBook(id, target) }
+func (a *App) DeleteMissingBook(id string) error                  { return book.DeleteMissingBook(id) }
+func (a *App) RestoreOriginalBook(name string, overwrite bool) (string, error) {
+	return book.ImportOriginal(name, overwrite)
+}
+func (a *App) DeleteOriginalBook(name string) error     { return book.DeleteOriginal(name) }
+func (a *App) ImportBook(source string) (string, error) { return book.ImportLocal(source) }
 
 // DeleteFile 删除文件
 func (*App) DeleteFile(name string) string {

@@ -19,24 +19,28 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"wd-reader/go/book/mobi"
 	"wd-reader/go/constant"
 
 	"github.com/google/uuid"
 )
 
 type BookMetadata struct {
-	ID          string            `json:"id"`
-	FileName    string            `json:"fileName"`
-	ImportType  string            `json:"importType,omitempty"`
-	Title       string            `json:"title"`
-	Authors     []string          `json:"authors"`
-	Description string            `json:"description"`
-	Cover       string            `json:"cover"`
-	Sources     map[string]string `json:"sources"`
-	ImportedAt  time.Time         `json:"importedAt"`
-	FileHash    string            `json:"fileHash,omitempty"`
-	FileSize    int64             `json:"fileSize,omitempty"`
-	FileModTime int64             `json:"fileModTime,omitempty"`
+	ID           string            `json:"id"`
+	FileName     string            `json:"fileName"`
+	ImportType   string            `json:"importType,omitempty"`
+	OriginalName string            `json:"originalName,omitempty"`
+	Title        string            `json:"title"`
+	Authors      []string          `json:"authors"`
+	Description  string            `json:"description"`
+	Cover        string            `json:"cover"`
+	CoverChecked bool              `json:"coverChecked,omitempty"`
+	Sources      map[string]string `json:"sources"`
+	ImportedAt   time.Time         `json:"importedAt"`
+	LastOpenedAt time.Time         `json:"lastOpenedAt"`
+	FileHash     string            `json:"fileHash,omitempty"`
+	FileSize     int64             `json:"fileSize,omitempty"`
+	FileModTime  int64             `json:"fileModTime,omitempty"`
 }
 type metadataStore struct {
 	Version int            `json:"version"`
@@ -45,14 +49,19 @@ type metadataStore struct {
 
 var metadataMu sync.Mutex
 
-func metadataDir() string { return filepath.Join(GetAppPath(), constant.BOOK_PATH, "book-data") }
+func metadataDir() string { return filepath.Join(GetAppPath(), constant.BOOK_PATH, "meta-data") }
 
 // Move the old sibling directory once, before reading or writing any metadata.
 func ensureMetadataLocation() error {
-	old := filepath.Join(GetAppPath(), "book-data")
+	old := filepath.Join(GetAppPath(), constant.BOOK_PATH, "book-data")
 	target := metadataDir()
 	if _, err := os.Stat(old); os.IsNotExist(err) {
-		return nil
+		old = filepath.Join(GetAppPath(), "book-data")
+		if _, err = os.Stat(old); os.IsNotExist(err) {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	} else if err != nil {
 		return err
 	}
@@ -135,7 +144,8 @@ func importType(name string) string {
 	return strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
 }
 func defaultMetadata(n string) BookMetadata {
-	return BookMetadata{ID: uuid.NewString(), FileName: n, ImportType: importType(n), Title: strings.TrimSuffix(n, filepath.Ext(n)), Authors: []string{}, Sources: map[string]string{}, ImportedAt: time.Now().UTC()}
+	now := time.Now().UTC()
+	return BookMetadata{ID: uuid.NewString(), FileName: n, ImportType: importType(n), Title: strings.TrimSuffix(n, filepath.Ext(n)), Authors: []string{}, Sources: map[string]string{}, ImportedAt: now, LastOpenedAt: now}
 }
 
 // RecordImport records a successful explicit import, including a replacement.
@@ -152,26 +162,50 @@ func RecordImport(name, originalName string) error {
 	for i := range s.Books {
 		if s.Books[i].FileName == name {
 			s.Books[i].ImportedAt = time.Now().UTC()
+			s.Books[i].LastOpenedAt = s.Books[i].ImportedAt
 			s.Books[i].ImportType = importType(originalName)
+			s.Books[i].OriginalName = filepath.Base(originalName)
 			return writeMetadata(s)
 		}
 	}
 	b := defaultMetadata(name)
 	b.ImportType = importType(originalName)
+	b.OriginalName = filepath.Base(originalName)
 	s.Books = append(s.Books, b)
 	return writeMetadata(s)
 }
 
+func RecordBookOpened(name string) error {
+	if !validBookName(name) {
+		return fmt.Errorf("invalid book name")
+	}
+	metadataMu.Lock()
+	defer metadataMu.Unlock()
+	s, err := readMetadata()
+	if err != nil {
+		return err
+	}
+	for i := range s.Books {
+		if s.Books[i].FileName == name {
+			s.Books[i].LastOpenedAt = time.Now().UTC()
+			return writeMetadata(s)
+		}
+	}
+	return fmt.Errorf("书籍信息不存在")
+}
+
 // ListMetadata reconciles the index with files while preserving missing entries.
 func ListMetadata() ([]BookMetadata, error) {
+	if err := EnsureStorage(); err != nil {
+		return nil, err
+	}
 	metadataMu.Lock()
 	defer metadataMu.Unlock()
 	s, err := readMetadata()
 	if err != nil {
 		return nil, err
 	}
-	CheckBooksPath()
-	entries, err := os.ReadDir(filepath.Join(GetAppPath(), "books"))
+	entries, err := os.ReadDir(ParsePath())
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +226,7 @@ func ListMetadata() ([]BookMetadata, error) {
 	for _, e := range entries {
 		n := e.Name()
 		ext := strings.ToLower(filepath.Ext(n))
-		if e.IsDir() || (ext != ".txt" && ext != ".epub") {
+		if e.IsDir() || strings.HasPrefix(n, ".parse-") || ext != ".txt" {
 			continue
 		}
 		info, e2 := e.Info()
@@ -208,7 +242,7 @@ func ListMetadata() ([]BookMetadata, error) {
 			}
 		}
 		if !known {
-			f, e2 := os.Open(filepath.Join(GetAppPath(), "books", n))
+			f, e2 := os.Open(filepath.Join(ParsePath(), n))
 			if e2 != nil {
 				continue
 			}
@@ -234,7 +268,7 @@ func ListMetadata() ([]BookMetadata, error) {
 	for _, e := range entries {
 		n := e.Name()
 		ext := strings.ToLower(filepath.Ext(n))
-		if e.IsDir() || (ext != ".txt" && ext != ".epub") {
+		if e.IsDir() || strings.HasPrefix(n, ".parse-") || ext != ".txt" {
 			continue
 		}
 		idx := -1
@@ -280,6 +314,38 @@ func ListMetadata() ([]BookMetadata, error) {
 				s.Books[idx].ImportedAt = time.Now().UTC()
 			}
 			changed = true
+		}
+		if s.Books[idx].LastOpenedAt.IsZero() {
+			s.Books[idx].LastOpenedAt = s.Books[idx].ImportedAt
+			changed = true
+		}
+		if s.Books[idx].OriginalName == "" {
+			if info, e2 := os.Stat(filepath.Join(PurePath(), n)); e2 == nil && info.Mode().IsRegular() {
+				s.Books[idx].OriginalName = n
+				changed = true
+			}
+		}
+		b := &s.Books[idx]
+		if !b.CoverChecked && b.Cover == "" && b.Sources["cover"] != "user" && validBookName(b.OriginalName) {
+			ext := strings.ToLower(filepath.Ext(b.OriginalName))
+			if ext == ".mobi" || ext == ".azw" || ext == ".azw3" {
+				source := filepath.Join(PurePath(), b.OriginalName)
+				if info, e2 := os.Stat(source); e2 == nil && info.Mode().IsRegular() {
+					if reader, e2 := mobi.NewReader(source); e2 == nil {
+						if data := reader.ExtractCover(); len(data) > 0 {
+							if cover, e2 := storeCover(data); e2 == nil {
+								b.Cover = cover
+								if b.Sources == nil {
+									b.Sources = map[string]string{}
+								}
+								b.Sources["cover"] = "embedded"
+							}
+						}
+					}
+					b.CoverChecked = true
+					changed = true
+				}
+			}
 		}
 		result = append(result, s.Books[idx])
 	}
@@ -574,6 +640,7 @@ func CaptureEPUBMetadata(source, target string) error {
 	}
 	b := &s.Books[idx]
 	b.ImportType = "epub"
+	b.OriginalName = filepath.Base(source)
 	if b.Sources == nil {
 		b.Sources = map[string]string{}
 	}

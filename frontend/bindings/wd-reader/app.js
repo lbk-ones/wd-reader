@@ -62,6 +62,22 @@ export function DeleteFile(name) {
 }
 
 /**
+ * @param {string} id
+ * @returns {$CancellablePromise<void>}
+ */
+export function DeleteMissingBook(id) {
+    return $Call.ByName("main.App.DeleteMissingBook", id);
+}
+
+/**
+ * @param {string} name
+ * @returns {$CancellablePromise<void>}
+ */
+export function DeleteOriginalBook(name) {
+    return $Call.ByName("main.App.DeleteOriginalBook", name);
+}
+
+/**
  * GetAppPath 获取目前程序运行目录
  * @returns {$CancellablePromise<string>}
  */
@@ -168,6 +184,32 @@ export function Greet(name) {
 }
 
 /**
+ * @param {string} source
+ * @returns {$CancellablePromise<string>}
+ */
+export function ImportBook(source) {
+    return $Call.ByName("main.App.ImportBook", source);
+}
+
+/**
+ * @returns {$CancellablePromise<book$0.MissingBook[]>}
+ */
+export function ListMissingBooks() {
+    return $Call.ByName("main.App.ListMissingBooks").then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType4($result);
+    }));
+}
+
+/**
+ * @returns {$CancellablePromise<book$0.LibraryOriginal[]>}
+ */
+export function ListOriginalBooks() {
+    return $Call.ByName("main.App.ListOriginalBooks").then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType6($result);
+    }));
+}
+
+/**
  * LogError keeps frontend errors in the rotating application log.
  * @param {string} message
  * @returns {$CancellablePromise<void>}
@@ -208,11 +250,37 @@ export function ParseEpubToTxt(filename) {
 }
 
 /**
+ * @param {string} name
+ * @returns {$CancellablePromise<void>}
+ */
+export function RecordBookOpened(name) {
+    return $Call.ByName("main.App.RecordBookOpened", name);
+}
+
+/**
+ * @param {string} id
+ * @param {string} target
+ * @returns {$CancellablePromise<void>}
+ */
+export function RelinkMissingBook(id, target) {
+    return $Call.ByName("main.App.RelinkMissingBook", id, target);
+}
+
+/**
  * @param {string} id
  * @returns {$CancellablePromise<void>}
  */
 export function RemoveBookCover(id) {
     return $Call.ByName("main.App.RemoveBookCover", id);
+}
+
+/**
+ * @param {string} name
+ * @param {boolean} overwrite
+ * @returns {$CancellablePromise<string>}
+ */
+export function RestoreOriginalBook(name, overwrite) {
+    return $Call.ByName("main.App.RestoreOriginalBook", name, overwrite);
 }
 
 /**
@@ -239,3 +307,7 @@ export function UpdateBookMetadata(id, title, authors, description) {
 const $$createType0 = book$0.BookMetadata.createFrom;
 const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = $models.MiniMenuState.createFrom;
+const $$createType3 = book$0.MissingBook.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = book$0.LibraryOriginal.createFrom;
+const $$createType6 = $Create.Array($$createType5);

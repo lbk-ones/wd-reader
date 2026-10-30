@@ -573,6 +573,29 @@
     color: #909b88;
 }
 
+.original-library-drawer .ant-drawer-body { min-width: 0; overflow-x: hidden; padding: 16px; }
+.original-library-description { color: #80877f; font-size: 12px; line-height: 1.6; margin-bottom: 12px; }
+.original-library-search { margin-bottom: 12px; }
+.original-library-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+.original-library-item { display: flex; align-items: center; min-width: 0; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: #fffefa; }
+.original-library-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.original-library-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 5px; margin-left: auto; }
+.missing-library-open { margin-bottom: 12px; }
+.missing-library-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.missing-library-item { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: #fffefa; }
+.missing-library-title, .missing-library-filename { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.missing-library-title { font-size: 13px; color: var(--ink); font-weight: 600; }
+.missing-library-filename, .missing-library-candidates { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.missing-library-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.missing-library-candidate { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.missing-library-candidate > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 330px) {
+    .original-library-drawer .ant-drawer-body { padding: 12px; }
+    .original-library-action-label { display: none; }
+    .original-library-actions .ant-btn { width: 28px; padding-inline: 0; }
+}
+
 .library-empty > .anticon {
     font-size: 32px;
     margin-bottom: 15px;
@@ -1427,6 +1450,8 @@ html[lang="en"] .settings-chapter-controls.is-paragraph {
     .library-reading-count {
         display: none;
     }
+    .library-originals-label { display: none; }
+    .library-originals-button { gap: 0; width: 28px; padding: 0; }
 }
 
 /* Chapter ornaments occupy whole text lines so page boundaries stay aligned. */

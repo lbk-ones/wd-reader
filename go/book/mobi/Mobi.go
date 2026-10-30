@@ -27,6 +27,7 @@ type Reader struct {
 	MobiBook        *MOBI_BOOK     // Mobi 书籍结构信息
 	FirstTextRecord int            // 第一条文本记录的索引
 	Mobi6Header     *MOBI_HEADER   // 原始 Mobi6 头部 (用于 Hybrid 文件回退)
+	Mobi6EXTH       *EXTH_HEADER
 }
 
 // LoadRecord 读取指定索引的记录数据
@@ -36,7 +37,7 @@ func (r *Reader) LoadRecord(index int) ([]byte, error) {
 		return nil, io.EOF
 	}
 	offset := r.Offsets[index]
-	if int(offset.End) > len(r.Data) {
+	if offset.Start > offset.End || int(offset.End) > len(r.Data) {
 		return nil, fmt.Errorf("record end offset %d out of bounds %d", offset.End, len(r.Data))
 	}
 	return r.Data[offset.Start:offset.End], nil
@@ -338,6 +339,7 @@ func (r *Reader) analysisHeaders() error {
 		return err
 	}
 	r.Mobi6Header = mobiHeader // 保存 Mobi6 Header 副本
+	r.Mobi6EXTH = exthHeader
 
 	isKF8 := mobiHeader.Version >= 8
 	mobiBook.IS_KF8 = isKF8
@@ -715,6 +717,7 @@ func getExth(row1Bytes []byte, mobiHeader *MOBI_HEADER) (*EXTH_HEADER, error) {
 		if err != nil {
 			return nil, err
 		}
+		_, extRowItem.HasCoverOffset = jsonMap["coverOffset"]
 		exthHeader.ExthRow = &extRowItem
 		return &exthHeader, nil
 	} else {

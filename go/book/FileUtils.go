@@ -94,11 +94,6 @@ func getFileName(resp *http.Response, urlstr string) (string, error) {
 			}
 		}
 	}
-	ext := path.Ext(urlstr)
-	if ext != "" {
-		return path.Base(urlstr), nil
-	}
-
 	parsedURL, err := url2.Parse(urlstr)
 	if err != nil {
 		return "", err

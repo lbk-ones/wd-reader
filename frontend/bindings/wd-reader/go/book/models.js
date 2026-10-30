@@ -33,6 +33,13 @@ export class BookMetadata {
              */
             this["importType"] = undefined;
         }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["originalName"] = undefined;
+        }
         if (!("title" in $$source)) {
             /**
              * @member
@@ -61,6 +68,13 @@ export class BookMetadata {
              */
             this["cover"] = "";
         }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["coverChecked"] = undefined;
+        }
         if (!("sources" in $$source)) {
             /**
              * @member
@@ -74,6 +88,13 @@ export class BookMetadata {
              * @type {Date}
              */
             this["importedAt"] = new Date("0001-01-01T00:00:00.000Z");
+        }
+        if (!("lastOpenedAt" in $$source)) {
+            /**
+             * @member
+             * @type {Date}
+             */
+            this["lastOpenedAt"] = new Date("0001-01-01T00:00:00.000Z");
         }
         if (/** @type {any} */(false)) {
             /**
@@ -106,20 +127,133 @@ export class BookMetadata {
      * @returns {BookMetadata}
      */
     static createFrom($$source = {}) {
-        const $$createField4_0 = $$createType0;
-        const $$createField7_0 = $$createType1;
-        const $$createField8_0 = $Create.DateFromTime;
+        const $$createField5_0 = $$createType0;
+        const $$createField9_0 = $$createType1;
+        const $$createField10_0 = $Create.DateFromTime;
+        const $$createField11_0 = $Create.DateFromTime;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("authors" in $$parsedSource) {
-            $$parsedSource["authors"] = $$createField4_0($$parsedSource["authors"]);
+            $$parsedSource["authors"] = $$createField5_0($$parsedSource["authors"]);
         }
         if ("sources" in $$parsedSource) {
-            $$parsedSource["sources"] = $$createField7_0($$parsedSource["sources"]);
+            $$parsedSource["sources"] = $$createField9_0($$parsedSource["sources"]);
         }
         if ("importedAt" in $$parsedSource) {
-            $$parsedSource["importedAt"] = $$createField8_0($$parsedSource["importedAt"]);
+            $$parsedSource["importedAt"] = $$createField10_0($$parsedSource["importedAt"]);
+        }
+        if ("lastOpenedAt" in $$parsedSource) {
+            $$parsedSource["lastOpenedAt"] = $$createField11_0($$parsedSource["lastOpenedAt"]);
         }
         return new BookMetadata(/** @type {Partial<BookMetadata>} */($$parsedSource));
+    }
+}
+
+export class LibraryOriginal {
+    /**
+     * Creates a new LibraryOriginal instance.
+     * @param {Partial<LibraryOriginal>} [$$source = {}] - The source object to create the LibraryOriginal.
+     */
+    constructor($$source = {}) {
+        if (!("name" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["name"] = "";
+        }
+        if (!("parsedName" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["parsedName"] = "";
+        }
+        if (!("inShelf" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["inShelf"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LibraryOriginal instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {LibraryOriginal}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LibraryOriginal(/** @type {Partial<LibraryOriginal>} */($$parsedSource));
+    }
+}
+
+export class MissingBook {
+    /**
+     * Creates a new MissingBook instance.
+     * @param {Partial<MissingBook>} [$$source = {}] - The source object to create the MissingBook.
+     */
+    constructor($$source = {}) {
+        if (!("id" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["id"] = "";
+        }
+        if (!("title" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["title"] = "";
+        }
+        if (!("fileName" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["fileName"] = "";
+        }
+        if (!("originalName" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["originalName"] = "";
+        }
+        if (!("canRestore" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["canRestore"] = false;
+        }
+        if (!("candidates" in $$source)) {
+            /**
+             * @member
+             * @type {string[]}
+             */
+            this["candidates"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MissingBook instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {MissingBook}
+     */
+    static createFrom($$source = {}) {
+        const $$createField5_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("candidates" in $$parsedSource) {
+            $$parsedSource["candidates"] = $$createField5_0($$parsedSource["candidates"]);
+        }
+        return new MissingBook(/** @type {Partial<MissingBook>} */($$parsedSource));
     }
 }
 

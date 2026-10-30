@@ -31,6 +31,17 @@ func TestMetadataLifecycle(t *testing.T) {
 	if imported.IsZero() {
 		t.Fatal("missing import time")
 	}
+	if !list[0].LastOpenedAt.Equal(imported) {
+		t.Fatal("new book should default to import time")
+	}
+	if err = RecordBookOpened("a.txt"); err != nil {
+		t.Fatal(err)
+	}
+	list, err = ListMetadata()
+	if err != nil || list[0].LastOpenedAt.Before(imported) || !list[0].ImportedAt.Equal(imported) {
+		t.Fatalf("opening: %#v %v", list, err)
+	}
+	opened := list[0].LastOpenedAt
 	if err = UpdateMetadata(id, "书名", []string{"作者"}, "简介"); err != nil {
 		t.Fatal(err)
 	}
@@ -56,11 +67,11 @@ func TestMetadataLifecycle(t *testing.T) {
 	if err != nil || list[0].ID != id || list[0].Title != "书名" || list[0].Authors[0] != "作者" {
 		t.Fatalf("metadata: %#v %v", list, err)
 	}
-	if err = os.Rename(filepath.Join(GetAppPath(), "books", "a.txt"), filepath.Join(GetAppPath(), "books", "renamed.txt")); err != nil {
+	if err = os.Rename(filepath.Join(ParsePath(), "a.txt"), filepath.Join(ParsePath(), "renamed.txt")); err != nil {
 		t.Fatal(err)
 	}
 	list, err = ListMetadata()
-	if err != nil || list[0].ID != id || list[0].FileName != "renamed.txt" || list[0].ImportType != "txt" || !list[0].ImportedAt.Equal(imported) {
+	if err != nil || list[0].ID != id || list[0].FileName != "renamed.txt" || list[0].ImportType != "txt" || !list[0].ImportedAt.Equal(imported) || !list[0].LastOpenedAt.Equal(opened) {
 		t.Fatalf("rename: %#v %v", list, err)
 	}
 	if err = RemoveMetadata("renamed.txt"); err != nil {
@@ -92,7 +103,7 @@ func TestLegacyImportTimeMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	list, err := ListMetadata()
-	if err != nil || len(list) != 1 || !list[0].ImportedAt.Equal(old) {
+	if err != nil || len(list) != 1 || !list[0].ImportedAt.Equal(old) || !list[0].LastOpenedAt.Equal(old) {
 		t.Fatalf("migration: %#v %v", list, err)
 	}
 	if list[0].ImportType != "" {
@@ -102,7 +113,7 @@ func TestLegacyImportTimeMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	list, err = ListMetadata()
-	if err != nil || !list[0].ImportedAt.After(old) {
+	if err != nil || !list[0].ImportedAt.After(old) || !list[0].LastOpenedAt.Equal(list[0].ImportedAt) {
 		t.Fatalf("reimport: %#v %v", list, err)
 	}
 }
@@ -186,6 +197,28 @@ func TestMetadataDirectoryMigration(t *testing.T) {
 	}
 	if data, err := os.ReadFile(filepath.Join(metadataDir(), "covers", "cover.png")); err != nil || string(data) != "cover" {
 		t.Fatalf("cover: %q %v", data, err)
+	}
+}
+
+func TestNestedMetadataDirectoryMigration(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", dir)
+	old := filepath.Join(GetAppPath(), "books", "book-data")
+	if err := os.MkdirAll(old, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(old, "metadata.json"), []byte(`{"version":1,"books":[]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readMetadata(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(metadataDir(), "metadata.json")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Fatalf("old path still exists: %v", err)
 	}
 }
 

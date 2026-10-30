@@ -18,7 +18,7 @@ import {
 } from "../bindings/wd-reader/app";
 import {GetChapterContentByChapterName} from "../bindings/wd-reader/app.js";
 import useAllState from "./components/lib/hooks/UseAllState";
-import {Application, Browser, Events, Window} from "@wailsio/runtime";
+import {Application, Browser, Call, Events, Window} from "@wailsio/runtime";
 import {LineOutlined, PlusOutlined} from "@ant-design/icons";
 import Header from "./components/bus/Header";
 import BookList from "./components/bus/BookList";
@@ -47,6 +47,7 @@ import {createAutoScroll} from "./components/autoScroll.js";
 import {DEFAULT_READING_TYPOGRAPHY} from "./components/readingTypography.js";
 import {DEFAULT_READING_COLORS} from "./components/readingColors.js";
 import {runMiniMenuAction} from './components/readerMenu.js';
+import {importedBookName} from './components/importedBookName.js';
 import {CloseMiniMenu, OpenMiniMenu} from '../bindings/wd-reader/app.js';
 
 
@@ -185,7 +186,7 @@ function App() {
         }
     });
 
-    function handlerAddFileRes(res, list) {
+    function handlerAddFileRes(res, list, editAfterImport = false) {
         if (!hasError(res)) {
             try {
                 let parse = JSON.parse(res);
@@ -205,23 +206,34 @@ function App() {
                     loadingBook: true,
                     loadingBookTip: "加载中。。",
                 })
-                reloadBookList();
+                reloadBookList(names => {
+                    if (editAfterImport && entries.length === 0 && list.length === 1) {
+                        const name = importedBookName(list[0]);
+                        if (names.includes(name)) bookListRef.current?.editImportedBook(name);
+                    }
+                });
                 message.info(t('成功导入 {count} 份文件', {count: allLength - errorLength}))
             } catch (e) {
-
+                setState({loadingBook: false});
+                message.error(String(e));
             }
+        } else {
+            setState({loadingBook: false});
         }
     }
 
-    function AddFleAndHandlerRes(paths) {
+    function AddFleAndHandlerRes(paths, editAfterImport = false) {
         paths = (paths || []).filter(Boolean)
         setState({
             loadingBook: true,
             loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增",
         })
         AddFile(paths).then(res => {
-            handlerAddFileRes(res, paths);
-        })
+            handlerAddFileRes(res, paths, editAfterImport);
+        }).catch(error => {
+            setState({loadingBook: false});
+            message.error(String(error));
+        });
     }
 
     function handlerError(e) {
@@ -335,7 +347,7 @@ function App() {
                 })
 
 
-                if (typeof cb === 'function') cb()
+                if (typeof cb === 'function') cb(strings)
             } else {
                 setState({
                     loadingBook: false
@@ -1006,7 +1018,14 @@ function App() {
                 clickBookPlus={() => {
                     OpenFileDialog(t("文件选择")).then(r => {
                         if (r) {
-                            AddFleAndHandlerRes([r]);
+                            setState({loadingBook: true, loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增"});
+                            Call.ByName('main.App.ImportBook', r).then(name => {
+                                reloadBookList(() => bookListRef.current?.editImportedBook(name));
+                                message.info(t('成功导入 {count} 份文件', {count: 1}));
+                            }).catch(error => {
+                                setState({loadingBook: false});
+                                message.error(String(error));
+                            });
                         }
                     }).catch(error => message.error(String(error)))
                 }}
