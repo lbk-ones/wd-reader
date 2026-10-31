@@ -3,7 +3,7 @@ import {Events} from '@wailsio/runtime';
 import {
     ArrowLeftOutlined, ArrowRightOutlined, BookOutlined, BorderInnerOutlined,
     CloseOutlined, DatabaseOutlined, ExpandOutlined, LeftOutlined, LogoutOutlined,
-    MinusOutlined, QuestionCircleOutlined, ReadOutlined, RightOutlined, SettingOutlined,
+    MinusOutlined, QuestionCircleOutlined, ReadOutlined, RightOutlined, SettingOutlined, PauseCircleOutlined,
 } from '@ant-design/icons';
 import {CloseMiniMenu, GetMiniMenuState, SelectMiniMenuAction} from '../../bindings/wd-reader/app.js';
 import {useI18n} from '../i18n/index.jsx';
@@ -16,6 +16,7 @@ const icons = {
     contents: BookOutlined, preferences: SettingOutlined, 'title-bar': BorderInnerOutlined,
     'exit-mini': ExpandOutlined, library: DatabaseOutlined, help: QuestionCircleOutlined,
     minimize: MinusOutlined, quit: LogoutOutlined,
+    'stop-auto-scroll': PauseCircleOutlined, 'stop-auto-page': PauseCircleOutlined,
 };
 
 export default function MiniReaderMenu() {

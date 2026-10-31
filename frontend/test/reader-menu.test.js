@@ -6,8 +6,8 @@ import {prepareReadingShortcut} from '../src/components/readingShortcuts.js';
 
 test('mini window exposes every existing context action and an explicit exit from mini mode', () => {
     assert.deepEqual([...MINI_MENU_ACTION_IDS].sort(), ['title-bar', 'preferences', 'next-page', 'previous-page',
-        'contents', 'next-chapter', 'previous-chapter', 'library', 'help', 'minimize', 'quit', 'exit-mini'].sort());
-    assert.equal(new Set(MINI_MENU_ACTION_IDS).size, 12);
+        'contents', 'next-chapter', 'previous-chapter', 'library', 'help', 'minimize', 'quit', 'exit-mini', 'stop-auto-scroll', 'stop-auto-page'].sort());
+    assert.equal(new Set(MINI_MENU_ACTION_IDS).size, 14);
     for (const group of MINI_MENU_GROUPS) {
         for (const label of [group.label, ...group.actions.map(action => action.label)]) {
             assert.notEqual(translate('en', label), label, `missing English translation: ${label}`);
@@ -19,7 +19,7 @@ test('panels restore a full reader while page and chapter navigation stay in min
     for (const action of ['contents', 'preferences', 'help', 'library', 'title-bar', 'exit-mini']) {
         assert.equal(miniMenuNeedsNormalWindow(action), true, action);
     }
-    for (const action of ['next-page', 'previous-page', 'next-chapter', 'previous-chapter', 'minimize', 'quit']) {
+    for (const action of ['next-page', 'previous-page', 'next-chapter', 'previous-chapter', 'minimize', 'quit', 'stop-auto-scroll', 'stop-auto-page']) {
         assert.equal(miniMenuNeedsNormalWindow(action), false, action);
     }
 });

@@ -8,5 +8,6 @@ export {
 };
 
 export {
-    MiniMenuState
+    MiniMenuState,
+    UpdateInfo
 } from "./models.js";

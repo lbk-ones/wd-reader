@@ -110,7 +110,7 @@ test('auto-scroll accumulates subpixel movement and pauses for user input and hi
 });
 
 test('auto-scroll waits at chapter end and fires only once; short chapters have reading time', () => {
-    for (const [height, total, speed, due] of [[100, 105, 100, 2100], [100, 100, 20, 5000]]) {
+    for (const [height, total, speed, due] of [[100, 105, 100, 4100], [100, 100, 20, 5000], [600, 600, 20, 30000]]) {
         const time = animationClock();
         let ends = 0;
         const content = {clientHeight: height, scrollHeight: total, scrollTop: 0};
@@ -130,6 +130,26 @@ test('auto-scroll waits at chapter end and fires only once; short chapters have 
     }
 });
 
+test('auto-scroll compensates rounded scroll positions and clears the offset when paused or stopped', () => {
+    const time = animationClock();
+    let top = 0, offset = 0;
+    const content = {clientHeight: 300, scrollHeight: 3000,
+        get scrollTop() {return top;}, set scrollTop(value) {top = Math.round(value);},
+        style: {setProperty(key, value) {offset = parseFloat(value);}, removeProperty() {offset = 0;}}};
+    const scroll = createAutoScroll({getContent: () => content, canScroll: () => true,
+        onEnd: () => assert.fail('not at chapter end'), ...time});
+    scroll.start(20);
+    for (let ms = 0; ms <= 1000; ms += 10) {
+        time.frame(ms);
+        assert(Math.abs(content.scrollTop - offset - ms * .02) < 1e-6);
+    }
+    scroll.pause();
+    assert.equal(offset, 0);
+    scroll.stop();
+    assert.equal(offset, 0);
+    assert.equal(time.frames.size, 0);
+});
+
 test('auto-scroll does not move missing or hidden-sized content', () => {
     const time = animationClock();
     let content = null;
@@ -142,6 +162,25 @@ test('auto-scroll does not move missing or hidden-sized content', () => {
     assert.equal(content.scrollTop, 12);
     scroll.stop();
     assert.equal(time.frames.size, 0);
+});
+
+test('chapter-end pause is configurable and user interaction restarts the waiting period', () => {
+    const time = animationClock();
+    let ends = 0;
+    const content = {clientHeight: 300, scrollHeight: 300, scrollTop: 0};
+    const scroll = createAutoScroll({getContent: () => content, canScroll: () => true,
+        onEnd: () => ends++, ...time});
+    scroll.start(100, 12);
+    time.frame(0);
+    time.frame(11999);
+    assert.equal(ends, 0);
+    scroll.pause();
+    time.frame(12000);
+    time.frame(13500);
+    time.frame(25499);
+    assert.equal(ends, 0);
+    time.frame(25500);
+    assert.equal(ends, 1);
 });
 
 test('page turns correct wheel offsets in both directions without skipping the edge line', () => {
@@ -332,6 +371,24 @@ test('F5 cannot refresh reading while panels, loading, hidden content or inputs 
     assert.equal(prepareReadingShortcut(makeEvent({key: 'F9'}), reading, true), true);
     assert.equal(prepareReadingShortcut(makeEvent({key: 'F9', target: {closest: () => true}}), reading, true), false);
     assert.equal(prepareReadingShortcut(makeEvent({key: 'F2'}), {...reading, muluVisible: true}, true), true);
+});
+
+test('PageUp and PageDown turn pages only when the reader accepts navigation', () => {
+    for (const key of ['PageUp', 'PageDown']) {
+        const makeEvent = patch => ({key, preventDefault() {this.defaultPrevented = true;}, ...patch});
+        const reading = {currentBookChapterName: '第一章'};
+        const event = makeEvent();
+        assert.equal(prepareReadingShortcut(event, reading, true), true);
+        assert.equal(event.defaultPrevented, true);
+        for (const state of [{}, {...reading, settingVisible: true}, {...reading, muluVisible: true}, {...reading, loadingBook: true}]) {
+            const blocked = makeEvent();
+            assert.equal(prepareReadingShortcut(blocked, state, true), false);
+            assert.equal(blocked.defaultPrevented, undefined);
+        }
+        assert.equal(prepareReadingShortcut(makeEvent({target: {closest: () => true}}), reading, true), false);
+        assert.equal(prepareReadingShortcut(makeEvent({ctrlKey: true}), reading, true), false);
+        assert.equal(prepareReadingShortcut(makeEvent({repeat: true}), reading, true), false);
+    }
 });
 
 test('clearing reading history removes all progress, retains preferences and notifies cache subscribers', async t => {

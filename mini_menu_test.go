@@ -35,6 +35,11 @@ func TestMiniMenuOpensAboveBottomEdge(t *testing.T) {
 }
 
 func TestMiniMenuRejectsUnknownOrClosedCommands(t *testing.T) {
+	for _, action := range []string{"stop-auto-scroll", "stop-auto-page"} {
+		if !miniMenuActionAllowed(action) {
+			t.Fatalf("missing reader action %q", action)
+		}
+	}
 	a := NewApp()
 	for _, action := range []string{"title-bar", "preferences", "next-page", "previous-page", "contents", "next-chapter", "previous-chapter", "library", "help", "minimize", "quit", "exit-mini"} {
 		if !miniMenuActionAllowed(action) {

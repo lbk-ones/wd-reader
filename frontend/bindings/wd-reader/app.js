@@ -29,6 +29,16 @@ export function AddFile(name) {
 }
 
 /**
+ * @param {boolean} force
+ * @returns {$CancellablePromise<$models.UpdateInfo>}
+ */
+export function CheckForUpdates(force) {
+    return $Call.ByName("main.App.CheckForUpdates", force).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
  * @param {string} id
  * @returns {$CancellablePromise<boolean>}
  */
@@ -106,7 +116,7 @@ export function GetBookList() {
  */
 export function GetBookMetadata() {
     return $Call.ByName("main.App.GetBookMetadata").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType1($result);
+        return $$createType2($result);
     }));
 }
 
@@ -147,7 +157,7 @@ export function GetChapterListByFileName(_fileName, splitType, splitValue) {
  */
 export function GetMiniMenuState() {
     return $Call.ByName("main.App.GetMiniMenuState").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType2($result);
+        return $$createType3($result);
     }));
 }
 
@@ -196,7 +206,7 @@ export function ImportBook(source) {
  */
 export function ListMissingBooks() {
     return $Call.ByName("main.App.ListMissingBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType4($result);
+        return $$createType5($result);
     }));
 }
 
@@ -205,7 +215,7 @@ export function ListMissingBooks() {
  */
 export function ListOriginalBooks() {
     return $Call.ByName("main.App.ListOriginalBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType6($result);
+        return $$createType7($result);
     }));
 }
 
@@ -304,10 +314,11 @@ export function UpdateBookMetadata(id, title, authors, description) {
 }
 
 // Private type creation functions
-const $$createType0 = book$0.BookMetadata.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = $models.MiniMenuState.createFrom;
-const $$createType3 = book$0.MissingBook.createFrom;
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = book$0.LibraryOriginal.createFrom;
-const $$createType6 = $Create.Array($$createType5);
+const $$createType0 = $models.UpdateInfo.createFrom;
+const $$createType1 = book$0.BookMetadata.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = $models.MiniMenuState.createFrom;
+const $$createType4 = book$0.MissingBook.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = book$0.LibraryOriginal.createFrom;
+const $$createType7 = $Create.Array($$createType6);

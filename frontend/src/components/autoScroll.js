@@ -1,8 +1,13 @@
 export function createAutoScroll({getContent, canScroll, onEnd,
     request = requestAnimationFrame, cancel = cancelAnimationFrame, now = () => performance.now()}) {
-    let frame = null, active = false, speed = 20;
+    let frame = null, active = false, speed = 20, endPause = 4;
+    let movingContent = null;
     let previous = null, position = null, applied = null, bottomSince = null, pausedUntil = 0;
-    const resetMotion = () => { previous = position = applied = bottomSince = null; };
+    const resetMotion = () => {
+        movingContent?.style?.removeProperty?.('--reader-scroll-offset');
+        movingContent = null;
+        previous = position = applied = bottomSince = null;
+    };
     const stop = () => {
         active = false;
         if (frame !== null) cancel(frame);
@@ -26,13 +31,12 @@ export function createAutoScroll({getContent, canScroll, onEnd,
             position = Math.min(limit, position + speed * elapsed / 1000);
             content.scrollTop = position;
             applied = content.scrollTop;
+            movingContent = content;
+            content.style?.setProperty?.('--reader-scroll-offset', `${position < limit ? applied - position : 0}px`);
             if (limit - content.scrollTop <= 0.5) {
                 if (bottomSince === null) bottomSince = timestamp;
-                // Short chapters need time to read even when there is no overflow.
-                const lineHeight = parseFloat(content.style?.lineHeight) || 30;
-                const dwell = limit === 0
-                    ? Math.min(15000, Math.max(2000, content.clientHeight / speed * 1000))
-                    : Math.max(2000, lineHeight / speed * 1000);
+                // Leave time to finish the last stationary screen before advancing.
+                const dwell = Math.max(endPause * 1000, content.clientHeight / speed * 1000);
                 if (timestamp - bottomSince >= dwell) {
                     stop();
                     onEnd();
@@ -45,9 +49,10 @@ export function createAutoScroll({getContent, canScroll, onEnd,
         if (active) frame = request(step);
     };
     return {
-        start(value) {
+        start(value, pauseSeconds = 4) {
             stop();
             speed = Math.min(100, Math.max(5, Number(value) || 20));
+            endPause = Math.min(120, Math.max(1, Number(pauseSeconds) || 4));
             pausedUntil = 0;
             active = true;
             frame = request(step);

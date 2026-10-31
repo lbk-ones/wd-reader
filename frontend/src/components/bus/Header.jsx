@@ -23,6 +23,8 @@ function Header(props) {
     useI18n();
     const {state, settingstate: settings} = props;
     const reading = !isEmpty(state.currentBookName);
+    const bookTitle = state.bookMetadata?.[state.currentBookName]?.title
+        || state.currentBookName.replace(/\.(txt|epub)$/i, '');
     if (!props.display) return null;
     if (reading && settings.miniMode === '1') {
         return <aside className="mini-controls" aria-label={t("迷你阅读操作栏")}
@@ -61,14 +63,14 @@ function Header(props) {
 
     return <header className={`title ${reading ? 'title--reading' : 'title--library'}`}>
         <div className="title-brand" style={{'--wails-draggable': 'drag'}}
-             title={reading ? t("{0}\n当前章节：{1}", {0: state.currentBookName, 1: state.currentBookChapterName}) : props.title}
+             title={reading ? t("{0}\n当前章节：{1}", {0: bookTitle, 1: state.currentBookChapterName}) : props.title}
              onDoubleClick={event => {
                  event.stopPropagation();
                  Window.ToggleMaximise()
              }}>
             <span className="brand-mark" aria-hidden="true"><BookOutlined/></span>
             <span
-                className="title-name">{reading ? state.currentBookName.replace(/\.(txt|epub)$/i, '') : props.title}</span>
+                className="title-name">{reading ? bookTitle : props.title}</span>
         </div>
         <nav className="window-controls" aria-label={t("窗口控制")}>
             {reading && control(t("隐藏标题栏"), <BorderInnerOutlined/>, props.toggleTitle)}

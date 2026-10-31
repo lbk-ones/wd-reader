@@ -62,6 +62,7 @@ const Content = (props, ref) => {
                          }}
 
                     >
+                        <div className="reader-text">
                         {
                             !isEmpty(state.currentBookChapterName)
                             && (
@@ -116,6 +117,7 @@ const Content = (props, ref) => {
                         }
 
 
+                        </div>
                         <ContextMenu options={props.options} onSelect={props.onSelect}
                                      onOpenWindow={settingState.miniMode === '1' ? props.onOpenMenuWindow : undefined}/>
                     </div>

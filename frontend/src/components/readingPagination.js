@@ -20,7 +20,7 @@ export function calculatePageTurn({scrollTop, viewportHeight, contentHeight, lin
 export function turnReaderPage(content, lineHeight, direction) {
     if (!content || content.clientHeight <= 0) return;
     const scrollTop = content.scrollTop;
-    const firstParagraph = content.querySelector(':scope > p');
+    const firstParagraph = content.querySelector(':scope > .reader-text > p, :scope > p');
     const origin = firstParagraph
         ? firstParagraph.getBoundingClientRect().top - content.getBoundingClientRect().top - content.clientTop + scrollTop
         : 0;

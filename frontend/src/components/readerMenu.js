@@ -10,6 +10,8 @@ export const MINI_MENU_GROUPS = [
         {id: 'preferences', label: '阅读设置'},
         {id: 'title-bar', label: '标题开关'},
         {id: 'exit-mini', label: '退出迷你模式', shortcut: 'F8'},
+        {id: 'stop-auto-scroll', label: '取消自动滚动'},
+        {id: 'stop-auto-page', label: '取消自动翻页'},
     ]},
     {label: '更多操作', actions: [
         {id: 'library', label: '返回书架'},

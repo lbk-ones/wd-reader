@@ -400,6 +400,16 @@ function ContentSetting(props) {
                             <span>{t("像素/秒")}</span>
                         </div>
                     </Form.Item>
+                    <Form.Item className="settings-wide" label={<Tooltip title={t("到达章末后，至少等待此时间；若一屏文字的滚动时长更长，则按该时长等待。")}>{t("章末停留")}</Tooltip>}>
+                        <InputNumber aria-label={t("章末至少停留（秒）")} min={1} max={120} precision={0}
+                                     style={{width: 70}} value={settingState.autoScrollEndPause}
+                                     onChange={value => {
+                                         if (value === null || !Number.isFinite(Number(value))) return;
+                                         const autoScrollEndPause = Math.min(120, Math.max(1, Math.round(Number(value))));
+                                         setCacheItem('autoScrollEndPause', autoScrollEndPause);
+                                         setSettingState({autoScrollEndPause});
+                                     }}/>{' '}{t("秒")}
+                    </Form.Item>
                     <h3 className="settings-section-title settings-split-title">{t("断章方式")}<Tooltip title={t("默认智能识别章节。章节混乱时可切换为按段落数或自定义正则分章，修改后点击应用。")}>
                             <ExclamationCircleOutlined/>
                         </Tooltip>
@@ -535,6 +545,7 @@ function ContentSetting(props) {
                             setCacheItem('autoPageInterval', 30)
                             setCacheItem('autoScroll', '0')
                             setCacheItem('autoScrollSpeed', 20)
+                            setCacheItem('autoScrollEndPause', 4)
                             setCacheItem('showProgress', "1")
                             setCacheItem('isAlwaysTop', "1")
                             setCacheItem('transparentMode', "0")
@@ -556,6 +567,7 @@ function ContentSetting(props) {
                                 autoPageInterval: 30,
                                 autoScroll: '0',
                                 autoScrollSpeed: 20,
+                                autoScrollEndPause: 4,
                                 showProgress: "1",
                                 isAlwaysTop: "1",
                                 transparentMode: "0",

@@ -3,7 +3,7 @@ import LanguageSelect from './i18n/LanguageSelect.jsx';
 import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
-import {Alert, App as AntdApp, Button, Drawer, Input, message, notification, Space, Spin, theme} from 'antd';
+import {Alert, App as AntdApp, Button, Drawer, Input, message, notification, Space, Spin, Switch, theme} from 'antd';
 import {presetPalettes} from '@ant-design/colors';
 import {filter, find, findIndex, get, isEmpty, throttle, trim} from 'lodash-es'
 import {
@@ -70,6 +70,37 @@ function App() {
     const autoScrollSaveTimeRef = useRef(0);
 
     const [api, contextHolder] = notification.useNotification();
+    const [checkingUpdates, setCheckingUpdates] = useState(false);
+    const [updateInfo, setUpdateInfo] = useState(null);
+    const [checkUpdatesOnStartup, setCheckUpdatesOnStartup] = useState(() => getCacheItem('checkUpdatesOnStartup') !== '0');
+    const updateCheckBusyRef = useRef(false);
+
+    const checkForUpdates = useMemoizedFn(async (manual = false) => {
+        if (updateCheckBusyRef.current) return;
+        updateCheckBusyRef.current = true;
+        setCheckingUpdates(true);
+        try {
+            const info = await Call.ByName('main.App.CheckForUpdates', manual);
+            setUpdateInfo(info);
+            if (info.available) {
+                api.info({
+                    key: 'new-release', message: t('发现新版本 {0}', {0: info.latestVersion}),
+                    description: t('当前版本：{0}', {0: info.currentVersion}), duration: 0,
+                    btn: <Button type="primary" size="small"
+                                 onClick={() => Browser.OpenURL(info.url)}>{t('查看新版本')}</Button>
+                });
+            } else if (manual) {
+                message.info(info.comparable ? t('当前已是最新版本') : t('当前为开发版本，最新正式版：{0}', {0: info.latestVersion}));
+            }
+        } catch (error) {
+            if (manual) message.error(t('检查更新失败，请稍后重试'));
+            else LogError(String(error)).catch(() => {
+            });
+        } finally {
+            updateCheckBusyRef.current = false;
+            setCheckingUpdates(false);
+        }
+    });
 
     const [settingState, setSettingState, getSettingState] = useAllState({
         fontColor: getCacheItem('fontColor') || DEFAULT_READING_COLORS.fontColor,
@@ -83,6 +114,7 @@ function App() {
         autoPageInterval: Math.min(3600, Math.max(1, Math.round(Number(getCacheItem('autoPageInterval')) || 30))),
         autoScroll: getCacheItem('autoScroll') || '0',
         autoScrollSpeed: Math.min(100, Math.max(5, Number(getCacheItem('autoScrollSpeed')) || 20)),
+        autoScrollEndPause: Math.min(120, Math.max(1, Number(getCacheItem('autoScrollEndPause')) || 4)),
         showProgress: getCacheItem('showProgress') || '1',
         isAlwaysTop: getCacheItem('isAlwaysTop') || '1',
         transparentMode: getCacheItem('transparentMode') || '0',
@@ -95,6 +127,7 @@ function App() {
 
     const [state, setState, getState] = useAllState({
         currentBookList: [],
+        bookMetadata: {},
         currentBookName: "",
         currentBookChapterList: [],
         currentBookChapterName: "",
@@ -151,9 +184,11 @@ function App() {
                 handleSelect({id: 'contents'});
                 break;
             case 'F3':
+            case 'PageUp':
                 if (pageContentRef.current) pageUp();
                 break;
             case 'F4':
+            case 'PageDown':
                 if (pageContentRef.current) pageDown();
                 break;
             case 'F5':
@@ -252,6 +287,7 @@ function App() {
             setState({
                 version: res
             })
+            if (getCacheItem('checkUpdatesOnStartup') !== '0' && res !== 'dev') checkForUpdates();
         })
         GetBooksPath().then(res => {
             setState({
@@ -286,9 +322,6 @@ function App() {
                 return;
             }
             handleReadingShortcut(event);
-            if (event.key === 'PageDown' || event.key === 'PageUp') {
-                event.preventDefault();
-            }
             if (event.key === 'Escape' && !event.repeat && !event.defaultPrevented
                 && getSettingState().miniMode === '1' && getState().currentBookName
                 && !getState().settingVisible && !getState().muluVisible && !getState().helpVisible
@@ -314,7 +347,8 @@ function App() {
             offFileDrop()
             offMiniAction();
             offMiniClosed();
-            CloseMiniMenu().catch(() => {});
+            CloseMiniMenu().catch(() => {
+            });
             document.removeEventListener('keydown', handleReaderKeyDown)
             window.removeEventListener('pagehide', saveReadingPosition);
             window.removeEventListener('beforeunload', saveReadingPosition);
@@ -487,12 +521,12 @@ function App() {
         if (settingState.autoScroll !== '1' || !display || !state.currentBookChapterName
             || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
             || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible || state.miniMenuOpen) return;
-        autoScrollRef.current.start(settingState.autoScrollSpeed);
+        autoScrollRef.current.start(settingState.autoScrollSpeed, settingState.autoScrollEndPause);
         return () => {
             autoScrollRef.current.stop();
             progressRef.current.save();
         };
-    }, [settingState.autoScroll, settingState.autoScrollSpeed, display, state.currentBookName,
+    }, [settingState.autoScroll, settingState.autoScrollSpeed, settingState.autoScrollEndPause, display, state.currentBookName,
         state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
         state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible, state.gotoMuluIndexSearchVisible, state.miniMenuOpen]);
 
@@ -712,7 +746,16 @@ function App() {
     }
 
     const handleSelect = (option) => {
-        if (option.id === 'library') {
+        if (option.id === 'stop-auto-scroll') {
+            autoScrollRef.current.stop();
+            setAutoReadingMode('autoScroll', false);
+            progressRef.current.save();
+        } else if (option.id === 'stop-auto-page') {
+            autoPageTimerRef.current.stop();
+            setAutoReadingMode('autoPage', false);
+        } else if (option.id === 'enter-mini') {
+            miniSize(getSettingState().miniRows, true).catch(error => message.error(String(error)));
+        } else if (option.id === 'library') {
             backBookList()
         } else if (option.id === 'next-chapter') {
             nextChpater();
@@ -750,7 +793,8 @@ function App() {
         autoPageTimerRef.current.stop();
         pauseAutoScroll();
         try {
-            await OpenMiniMenu(x, y, language, getState().currentBookName, getState().currentBookChapterName);
+            const current = getState();
+            await OpenMiniMenu(x, y, language, current.bookMetadata[current.currentBookName]?.title || current.currentBookName, current.currentBookChapterName);
         } catch (error) {
             setState({miniMenuOpen: false});
             message.error(String(error));
@@ -766,19 +810,24 @@ function App() {
                 showTitle: () => toggleTitle(true),
                 dispatch: action => handleSelect({id: action}),
             });
-        } catch (error) { message.error(String(error)); }
+        } catch (error) {
+            message.error(String(error));
+        }
     });
 
 
     const options = [
         {id: 'title-bar', label: t("标题开关")},
         {id: 'preferences', label: t("设置"),},
-        {id: 'next-page', label: t("下一页")},
         {id: 'previous-page', label: t("上一页")},
-        {id: 'contents', label: t("目录")},
-        {id: 'next-chapter', label: t("下一章")},
+        {id: 'next-page', label: t("下一页")},
         {id: 'previous-chapter', label: t("上一章")},
+        {id: 'next-chapter', label: t("下一章")},
+        {id: 'contents', label: t("目录")},
         {id: 'library', label: t("返回书架")},
+        {id: 'stop-auto-scroll', label: t("取消自动滚动")},
+        {id: 'stop-auto-page', label: t("取消自动翻页")},
+        {id: 'enter-mini', label: t("迷你化")},
         {id: 'help', label: t("使用说明")},
         {id: 'minimize', label: t("最小化")},
         {id: 'quit', label: t("退出系统")},
@@ -799,11 +848,8 @@ function App() {
     });
 
     function clickBookToFirst(tem) {
-        let item1 = getCacheItem("LastClickBook") || tem;
-        if (item1) {
-            item1 = [tem, ...((item1.replace(tem, "")).split(","))].filter(Boolean).join(",")
-        }
-        setCacheItem("LastClickBook", item1);
+        const history = (getCacheItem("LastClickBook") || '').split(',').filter(name => name && name !== tem);
+        setCacheItem("LastClickBook", [tem, ...history].join(','));
     }
 
     function beginRecordTop(tem) {
@@ -1015,10 +1061,14 @@ function App() {
                 display={display}
                 hasError={useMemoizedFn(hasError)}
                 clickBookToFirst={useMemoizedFn(clickBookToFirst)}
+                onMetadataLoaded={useMemoizedFn(books => setState({bookMetadata: Object.fromEntries(books.map(book => [book.fileName, book]))}))}
                 clickBookPlus={() => {
                     OpenFileDialog(t("文件选择")).then(r => {
                         if (r) {
-                            setState({loadingBook: true, loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增"});
+                            setState({
+                                loadingBook: true,
+                                loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增"
+                            });
                             Call.ByName('main.App.ImportBook', r).then(name => {
                                 reloadBookList(() => bookListRef.current?.editImportedBook(name));
                                 message.info(t('成功导入 {count} 份文件', {count: 1}));
@@ -1212,7 +1262,7 @@ function App() {
                     </Space>
                 }
             >
-                <Alert className={"mb-10"} message={t("最好下载txt、epub格式，解析最快最稳定")} type="info"/>
+                <Alert className={"mb-10"} message={t("最好下载txt、epub、mobi格式，解析最快最稳定")} type="info"/>
 
                 <p className={"mb-5"}>
                     <Space>
@@ -1301,6 +1351,21 @@ function App() {
                         <div className={"flex flex-column gap10"}>
 
                             <LanguageSelect/>
+                            <div className="update-settings">
+                                <span>{t('当前版本：{0}', {0: state.version || 'dev'})}</span>
+                                <Button size="small" loading={checkingUpdates}
+                                        onClick={() => checkForUpdates(true)}>{t('检查更新')}</Button>
+                                {updateInfo?.latestVersion &&
+                                    <span>{t('最新正式版：{0}', {0: updateInfo.latestVersion})}{' '}
+                                        <Button size="small" type="link"
+                                                onClick={() => Browser.OpenURL(updateInfo.url)}>{t('查看发布页')}</Button></span>}
+                                <label className="update-settings-switch"><Switch size="small"
+                                                                                  checked={checkUpdatesOnStartup}
+                                                                                  onChange={enabled => {
+                                                                                      setCheckUpdatesOnStartup(enabled);
+                                                                                      setCacheItem('checkUpdatesOnStartup', enabled ? '1' : '0');
+                                                                                  }}/>{t('启动时检查更新')}</label>
+                            </div>
 
                             <Button onClick={openUsageGuide}>{t("使用说明（F1）")}</Button>
 

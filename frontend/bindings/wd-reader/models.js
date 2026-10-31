@@ -57,3 +57,59 @@ export class MiniMenuState {
         return new MiniMenuState(/** @type {Partial<MiniMenuState>} */($$parsedSource));
     }
 }
+
+export class UpdateInfo {
+    /**
+     * Creates a new UpdateInfo instance.
+     * @param {Partial<UpdateInfo>} [$$source = {}] - The source object to create the UpdateInfo.
+     */
+    constructor($$source = {}) {
+        if (!("currentVersion" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["currentVersion"] = "";
+        }
+        if (!("latestVersion" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["latestVersion"] = "";
+        }
+        if (!("available" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["available"] = false;
+        }
+        if (!("comparable" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["comparable"] = false;
+        }
+        if (!("url" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["url"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UpdateInfo instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {UpdateInfo}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new UpdateInfo(/** @type {Partial<UpdateInfo>} */($$parsedSource));
+    }
+}

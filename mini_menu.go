@@ -17,7 +17,7 @@ type MiniMenuState struct {
 func miniMenuActionAllowed(id string) bool {
 	switch id {
 	case "title-bar", "preferences", "next-page", "previous-page", "contents",
-		"next-chapter", "previous-chapter", "library", "help", "minimize", "quit", "exit-mini":
+		"next-chapter", "previous-chapter", "library", "help", "minimize", "quit", "exit-mini", "stop-auto-scroll", "stop-auto-page":
 		return true
 	}
 	return false

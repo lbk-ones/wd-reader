@@ -28,8 +28,6 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
         };
 
         const handleClick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
             setShowMenu(false);
             // console.log('点击。。。。')
         };
@@ -46,8 +44,11 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
     return (
         <div
             ref={menuRef}
+            className="reader-context-menu"
+            role="menu"
+            onDoubleClick={e => e.stopPropagation()}
             style={{
-                display: showMenu ? 'block' : 'none',
+                display: showMenu ? 'grid' : 'none',
                 position: 'fixed',
                 left: `${menuPosition.x}px`,
                 top: `${menuPosition.y}px`,
@@ -57,13 +58,15 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                 zIndex: 1000,
                 width: 'max-content',
-                minWidth: '120px',
+                minWidth: 'min(240px, calc(100vw - 16px))',
                 maxWidth: 'calc(100vw - 16px)',
                 lineHeight: '25px' // 写死吧 不然会受外面的影响
             }}
         >
             {options.map(option => (
-                <div
+                <button
+                    type="button"
+                    role="menuitem"
                     key={option.id}
                     title={option.label}
                     className={'context-optional'}
@@ -95,7 +98,7 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
                     }}
                 >
                     {option.label}
-                </div>
+                </button>
             ))}
         </div>
     );

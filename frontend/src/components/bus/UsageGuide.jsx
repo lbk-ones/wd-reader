@@ -62,6 +62,7 @@ function getTopics() { return [
                 <div><dt><kbd>F1</kbd></dt><dd>{t("打开使用说明")}</dd></div>
                 <div><dt><kbd>F2</kbd></dt><dd>{t("打开 / 关闭目录")}</dd></div>
                 <div><dt><kbd>F3</kbd> / <kbd>F4</kbd></dt><dd>{t("上一页 / 下一页")}</dd></div>
+                <div><dt><kbd>PageUp</kbd> / <kbd>PageDown</kbd></dt><dd>{t("上一页 / 下一页")}</dd></div>
                 <div><dt><kbd>F5</kbd> / <kbd>F6</kbd></dt><dd>{t("上一章 / 下一章")}</dd></div>
                 <div><dt><kbd>F7</kbd></dt><dd>{t("开启 / 关闭自动翻页（间隔在阅读偏好中设置）")}</dd></div>
                 <div><dt><kbd>F8</kbd></dt><dd>{t("进入 / 退出迷你模式（使用已保存的行数）")}</dd></div>

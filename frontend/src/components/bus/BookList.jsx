@@ -18,9 +18,9 @@ import {Button, Drawer, Input, Modal, message} from "antd";
 import {getCacheItem, setCacheItem, getSplitMap, putSplitMap} from "../Utils";
 import classNames from "classnames";
 import {DeleteFile, GetScOne} from "../../../bindings/wd-reader/app";
-import {forwardRef, useEffect, useImperativeHandle, useMemo, useState} from "react";
+import {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {Browser, Call} from "@wailsio/runtime";
-import {sortBooksByLastOpened} from '../bookSorting.js';
+import {getCurrentlyReadingBook, sortBooksByLastOpened} from '../bookSorting.js';
 import DefaultBookCover from '../DefaultBookCover.jsx';
 import {indexOriginalName, matchesOriginalName} from '../librarySearch.js';
 
@@ -41,6 +41,7 @@ function BookList(props, ref) {
     const [libraryLayout, setLibraryLayout] = useState(() => getCacheItem('libraryLayout') === 'grid' ? 'grid' : 'list');
     const [metadata, setMetadata] = useState({});
     const [covers, setCovers] = useState({});
+    const metadataRequestRef = useRef(0);
     const [editing, setEditing] = useState(null);
     const [searchMatches, setSearchMatches] = useState(null);
     const [libraryOpen, setLibraryOpen] = useState(false);
@@ -86,14 +87,17 @@ function BookList(props, ref) {
     }
 
     async function loadMetadata() {
+        const request = ++metadataRequestRef.current;
         try {
             const books = await Call.ByName('main.App.GetBookMetadata');
+            if (request !== metadataRequestRef.current) return books;
+            props.onMetadataLoaded?.(books);
             setMetadata(Object.fromEntries(books.map(book => [book.fileName, book])));
             const images = await Promise.all(books.filter(book => book.cover).map(async book => {
                 try { return [book.id, await Call.ByName('main.App.GetBookCover', book.id)]; }
                 catch { return [book.id, '']; }
             }));
-            setCovers(Object.fromEntries(images));
+            if (request === metadataRequestRef.current) setCovers(Object.fromEntries(images));
             return books;
         } catch (error) { message.error(String(error)); return []; }
     }
@@ -120,12 +124,12 @@ function BookList(props, ref) {
     }, [])
 
     function selectBookFun(tem) {
-        props.clickBookToFirst(tem);
         props.setState({
             loadingBook: true
         })
         let item = getCacheItem(tem);
         props.goChapterByName(tem, item, () => {
+            props.clickBookToFirst(tem);
             Call.ByName('main.App.RecordBookOpened', tem).then(loadMetadata).catch(error => message.error(String(error)));
             props.beginRecordTop(tem)
             props.setState({loadingBook: false})
@@ -149,7 +153,7 @@ function BookList(props, ref) {
 
     const allBooks = sortBooksByLastOpened((state.currentBookList || []).filter(Boolean), metadata);
     const books = searchMatches === null ? allBooks : allBooks.filter(name => searchMatches.includes(name));
-    const recentBooks = (getCacheItem("LastClickBook") || "").split(",").filter(Boolean);
+    const currentlyReading = getCurrentlyReadingBook(allBooks, metadata);
 
     return isEmpty(state.currentBookChapterName) && props.display && isEmpty(state.errorInfo) ? (
         <section className="book-list" aria-label={t("我的书架")}>
@@ -196,7 +200,7 @@ function BookList(props, ref) {
                 {books.map((name, index) => {
                     const meta = metadata[name];
                     const title = meta?.title || name.replace(/\.(txt|epub)$/i, '');
-                    const isRecent = recentBooks[0] === name;
+                    const isRecent = currentlyReading === name;
                     return <li key={name} className={classNames('library-book', {'library-book--recent': isRecent})}>
                         <button className="library-book-open" title={t("双击阅读：") + title}
                                 onDoubleClick={() => selectBookFun(name)}
