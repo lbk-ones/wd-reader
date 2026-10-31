@@ -698,6 +698,30 @@
       "fileHash": "88c7e62d8ab48ed85a6a5c8b2bac6c79d0ef953b206ccf7e54e70d027aa1480f",
       "fileSize": 16228186,
       "fileModTime": 1793341906702438500
+    },
+    {
+      "id": "0a98e678-20af-4732-9e69-6f279b6c7159",
+      "fileName": "惊悚我只卖凶宅 (尼古拉斯狗蛋) (z-library.sk, 1lib.sk, z-lib.sk).txt",
+      "importType": "mobi",
+      "originalName": "惊悚我只卖凶宅 (尼古拉斯狗蛋) (z-library.sk, 1lib.sk, z-lib.sk).mobi",
+      "title": "惊悚：我只卖凶宅",
+      "authors": [
+        "尼古拉斯狗蛋"
+      ],
+      "description": "Downloaded from Z-Library https://z-library.sk",
+      "cover": "ee46dcf7ad9a258f37600c67b6a18f9bdb1f9e5d946f8841c79fbebdc3ecefbc.jpg",
+      "coverChecked": true,
+      "sources": {
+        "authors": "user",
+        "cover": "embedded",
+        "description": "user",
+        "title": "user"
+      },
+      "importedAt": "2026-10-30T08:47:40.2619689Z",
+      "lastOpenedAt": "2026-10-30T08:47:49.2967265Z",
+      "fileHash": "5480bd187e50db6a905c36a4a1efce6122973251b1c101d7e1aee9b58de39956",
+      "fileSize": 4676009,
+      "fileModTime": 1793350060239277600
     }
   ]
 }
