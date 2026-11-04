@@ -9,6 +9,10 @@ export default defineConfig({
         port: Number(process.env.WAILS_VITE_PORT) || 9245,
         strictPort: true,
     },
+    build: {
+        // Keep Vite 3's browser targets for older desktop WebViews.
+        target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+    },
     plugins: [
         react(),
     ]

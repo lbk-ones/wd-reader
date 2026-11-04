@@ -154,6 +154,19 @@
     border-color: transparent;
 }
 
+.reader-drag-strip {
+    position: fixed;
+    inset: 0 0 auto;
+    height: 30px;
+    z-index: 109;
+    cursor: grab;
+    --wails-draggable: drag;
+}
+
+.reader-drag-strip:hover {
+    background-color: #7e9b8766;
+}
+
 .mini-controls {
     position: fixed;
     inset: 0 0 0 auto;
@@ -965,6 +978,40 @@
 .settings-color-preview {
     font-family: "Songti SC", "SimSun", serif;
     font-size: 16px;
+}
+
+.settings-background-presets {
+    grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+}
+
+.settings-background-preset {
+    flex-direction: column;
+    gap: 0;
+    min-height: 48px;
+}
+
+.settings-background-preset img {
+    width: 100%;
+    height: 24px;
+    object-fit: contain;
+}
+
+.reader-pane {
+    position: relative;
+    isolation: isolate;
+}
+
+.reader-corner-ornament {
+    position: absolute;
+    inset: 0 0 auto auto;
+    width: min(42%, 300px);
+    height: auto;
+    max-height: 48%;
+    object-fit: contain;
+    object-position: top right;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .settings-color-preset:hover, .settings-color-preset.is-active {

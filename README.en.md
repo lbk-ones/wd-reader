@@ -13,7 +13,7 @@ A lightweight, distraction-free desktop ebook reader for Windows, macOS and Linu
 [![Release](https://img.shields.io/github/v/release/lbk-ones/wd-reader?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/lbk-ones/wd-reader/total?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-456653?style=flat-square)
-![Wails](https://img.shields.io/badge/Wails-v3.0.0--beta.33-DF0000?style=flat-square)
+![Wails](https://img.shields.io/badge/Wails-v3.1.0-DF0000?style=flat-square)
 
 [Download](https://github.com/lbk-ones/wd-reader/releases) · [Screenshots](#screenshots) · [Getting started](#getting-started) · [Development and builds](#development-and-builds) · [Report an issue](https://github.com/lbk-ones/wd-reader/issues)
 
@@ -191,7 +191,7 @@ Auto page turn defaults to 30 seconds; auto scroll defaults to 20 pixels per sec
 
 ## Development and builds
 
-Built with **Go + Wails 3 + React + Ant Design + Vite**. Keep the Wails Go module, CLI and frontend runtime aligned at `v3.0.0-beta.33`.
+Built with **Go + Wails 3 + React + Ant Design + Vite**. Keep the Wails Go module, CLI and frontend runtime aligned at `v3.1.0`.
 
 ### Requirements
 
@@ -207,7 +207,7 @@ Built with **Go + Wails 3 + React + Ant Design + Vite**. Keep the Wails Go modul
 ```sh
 git clone https://github.com/lbk-ones/wd-reader.git
 cd wd-reader
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.33
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
 wails3 dev
 ```
 

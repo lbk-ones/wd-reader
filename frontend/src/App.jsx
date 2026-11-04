@@ -108,6 +108,7 @@ function App() {
         blankLineHeight: 0,// 舍弃高度
         newContentHeight: 0,// 总高度
         bgColor: getCacheItem('bgColor') || DEFAULT_READING_COLORS.bgColor,
+        backgroundPreset: getCacheItem('backgroundPreset') || '',
         fontSize: getCacheItem('fontSize') || String(DEFAULT_READING_TYPOGRAPHY.fontSize),
         clickPage: getCacheItem('clickPage') || '1',
         autoPage: getCacheItem('autoScroll') === '1' ? '0' : getCacheItem('autoPage') || '0',
@@ -280,6 +281,12 @@ function App() {
     }
 
     useEffect(function () {
+        if (getCacheItem('backgroundPreset') === 'night') {
+            const patch = {backgroundPreset: '', bgColor: DEFAULT_READING_COLORS.bgColor,
+                fontColor: DEFAULT_READING_COLORS.fontColor};
+            Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
+            setSettingState(patch);
+        }
         // error log collect
         window.addEventListener("error", handlerError)
         window.addEventListener('unhandledrejection', unhandledrejection)

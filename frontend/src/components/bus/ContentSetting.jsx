@@ -18,6 +18,7 @@ import {Window} from "@wailsio/runtime";
 import {DEFAULT_READING_TYPOGRAPHY, READING_TYPOGRAPHY_PRESETS} from '../readingTypography.js';
 import {calculateReadingLayout} from '../readingLayout.js';
 import {DEFAULT_READING_COLORS, READING_COLOR_PRESETS} from '../readingColors.js';
+import {READING_BACKGROUND_PRESETS} from '../readingBackgrounds.js';
 import {CHAPTER_REGEX_PRESETS} from '../chapterRegexPresets.js';
 
 function ContentSetting(props) {
@@ -42,6 +43,10 @@ function ContentSetting(props) {
 
     let currentBookName = state.currentBookName;
     let splitMaElement = getSplitType(currentBookName);
+    const applyAppearance = patch => {
+        Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
+        setSettingState(patch);
+    };
 
     return (
         <div className="setting-modal" role="dialog" aria-labelledby="reading-preferences-title">
@@ -122,11 +127,10 @@ function ContentSetting(props) {
                                            aria-pressed={active}
                                            aria-label={t("{0}配色", {0: t(preset.name)})}
                                            title={t("{0}：背景 {1}，字体 {2}。同时应用两种颜色并关闭透明模式。", {0: t(preset.name), 1: preset.bgColor, 2: preset.fontColor})}
-                                           onClick={() => {
-                                               const patch = {bgColor: preset.bgColor, fontColor: preset.fontColor, transparentMode: '0'};
-                                               Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
-                                               setSettingState(patch);
-                                           }}>
+                                           onClick={() => applyAppearance({
+                                               bgColor: preset.bgColor, fontColor: preset.fontColor,
+                                               transparentMode: '0'
+                                           })}>
                                 <span className="settings-color-preview" aria-hidden="true">Aa</span>
                                 <span>{t(preset.name)}</span>
                             </button>;
@@ -148,12 +152,7 @@ function ContentSetting(props) {
                                 <SketchPicker
                                     disableAlpha
                                     color={settingState.bgColor}
-                                    onChange={(color) => {
-                                        setCacheItem('bgColor', color.hex)
-                                        setSettingState({
-                                            bgColor: color.hex
-                                        })
-                                    }}
+                                    onChange={(color) => applyAppearance({bgColor: color.hex})}
                                     styles={{
                                         // picker: {
                                         //     width: '', // 调整宽度
@@ -216,6 +215,25 @@ function ContentSetting(props) {
                         </Popover>
 
                     </Form.Item>
+                    <h3 className="settings-section-title" id="reading-background-title">{t("右上角装饰")}</h3>
+                    <div className="settings-color-presets settings-background-presets settings-wide" role="group" aria-labelledby="reading-background-title">
+                        <button type="button" className={`settings-color-preset${!settingState.backgroundPreset ? ' is-active' : ''}`}
+                                aria-pressed={!settingState.backgroundPreset}
+                                onClick={() => applyAppearance({backgroundPreset: ''})}>
+                            {t("无装饰")}
+                        </button>
+                        {READING_BACKGROUND_PRESETS.map(preset => {
+                            const active = settingState.backgroundPreset === preset.id;
+                            return <button type="button" key={preset.id}
+                                           className={`settings-color-preset settings-background-preset${active ? ' is-active' : ''}`}
+                                           style={{backgroundColor: settingState.bgColor, color: settingState.fontColor}}
+                                           aria-pressed={active}
+                                           onClick={() => applyAppearance({backgroundPreset: preset.id})}>
+                                <img src={preset.image} alt="" draggable={false}/>
+                                {t(preset.name)}
+                            </button>;
+                        })}
+                    </div>
                     <h3 className="settings-section-title">{t("阅读与窗口")}</h3>
                     <Form.Item
                         label={t("点击翻页")}
@@ -539,6 +557,7 @@ function ContentSetting(props) {
                             setCacheItem('fontColor', DEFAULT_READING_COLORS.fontColor)
                             setCacheItem('fontLineHeight', lineHeight+"")
                             setCacheItem('bgColor', DEFAULT_READING_COLORS.bgColor)
+                            setCacheItem('backgroundPreset', '')
                             setCacheItem('fontSize', fontSize+"")
                             setCacheItem('clickPage', "1")
                             setCacheItem('autoPage', "0")
@@ -561,6 +580,7 @@ function ContentSetting(props) {
                                 fontColor: DEFAULT_READING_COLORS.fontColor,
                                 fontLineHeight: lineHeight+"",
                                 bgColor: DEFAULT_READING_COLORS.bgColor,
+                                backgroundPreset: '',
                                 fontSize: fontSize+"",
                                 clickPage: "1",
                                 autoPage: "0",

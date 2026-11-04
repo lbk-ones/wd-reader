@@ -4,6 +4,7 @@ import ContextMenu from "../ContextMenu.jsx";
 import * as PropTypes from "prop-types";
 import {forwardRef, useLayoutEffect} from "react";
 import {Tooltip} from "antd";
+import {getReadingBackground} from '../readingBackgrounds.js';
 
 const Content = (props, ref) => {
     useI18n();
@@ -15,6 +16,8 @@ const Content = (props, ref) => {
         hasDisplay = false;
     }
     const showBottomBar = state.showTitle && settingState.transparentMode !== "1";
+    const ornament = settingState.transparentMode === '1' ? undefined
+        : getReadingBackground(settingState.backgroundPreset);
     const bookContainerHeight = props.getBookContainerHeight();
     const chapterIndex = findIndex(state.currentBookChapterList, name => name === state.currentBookChapterName);
     const nextChapterName = state.currentBookChapterList[chapterIndex + 1];
@@ -32,12 +35,13 @@ const Content = (props, ref) => {
         onContextMenu={props.onContextMenu}
         onClick={props.onClick}
         onDoubleClick={props.onDoubleClick}
-        className={"flex flex-auto flex-column-nowrap justify-b"}
+        className="reader-pane flex flex-auto flex-column-nowrap justify-b"
         style={{
             backgroundColor: `${settingState.transparentMode !== "1" ? settingState.bgColor : "rgba(0,0,0,0)"}`,
             height: bookContainerHeight + "px", // 这里必须计算一下 很奇怪 flex-auto 不是会自动填充吗？？
             display: hasDisplay ? "flex" : "none"
         }}>
+        {ornament && <img className="reader-corner-ornament" src={ornament.image} alt="" draggable={false}/>}
         {
             !state.currentBookName.endsWith(".epub") && (
                 <div className={"flex flex-auto shrink-1 w-100"}>
@@ -57,8 +61,7 @@ const Content = (props, ref) => {
                              // marginBottom: settingState.blankLineHeight + "px",
                              color: settingState.fontColor,
                              fontSize: Number(settingState.fontSize) + "px",
-                             visibility: !display ? "hidden" : "visible",
-                             backgroundColor: `${settingState.transparentMode !== "1" ? settingState.bgColor : "rgba(0,0,0,0)"}`
+                             visibility: !display ? "hidden" : "visible"
                          }}
 
                     >

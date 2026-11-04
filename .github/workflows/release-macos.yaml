@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           for attempt in 1 2 3; do
-            if go mod download && go mod tidy && go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.33; then
+            if go mod download && go mod tidy && go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then

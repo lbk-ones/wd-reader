@@ -40,7 +40,9 @@ function Header(props) {
                     onClick={props.exitMiniMode}><ExpandOutlined/></button>
         </aside>;
     }
-    if (!state.showTitle && reading) return null;
+    if (!state.showTitle && reading) {
+        return <div className="reader-drag-strip" title={t("按住此处拖动窗口")}/>;
+    }
 
     function toggleSetting(key) {
         const value = settings[key] === '1' ? '0' : '1';
