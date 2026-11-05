@@ -1,4 +1,6 @@
 export default {
+    '开启自动滚动后，↑ 暂停滚动，↓ 继续滚动；通过开关、F9 或菜单关闭自动滚动后，↑ / ↓ 恢复翻页。': 'With auto scroll enabled, Up pauses and Down resumes scrolling. Turn auto scroll off using the switch, F9 or the menu to use Up/Down for page turns again.',
+    '上下翻页、左右翻章默认开启，可在阅读偏好中分别关闭，设置会自动保存。方向键仅在阅读正文时生效，编辑输入框、加载书籍或打开其他面板时暂停。': 'Up/Down turn pages and Left/Right change chapters by default. Disable either option in Reading preferences. Your choices are saved. Arrow shortcuts pause while editing inputs, loading books or using other panels.',
     '迷你模式下右键打开独立操作窗口，所有菜单项完整显示。翻页和切章保持迷你模式，目录、设置等面板会先恢复正常窗口；按 Esc 或点击其他窗口关闭菜单。': 'In mini mode, right-click to open all actions in a separate window. Page and chapter navigation keep mini mode; contents, preferences and other panels restore the normal window first. Press Esc or focus another window to close the menu.',
     '开始阅读': 'Getting started',
     '把书放进书架': 'Add books to your library',

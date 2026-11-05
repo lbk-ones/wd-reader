@@ -182,6 +182,8 @@ Auto page turn defaults to 30 seconds and auto scroll defaults to 20 pixels per 
 | `F1` | Open help |
 | `F2` | Toggle contents |
 | `F3` or `PageUp` / `F4` or `PageDown` | Previous / next page |
+| `↑` / `↓` | Previous / next page. Enabled by default, configurable in Reading preferences |
+| `←` / `→` | Previous / next chapter. Enabled by default, configurable in Reading preferences |
 | `F5` / `F6` | Previous / next chapter |
 | `F7` | Toggle auto page turn |
 | `F8` | Toggle mini mode |

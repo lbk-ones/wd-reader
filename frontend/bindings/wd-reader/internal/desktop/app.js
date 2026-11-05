@@ -29,6 +29,15 @@ export function AddFile(name) {
 }
 
 /**
+ * @param {string} categoryID
+ * @param {string[]} bookIDs
+ * @returns {$CancellablePromise<void>}
+ */
+export function AssignUncategorizedBooks(categoryID, bookIDs) {
+    return $Call.ByName("wd-reader/internal/desktop.App.AssignUncategorizedBooks", categoryID, bookIDs);
+}
+
+/**
  * @returns {$CancellablePromise<string>}
  */
 export function AutostartStatus() {
@@ -58,6 +67,14 @@ export function ChooseBookCover(id) {
  */
 export function CloseMiniMenu() {
     return $Call.ByName("wd-reader/internal/desktop.App.CloseMiniMenu");
+}
+
+/**
+ * @param {string} id
+ * @returns {$CancellablePromise<void>}
+ */
+export function DeleteCategory(id) {
+    return $Call.ByName("wd-reader/internal/desktop.App.DeleteCategory", id);
 }
 
 /**
@@ -169,6 +186,13 @@ export function GetMiniMenuState() {
 }
 
 /**
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetRunDirectory() {
+    return $Call.ByName("wd-reader/internal/desktop.App.GetRunDirectory");
+}
+
+/**
  * GetScOne 诗词获取
  * @returns {$CancellablePromise<string>}
  */
@@ -217,11 +241,20 @@ export function InstallUpdate(expectedVersion) {
 }
 
 /**
+ * @returns {$CancellablePromise<book$0.Category[]>}
+ */
+export function ListCategories() {
+    return $Call.ByName("wd-reader/internal/desktop.App.ListCategories").then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType5($result);
+    }));
+}
+
+/**
  * @returns {$CancellablePromise<book$0.MissingBook[]>}
  */
 export function ListMissingBooks() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListMissingBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType5($result);
+        return $$createType7($result);
     }));
 }
 
@@ -230,7 +263,7 @@ export function ListMissingBooks() {
  */
 export function ListOriginalBooks() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListOriginalBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType7($result);
+        return $$createType9($result);
     }));
 }
 
@@ -300,12 +333,32 @@ export function RemoveBookCover(id) {
 }
 
 /**
+ * @param {string} bookID
+ * @param {string} categoryID
+ * @returns {$CancellablePromise<void>}
+ */
+export function RemoveBookFromCategory(bookID, categoryID) {
+    return $Call.ByName("wd-reader/internal/desktop.App.RemoveBookFromCategory", bookID, categoryID);
+}
+
+/**
  * @param {string} name
  * @param {boolean} overwrite
  * @returns {$CancellablePromise<string>}
  */
 export function RestoreOriginalBook(name, overwrite) {
     return $Call.ByName("wd-reader/internal/desktop.App.RestoreOriginalBook", name, overwrite);
+}
+
+/**
+ * @param {string} id
+ * @param {string} name
+ * @returns {$CancellablePromise<book$0.Category>}
+ */
+export function SaveCategory(id, name) {
+    return $Call.ByName("wd-reader/internal/desktop.App.SaveCategory", id, name).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType4($result);
+    }));
 }
 
 /**
@@ -326,6 +379,15 @@ export function SetAutostart(enabled) {
 }
 
 /**
+ * @param {string} id
+ * @param {boolean} favorite
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetBookFavorite(id, favorite) {
+    return $Call.ByName("wd-reader/internal/desktop.App.SetBookFavorite", id, favorite);
+}
+
+/**
  * @param {string} kind
  * @param {number} minutes
  * @param {string} language
@@ -333,6 +395,18 @@ export function SetAutostart(enabled) {
  */
 export function SetReminder(kind, minutes, language) {
     return $Call.ByName("wd-reader/internal/desktop.App.SetReminder", kind, minutes, language);
+}
+
+/**
+ * @param {string} id
+ * @param {string} title
+ * @param {string[]} authors
+ * @param {string} description
+ * @param {string} categoryID
+ * @returns {$CancellablePromise<void>}
+ */
+export function UpdateBookDetails(id, title, authors, description, categoryID) {
+    return $Call.ByName("wd-reader/internal/desktop.App.UpdateBookDetails", id, title, authors, description, categoryID);
 }
 
 /**
@@ -351,7 +425,9 @@ const $$createType0 = $models.UpdateInfo.createFrom;
 const $$createType1 = book$0.BookMetadata.createFrom;
 const $$createType2 = $Create.Array($$createType1);
 const $$createType3 = $models.MiniMenuState.createFrom;
-const $$createType4 = book$0.MissingBook.createFrom;
+const $$createType4 = book$0.Category.createFrom;
 const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = book$0.LibraryOriginal.createFrom;
+const $$createType6 = book$0.MissingBook.createFrom;
 const $$createType7 = $Create.Array($$createType6);
+const $$createType8 = book$0.LibraryOriginal.createFrom;
+const $$createType9 = $Create.Array($$createType8);

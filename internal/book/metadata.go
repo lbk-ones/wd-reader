@@ -26,6 +26,8 @@ import (
 )
 
 type BookMetadata struct {
+	CategoryID   string            `json:"categoryId,omitempty"`
+	Favorite     bool              `json:"favorite,omitempty"`
 	ID           string            `json:"id"`
 	FileName     string            `json:"fileName"`
 	ImportType   string            `json:"importType,omitempty"`
@@ -43,8 +45,10 @@ type BookMetadata struct {
 	FileModTime  int64             `json:"fileModTime,omitempty"`
 }
 type metadataStore struct {
-	Version int            `json:"version"`
-	Books   []BookMetadata `json:"books"`
+	Version              int            `json:"version"`
+	Books                []BookMetadata `json:"books"`
+	Categories           []Category     `json:"categories,omitempty"`
+	CategoryPresetsAdded bool           `json:"categoryPresetsAdded,omitempty"`
 }
 
 var metadataMu sync.Mutex
@@ -354,7 +358,7 @@ func ListMetadata() ([]BookMetadata, error) {
 	}
 	return result, err
 }
-func UpdateMetadata(id, title string, authors []string, description string) error {
+func SetFavorite(id string, favorite bool) error {
 	metadataMu.Lock()
 	defer metadataMu.Unlock()
 	s, err := readMetadata()
@@ -362,8 +366,38 @@ func UpdateMetadata(id, title string, authors []string, description string) erro
 		return err
 	}
 	for i := range s.Books {
+		if s.Books[i].ID == id {
+			s.Books[i].Favorite = favorite
+			return writeMetadata(s)
+		}
+	}
+	return fmt.Errorf("书籍不存在")
+}
+
+func UpdateMetadata(id, title string, authors []string, description string) error {
+	return updateMetadata(id, title, authors, description, nil)
+}
+
+func UpdateMetadataWithCategory(id, title string, authors []string, description, categoryID string) error {
+	return updateMetadata(id, title, authors, description, &categoryID)
+}
+
+func updateMetadata(id, title string, authors []string, description string, categoryID *string) error {
+	metadataMu.Lock()
+	defer metadataMu.Unlock()
+	s, err := readMetadata()
+	if err != nil {
+		return err
+	}
+	if categoryID != nil && !categoryExists(s, *categoryID) {
+		return fmt.Errorf("分类不存在")
+	}
+	for i := range s.Books {
 		b := &s.Books[i]
 		if b.ID == id {
+			if categoryID != nil {
+				b.CategoryID = *categoryID
+			}
 			b.Title = strings.TrimSpace(title)
 			if b.Title == "" {
 				return fmt.Errorf("书名不能为空")

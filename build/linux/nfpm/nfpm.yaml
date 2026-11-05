@@ -11,7 +11,7 @@ section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
 description: "A discreet desktop ebook reader"
-vendor: "B、KS"
+vendor: "B/K"
 homepage: "https://wails.io"
 license: "MIT"
 release: "1"

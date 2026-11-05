@@ -25,6 +25,7 @@ import {
     SetAutostart,
     GetBookList,
     GetBooksPath,
+    GetRunDirectory,
     GetChapterListByFileName,
     GetServerUrl,
     GetVersion,
@@ -185,6 +186,8 @@ function App() {
         backgroundPreset: getCacheItem('backgroundPreset') || '',
         fontSize: getCacheItem('fontSize') || String(DEFAULT_READING_TYPOGRAPHY.fontSize),
         clickPage: getCacheItem('clickPage') || '1',
+        arrowPage: getCacheItem('arrowPage') || '1',
+        arrowChapter: getCacheItem('arrowChapter') || '1',
         autoPage: getCacheItem('autoScroll') === '1' ? '0' : getCacheItem('autoPage') || '0',
         autoPageInterval: Math.min(3600, Math.max(1, Math.round(Number(getCacheItem('autoPageInterval')) || 30))),
         autoScroll: getCacheItem('autoScroll') || '0',
@@ -201,6 +204,7 @@ function App() {
     })
 
     const [state, setState, getState] = useAllState({
+        autoScrollPaused: false,
         currentBookList: [],
         bookMetadata: {},
         currentBookName: "",
@@ -219,6 +223,7 @@ function App() {
         errorInfo: '',
         version: '',
         booksPath: '',
+        runDirectory: '',
         downloadFromUrlVisible: false,
         downloadFromUrlList: [null],
         sysSettingVisible: false,
@@ -244,6 +249,7 @@ function App() {
     });
 
     const setAutoReadingMode = useMemoizedFn((mode, enabled) => {
+        setState({autoScrollPaused: false});
         const patch = {[mode]: enabled ? '1' : '0'};
         if (enabled) patch[mode === 'autoPage' ? 'autoScroll' : 'autoPage'] = '0';
         Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
@@ -253,23 +259,37 @@ function App() {
 
     const handleReadingShortcut = useMemoizedFn(event => {
         if (!prepareReadingShortcut(event, getState(), display,
-            () => document.querySelector('.ant-modal-wrap'))) return;
+            () => document.querySelector('.ant-modal-wrap'), getSettingState())) return;
+        if (getSettingState().autoScroll === '1' && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
+            const paused = event.key === 'ArrowUp';
+            setState({autoScrollPaused: paused});
+            if (paused) {
+                autoScrollRef.current.stop();
+                progressRef.current.save();
+            }
+            message.info(paused ? t('自动滚动已暂停，按下键继续') : t('自动滚动已开启'));
+            return;
+        }
         switch (event.key) {
             case 'F2':
                 handleSelect({id: 'contents'});
                 break;
             case 'F3':
             case 'PageUp':
+            case 'ArrowUp':
                 if (pageContentRef.current) pageUp();
                 break;
             case 'F4':
             case 'PageDown':
+            case 'ArrowDown':
                 if (pageContentRef.current) pageDown();
                 break;
             case 'F5':
+            case 'ArrowLeft':
                 lastChpater();
                 break;
             case 'F6':
+            case 'ArrowRight':
                 nextChpater();
                 break;
             case 'F7': {
@@ -389,6 +409,8 @@ function App() {
                 booksPath: res
             })
         })
+        GetRunDirectory().then(runDirectory => setState({runDirectory}))
+            .catch(error => LogError(String(error)).catch(() => {}));
         isAlwaysTop(null)
         reloadBookList();
 
@@ -584,7 +606,7 @@ function App() {
     const canAutoScroll = useMemoizedFn(() => {
         const current = getState();
         return getSettingState().autoScroll === '1' && display && !document.hidden
-            && !!current.currentBookChapterName && !current.loadingBook
+            && !current.autoScrollPaused && !!current.currentBookChapterName && !current.loadingBook
             && !current.settingVisible && !current.muluVisible && !current.helpVisible
             && !current.sysSettingVisible && !current.downloadFromUrlVisible
             && !current.gotoMuluIndexSearchVisible && !current.miniMenuOpen && !document.querySelector('.ant-modal-wrap');
@@ -613,7 +635,7 @@ function App() {
         });
     }
     useEffect(() => {
-        if (settingState.autoScroll !== '1' || !display || !state.currentBookChapterName
+        if (settingState.autoScroll !== '1' || state.autoScrollPaused || !display || !state.currentBookChapterName
             || state.loadingBook || state.settingVisible || state.muluVisible || state.helpVisible
             || state.sysSettingVisible || state.downloadFromUrlVisible || state.gotoMuluIndexSearchVisible || state.miniMenuOpen) return;
         autoScrollRef.current.start(settingState.autoScrollSpeed, settingState.autoScrollEndPause);
@@ -621,7 +643,7 @@ function App() {
             autoScrollRef.current.stop();
             progressRef.current.save();
         };
-    }, [settingState.autoScroll, settingState.autoScrollSpeed, settingState.autoScrollEndPause, display, state.currentBookName,
+    }, [settingState.autoScroll, settingState.autoScrollSpeed, settingState.autoScrollEndPause, state.autoScrollPaused, display, state.currentBookName,
         state.currentBookChapterName, state.loadingBook, state.settingVisible, state.muluVisible,
         state.helpVisible, state.sysSettingVisible, state.downloadFromUrlVisible, state.gotoMuluIndexSearchVisible, state.miniMenuOpen]);
 
@@ -827,6 +849,7 @@ function App() {
 
             setState({
                 currentBookChapterName: '',
+                autoScrollPaused: false,
                 currentBookName: '',
                 currentBookChapterContent: [],
                 currentBookChapterList: [],
@@ -1129,6 +1152,7 @@ function App() {
         >
 
             <Header
+                onToggleFavorite={name => bookListRef.current?.toggleFavorite(name)}
                 backBookList={backBookListCallback}
                 toggleTitle={useMemoizedFn(toggleTitle)}
                 exitMiniMode={exitMiniMode}
@@ -1145,6 +1169,10 @@ function App() {
 
             {/*index book list*/}
             <BookList
+                onFavoriteChanged={(name, favorite) => {
+                    const bookMetadata = getState().bookMetadata;
+                    setState({bookMetadata: {...bookMetadata, [name]: {...bookMetadata[name], favorite}}});
+                }}
                 onOpenHelp={openUsageGuide}
                 ref={bookListRef}
                 state={state}
@@ -1434,7 +1462,7 @@ function App() {
                     className="app-settings-drawer"
                     title={t("系统设置")}
                     placement="bottom"
-                    height="80%"
+                    height="100%"
                     onClose={() => setState({sysSettingVisible: false})}
                     open={state.sysSettingVisible}
                 >
@@ -1536,7 +1564,14 @@ function App() {
                         <section className="app-settings-section">
                             <h3>{t('本地数据')}</h3>
                             <div className="app-settings-diagnostics">
-                                <span title={state.booksPath}>{t('工作目录: ***')}</span>
+                                <div className="app-settings-path">
+                                    <span>{t('运行根目录')}</span>
+                                    <code>{state.runDirectory}</code>
+                                </div>
+                                <div className="app-settings-path">
+                                    <span>{t('书籍目录')}</span>
+                                    <code>{state.booksPath}</code>
+                                </div>
                                 <span title={window.location.href}>{t('地址: ***')}</span>
                                 <span>{t('缓存:')}{cacheCount}</span>
                             </div>

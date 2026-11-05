@@ -5,11 +5,11 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "B、KS" # The name of the company
+  companyName: "B/K" # The name of the company
   productName: "wdreader" # The name of the application
   productIdentifier: "com.wails.wdreader" # Preserve the v2 bundle identifier and WebKit data container.
   description: "A discreet desktop ebook reader" # The application description
-  copyright: "Copyright © 2024, B、KS" # Copyright text
+  copyright: "Copyright © 2024, B/K" # Copyright text
   comments: "我爱上班！" # Comments
   version: "1.0.0"
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)

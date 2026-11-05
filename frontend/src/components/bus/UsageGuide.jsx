@@ -63,6 +63,8 @@ function getTopics() { return [
                 <div><dt><kbd>F2</kbd></dt><dd>{t("打开 / 关闭目录")}</dd></div>
                 <div><dt><kbd>F3</kbd> / <kbd>F4</kbd></dt><dd>{t("上一页 / 下一页")}</dd></div>
                 <div><dt><kbd>PageUp</kbd> / <kbd>PageDown</kbd></dt><dd>{t("上一页 / 下一页")}</dd></div>
+                <div><dt><kbd>↑</kbd> / <kbd>↓</kbd></dt><dd>{t("上一页 / 下一页")}</dd></div>
+                <div><dt><kbd>←</kbd> / <kbd>→</kbd></dt><dd>{t("上一章 / 下一章")}</dd></div>
                 <div><dt><kbd>F5</kbd> / <kbd>F6</kbd></dt><dd>{t("上一章 / 下一章")}</dd></div>
                 <div><dt><kbd>F7</kbd></dt><dd>{t("开启 / 关闭自动翻页（间隔在阅读偏好中设置）")}</dd></div>
                 <div><dt><kbd>F8</kbd></dt><dd>{t("进入 / 退出迷你模式（使用已保存的行数）")}</dd></div>
@@ -71,6 +73,8 @@ function getTopics() { return [
                 <div><dt><kbd>Enter</kbd></dt><dd>{t("打开书架中已选中的书籍")}</dd></div>
                 <div><dt><kbd>Ctrl / ⌘</kbd> + <kbd>Space</kbd></dt><dd>{t("老板键：最小化窗口，再按恢复（Mac 使用 ⌘）")}</dd></div>
             </dl>
+            <p className="usage-guide-note">{t("开启自动滚动后，↑ 暂停滚动，↓ 继续滚动；通过开关、F9 或菜单关闭自动滚动后，↑ / ↓ 恢复翻页。")}</p>
+            <p className="usage-guide-note">{t("上下翻页、左右翻章默认开启，可在阅读偏好中分别关闭，设置会自动保存。方向键仅在阅读正文时生效，编辑输入框、加载书籍或打开其他面板时暂停。")}</p>
             <p className="usage-guide-note">{t("F2–F9 在阅读正文时生效；编辑输入框、加载书籍或打开其他面板时暂停。目录打开时可按 F2 关闭；按住按键不会连续触发。")}</p>
             <p className="usage-guide-note">{t("阅读时 F5 用于上一章；打开设置、目录或编辑输入框时，F5 不会切章，也不会刷新页面。")}</p>
             <p className="usage-guide-note">{t("老板键需要成功注册系统快捷键；如与其他程序冲突，可使用最小化按钮。Linux 全局快捷键依赖 X11 环境。")}</p>

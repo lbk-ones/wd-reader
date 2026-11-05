@@ -12,6 +12,20 @@ export class BookMetadata {
      * @param {Partial<BookMetadata>} [$$source = {}] - The source object to create the BookMetadata.
      */
     constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["categoryId"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["favorite"] = undefined;
+        }
         if (!("id" in $$source)) {
             /**
              * @member
@@ -127,24 +141,59 @@ export class BookMetadata {
      * @returns {BookMetadata}
      */
     static createFrom($$source = {}) {
-        const $$createField5_0 = $$createType0;
-        const $$createField9_0 = $$createType1;
-        const $$createField10_0 = $Create.DateFromTime;
-        const $$createField11_0 = $Create.DateFromTime;
+        const $$createField7_0 = $$createType0;
+        const $$createField11_0 = $$createType1;
+        const $$createField12_0 = $Create.DateFromTime;
+        const $$createField13_0 = $Create.DateFromTime;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("authors" in $$parsedSource) {
-            $$parsedSource["authors"] = $$createField5_0($$parsedSource["authors"]);
+            $$parsedSource["authors"] = $$createField7_0($$parsedSource["authors"]);
         }
         if ("sources" in $$parsedSource) {
-            $$parsedSource["sources"] = $$createField9_0($$parsedSource["sources"]);
+            $$parsedSource["sources"] = $$createField11_0($$parsedSource["sources"]);
         }
         if ("importedAt" in $$parsedSource) {
-            $$parsedSource["importedAt"] = $$createField10_0($$parsedSource["importedAt"]);
+            $$parsedSource["importedAt"] = $$createField12_0($$parsedSource["importedAt"]);
         }
         if ("lastOpenedAt" in $$parsedSource) {
-            $$parsedSource["lastOpenedAt"] = $$createField11_0($$parsedSource["lastOpenedAt"]);
+            $$parsedSource["lastOpenedAt"] = $$createField13_0($$parsedSource["lastOpenedAt"]);
         }
         return new BookMetadata(/** @type {Partial<BookMetadata>} */($$parsedSource));
+    }
+}
+
+export class Category {
+    /**
+     * Creates a new Category instance.
+     * @param {Partial<Category>} [$$source = {}] - The source object to create the Category.
+     */
+    constructor($$source = {}) {
+        if (!("id" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Category instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {Category}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Category(/** @type {Partial<Category>} */($$parsedSource));
     }
 }
 

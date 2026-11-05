@@ -80,6 +80,11 @@ func Run(assets fs.FS, icon []byte, version string) {
 	service.window.OnWindowEvent(events.Common.WindowHide, func(_ *application.WindowEvent) {
 		service.CloseMiniMenu()
 	})
+	service.window.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		event.Cancel()
+		service.CloseMiniMenu()
+		service.window.Minimise()
+	})
 	if application.System.IsDesktop() {
 		showReader := func() { showReaderWindow(service.window) }
 		menu := app.NewMenu()

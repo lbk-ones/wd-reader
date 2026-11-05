@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -76,6 +77,14 @@ func (a *App) GetAppPath() string {
 // GetBooksPath 获取books的目录
 func (a *App) GetBooksPath() string {
 	return filepath.Join(book.GetAppPath(), constant.BOOK_PATH)
+}
+
+func (a *App) GetRunDirectory() (string, error) {
+	return os.Getwd()
+}
+
+func (a *App) SetBookFavorite(id string, favorite bool) error {
+	return book.SetFavorite(id, favorite)
 }
 
 func (a *App) GetBookMetadata() ([]book.BookMetadata, error) { return book.ListMetadata() }

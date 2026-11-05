@@ -235,6 +235,19 @@ function ContentSetting(props) {
                         })}
                     </div>
                     <h3 className="settings-section-title">{t("阅读与窗口")}</h3>
+                    {[
+                        {key: 'arrowPage', label: '上下翻页'},
+                        {key: 'arrowChapter', label: '左右翻章'},
+                    ].map(({key, label}) => (
+                        <Form.Item key={key} label={t(label)}>
+                            <Switch size="small" aria-label={t(label)} checked={settingState[key] !== '0'}
+                                    onChange={enabled => {
+                                        const value = enabled ? '1' : '0';
+                                        setCacheItem(key, value);
+                                        setSettingState({[key]: value});
+                                    }}/>
+                        </Form.Item>
+                    ))}
                     <Form.Item
                         label={t("点击翻页")}
                         name="clickPage"
@@ -560,6 +573,8 @@ function ContentSetting(props) {
                             setCacheItem('backgroundPreset', '')
                             setCacheItem('fontSize', fontSize+"")
                             setCacheItem('clickPage', "1")
+                            setCacheItem('arrowPage', '1')
+                            setCacheItem('arrowChapter', '1')
                             setCacheItem('autoPage', "0")
                             setCacheItem('autoPageInterval', 30)
                             setCacheItem('autoScroll', '0')
@@ -583,6 +598,8 @@ function ContentSetting(props) {
                                 backgroundPreset: '',
                                 fontSize: fontSize+"",
                                 clickPage: "1",
+                                arrowPage: '1',
+                                arrowChapter: '1',
                                 autoPage: "0",
                                 autoPageInterval: 30,
                                 autoScroll: '0',

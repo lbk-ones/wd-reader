@@ -4,6 +4,7 @@
 
 export {
     BookMetadata,
+    Category,
     LibraryOriginal,
     MissingBook
 } from "./models.js";

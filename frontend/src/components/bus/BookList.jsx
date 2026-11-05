@@ -12,17 +12,24 @@ import {
     UnorderedListOutlined,
     EditOutlined,
     FolderOpenOutlined,
-    ImportOutlined
+    ImportOutlined,
+    StarOutlined,
+    StarFilled,
+    TagsOutlined,
+    MinusCircleOutlined,
+    RightOutlined
 } from "@ant-design/icons";
-import {Button, Drawer, Input, Modal, message} from "antd";
+import {Button, Drawer, Input, Modal, Select, message} from "antd";
 import {getCacheItem, setCacheItem, getSplitMap, putSplitMap} from "../Utils";
 import classNames from "classnames";
-import {DeleteFile, GetScOne} from "../../../bindings/wd-reader/internal/desktop/app";
-import {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
+import {DeleteFile, GetScOne, SetBookFavorite, ListCategories, UpdateBookDetails, RemoveBookFromCategory} from "../../../bindings/wd-reader/internal/desktop/app";
+import {Fragment, forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {Browser, Call} from "@wailsio/runtime";
 import {getCurrentlyReadingBook, sortBooksByLastOpened} from '../bookSorting.js';
 import DefaultBookCover from '../DefaultBookCover.jsx';
 import {indexOriginalName, matchesOriginalName} from '../librarySearch.js';
+import CategoryManager from './CategoryManager.jsx';
+import CategoryBooks from './CategoryBooks.jsx';
 
 const TIP = ["翻开一页，暂别喧嚣。", "每一段闲暇，都有书相伴。", "慢慢读，世界会安静下来。"]
 
@@ -44,6 +51,15 @@ function BookList(props, ref) {
     const metadataRequestRef = useRef(0);
     const [editing, setEditing] = useState(null);
     const [searchMatches, setSearchMatches] = useState(null);
+    const [favoritesOnly, setFavoritesOnly] = useState(() => getCacheItem('libraryFavoritesOnly') === '1');
+    const [categories, setCategories] = useState([]);
+    const [categoryMode, setCategoryMode] = useState(false);
+    const [collapsedCategories, setCollapsedCategories] = useState(() => new Set());
+    const [categoryID, setCategoryID] = useState('');
+    const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+    const [assigningCategory, setAssigningCategory] = useState(null);
+    const [savingFavorite, setSavingFavorite] = useState(false);
+    const favoriteBusyRef = useRef(false);
     const [libraryOpen, setLibraryOpen] = useState(false);
     const [originals, setOriginals] = useState([]);
     const [libraryQuery, setLibraryQuery] = useState('');
@@ -101,7 +117,36 @@ function BookList(props, ref) {
             return books;
         } catch (error) { message.error(String(error)); return []; }
     }
-    useEffect(() => { loadMetadata(); }, [state.currentBookList]);
+    async function loadCategories() {
+        const values = await ListCategories();
+        setCategories(values);
+        setEditing(current => current?.categoryId && !values.some(value => value.id === current.categoryId)
+            ? {...current, categoryId: ''} : current);
+        setCategoryID(current => values.some(value => value.id === current) ? current : '');
+    }
+    useEffect(() => {
+        loadCategories().then(loadMetadata).catch(error => message.error(String(error)));
+    }, [state.currentBookList]);
+
+    async function toggleFavorite(book) {
+        if (!book || favoriteBusyRef.current) return;
+        favoriteBusyRef.current = true;
+        setSavingFavorite(true);
+        const favorite = !book.favorite;
+        try {
+            await SetBookFavorite(book.id, favorite);
+            setMetadata(current => ({
+                ...current,
+                [book.fileName]: {...current[book.fileName], favorite},
+            }));
+            props.onFavoriteChanged(book.fileName, favorite);
+        } catch (error) {
+            message.error(String(error));
+        } finally {
+            favoriteBusyRef.current = false;
+            setSavingFavorite(false);
+        }
+    }
 
     function changeLayout(layout) {
         setLibraryLayout(layout);
@@ -138,6 +183,7 @@ function BookList(props, ref) {
     }
 
     useImperativeHandle(ref, () => ({
+        toggleFavorite: name => toggleFavorite(metadata[name]),
         selectBook: (tem) => {
             if (tem) {
                 selectBookFun(tem)
@@ -152,8 +198,19 @@ function BookList(props, ref) {
     }))
 
     const allBooks = sortBooksByLastOpened((state.currentBookList || []).filter(Boolean), metadata);
-    const books = searchMatches === null ? allBooks : allBooks.filter(name => searchMatches.includes(name));
+    const books = allBooks.filter(name =>
+        (searchMatches === null || searchMatches.includes(name)) && (!favoritesOnly || metadata[name]?.favorite));
     const currentlyReading = getCurrentlyReadingBook(allBooks, metadata);
+    const categoryOptions = [{value: '', label: t('全部')},
+        ...categories.map(category => ({value: category.id, label: category.name}))];
+    const bookGroups = categoryMode
+        ? categories
+            .filter(category => !categoryID || category.id === categoryID)
+            .map(category => ({
+                ...category,
+                books: books.filter(name => metadata[name]?.categoryId === category.id),
+            }))
+        : [{id: '', books}];
 
     return isEmpty(state.currentBookChapterName) && props.display && isEmpty(state.errorInfo) ? (
         <section className="book-list" aria-label={t("我的书架")}>
@@ -184,6 +241,19 @@ function BookList(props, ref) {
                                           .map(book => book.fileName) : [];
                                       setSearchMatches(query ? props.onSearch(value, matches) : null);
                                   }}/>
+                    <Button className="library-favorites-filter" size="small"
+                            type={favoritesOnly ? 'primary' : 'default'}
+                            icon={favoritesOnly ? <StarFilled/> : <StarOutlined/>}
+                            title={t('只看收藏')} aria-label={t('只看收藏')} aria-pressed={favoritesOnly}
+                            onClick={() => {
+                                const enabled = !favoritesOnly;
+                                setCacheItem('libraryFavoritesOnly', enabled ? '1' : '0');
+                                setFavoritesOnly(enabled);
+                            }}/>
+                    <Button className="library-favorites-filter" size="small" icon={<TagsOutlined/>}
+                            type={categoryMode ? 'primary' : 'default'} title={t('按分类展示')}
+                            aria-label={t('按分类展示')} aria-pressed={categoryMode}
+                            onClick={() => setCategoryMode(value => !value)}/>
                     <div className="library-layout-switch" role="group" aria-label={t("书架布局")}>
                         <button type="button" aria-label={t("列表布局")} aria-pressed={libraryLayout === 'list'}
                                 title={t("切换为列表布局")} onClick={() => changeLayout('list')}>
@@ -195,52 +265,117 @@ function BookList(props, ref) {
                         </button>
                     </div>
                 </div>
+                {categoryMode && <div className="library-category-toolbar">
+                    <div className="library-category-tags" role="group" aria-label={t('选择分类')}>
+                        {categoryOptions.map(category => (
+                            <button type="button" key={category.value}
+                                    className={classNames('library-category-tag', {'is-active': categoryID === category.value})}
+                                    title={category.label} aria-pressed={categoryID === category.value}
+                                    onClick={() => setCategoryID(category.value)}>
+                                {category.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="library-category-actions">
+                        <Button size="small" type="text"
+                                onClick={() => setCategoryManagerOpen(true)}>{t('管理分类')}</Button>
+                        <Button size="small" type="text" disabled={!categoryID}
+                                title={!categoryID ? t('请先选择具体分类') : undefined}
+                                onClick={() => setAssigningCategory(categories.find(category => category.id === categoryID))}>
+                            {t('维护选中分类')}
+                        </Button>
+                    </div>
+                </div>}
             </div>
-            <ul className={classNames('book-list-ul', {'book-list-ul--grid': libraryLayout === 'grid'})} aria-label={t("书籍列表")}>
-                {books.map((name, index) => {
-                    const meta = metadata[name];
-                    const title = meta?.title || name.replace(/\.(txt|epub)$/i, '');
-                    const isRecent = currentlyReading === name;
-                    return <li key={name} className={classNames('library-book', {'library-book--recent': isRecent})}>
-                        <button className="library-book-open" title={t("双击阅读：") + title}
-                                onDoubleClick={() => selectBookFun(name)}
-                                onKeyDown={event => {if (event.key === 'Enter') selectBookFun(name)}}>
-                            <span className={'book-spine book-spine--' + index % 4} aria-hidden="true">
-                                {covers[meta?.id] ? <img className="book-cover" src={covers[meta.id]} alt=""/> : <DefaultBookCover title={title}/>}
-                            </span>
-                            <span className="library-book-info">
-                                <span className="library-book-title">{title}</span>
-                                <span className="library-book-meta">
-                                    <span>{(meta?.importType || name.split('.').pop()).toUpperCase()}</span>
-                                    {meta?.authors?.length > 0 && <><span className="meta-dot">·</span><span className="library-book-author" title={meta.authors.join('、')}>{meta.authors.join('、')}</span></>}
-                                    <span className="meta-dot">·</span>
-                                    <span className="library-book-hint">{isRecent ? t("上次读到这里") : t("双击开始阅读")}</span>
-                                </span>
-                                {meta?.importedAt && <time className="library-book-import-date" dateTime={meta.importedAt} title={t('导入时间')}>
-                                    {t('导入')} {new Date(meta.importedAt).toLocaleDateString(language === 'en' ? 'en' : 'zh-CN')}
-                                </time>}
-                            </span>
-                            {isRecent && <span className="reading-badge">{t("在读")}</span>}
+            <ul className={classNames('book-list-ul', {'book-list-ul--grid': libraryLayout === 'grid', 'is-grouped': categoryMode})} aria-label={t("书籍列表")}>
+                {bookGroups.map(group => <Fragment key={group.id}>
+                    {categoryMode && group.name && <li className="library-category-heading">
+                        <button type="button" className="library-category-toggle"
+                                aria-expanded={!collapsedCategories.has(group.id)}
+                                title={t(collapsedCategories.has(group.id) ? '展开分类' : '折叠分类')}
+                                onClick={() => setCollapsedCategories(current => {
+                                    const next = new Set(current);
+                                    if (next.has(group.id)) next.delete(group.id);
+                                    else next.add(group.id);
+                                    return next;
+                                })}>
+                            <RightOutlined className={collapsedCategories.has(group.id) ? '' : 'is-expanded'}/>
+                            <span>{group.name}</span><small>{group.books.length}</small>
                         </button>
-                        {meta && <button className="book-edit" aria-label={t('编辑书籍信息') + ' ' + title} title={t('编辑书籍信息')}
-                                         onClick={() => setEditing({...meta, authorsText: (meta.authors || []).join('、')})}><EditOutlined/></button>}
-                        <button className="book-delete" aria-label={t("删除 ") + title} title={t("删除书籍")}
-                                onClick={() => DeleteFile(name).then(res => {
-                                    if (!props.hasError(res)) {
-                                        message.info(t("删除成功！"));
-                                        props.reloadBookList();
-                                    }
-                                })}><DeleteOutlined/></button>
-                    </li>
-                })}
-                {!books.length && searchMatches !== null && <li className="library-empty">{t('没有找到匹配的书籍')}</li>}
-                {!allBooks.length && searchMatches === null && <li className="library-empty">
+                    </li>}
+                    {(!categoryMode || !collapsedCategories.has(group.id)) && group.books.map((name, index) => {
+                        const meta = metadata[name];
+                        const title = meta?.title || name.replace(/\.(txt|epub)$/i, '');
+                        const isRecent = currentlyReading === name;
+                        return <li key={name} className={classNames('library-book', {'library-book--recent': isRecent})}>
+                            <button className="library-book-open" title={t("双击阅读：") + title}
+                                    onDoubleClick={() => selectBookFun(name)}
+                                    onKeyDown={event => {if (event.key === 'Enter') selectBookFun(name)}}>
+                                <span className={'book-spine book-spine--' + index % 4} aria-hidden="true">
+                                    {covers[meta?.id] ? <img className="book-cover" src={covers[meta.id]} alt=""/> : <DefaultBookCover title={title}/>}
+                                </span>
+                                <span className="library-book-info">
+                                    <span className="library-book-title">{title}</span>
+                                    {libraryLayout !== 'grid' && meta?.categoryId && <span className="library-book-category">
+                                        {categories.find(category => category.id === meta.categoryId)?.name}
+                                    </span>}
+                                    <span className="library-book-meta">
+                                        <span>{(meta?.importType || name.split('.').pop()).toUpperCase()}</span>
+                                        {meta?.authors?.length > 0 && <><span className="meta-dot">·</span><span className="library-book-author" title={meta.authors.join('、')}>{meta.authors.join('、')}</span></>}
+                                        <span className="meta-dot">·</span>
+                                        <span className="library-book-hint">{isRecent ? t("上次读到这里") : t("双击开始阅读")}</span>
+                                    </span>
+                                    {meta?.importedAt && <time className="library-book-import-date" dateTime={meta.importedAt} title={t('导入时间')}>
+                                        {t('导入')} {new Date(meta.importedAt).toLocaleDateString(language === 'en' ? 'en' : 'zh-CN')}
+                                    </time>}
+                                </span>
+                                {isRecent && <span className="reading-badge">{t("在读")}</span>}
+                            </button>
+                            {meta && <button className={classNames('book-favorite', {'is-favorite': meta.favorite})}
+                                             aria-label={t(meta.favorite ? '取消收藏' : '收藏书籍') + ' ' + title}
+                                             title={t(meta.favorite ? '取消收藏' : '收藏书籍')}
+                                             aria-pressed={!!meta.favorite} disabled={savingFavorite}
+                                             onClick={() => toggleFavorite(meta)}>
+                                {meta.favorite ? <StarFilled/> : <StarOutlined/>}
+                            </button>}
+                            {meta && <button className="book-edit" aria-label={t('编辑书籍信息') + ' ' + title} title={t('编辑书籍信息')}
+                                             onClick={() => setEditing({...meta, authorsText: (meta.authors || []).join('、')})}><EditOutlined/></button>}
+                            <button className="book-delete" aria-label={t(categoryMode ? '移出分类' : '删除书籍') + ' ' + title}
+                                    title={categoryMode ? t('从“{0}”移出，书籍仍保留在书架', {0: group.name}) : t('删除书籍')}
+                                    onClick={async () => {
+                                        try {
+                                            if (categoryMode) {
+                                                await RemoveBookFromCategory(meta.id, group.id);
+                                                await loadMetadata();
+                                                message.success(t('已移出分类'));
+                                            } else {
+                                                const res = await DeleteFile(name);
+                                                if (!props.hasError(res)) {
+                                                    message.info(t('删除成功！'));
+                                                    props.reloadBookList();
+                                                }
+                                            }
+                                        } catch (error) { message.error(String(error)); }
+                                    }}>{categoryMode ? <MinusCircleOutlined/> : <DeleteOutlined/>}</button>
+                        </li>
+                })}</Fragment>)}
+                {!books.length && (searchMatches !== null || favoritesOnly) &&
+                    <li className="library-empty">{t(favoritesOnly && searchMatches === null ? '暂无收藏，点击书籍旁的星标添加' : '没有找到匹配的书籍')}</li>}
+                {!allBooks.length && searchMatches === null && !favoritesOnly && <li className="library-empty">
                     <BookOutlined/>
                     <h2>{t("留一处安静的书架")}</h2>
                     <p>{t("添加一本书，或将文件拖入窗口。")}</p>
                     <Button onClick={props.clickBookPlus}>{t("添加第一本书")}</Button>
                 </li>}
             </ul>
+            <CategoryManager open={categoryManagerOpen} onClose={() => setCategoryManagerOpen(false)}
+                             categories={categories} onChanged={async () => {
+                                 await loadCategories();
+                                 await loadMetadata();
+                             }}/>
+            {assigningCategory && <CategoryBooks category={assigningCategory}
+                books={allBooks.map(name => metadata[name]).filter(book => book && !book.categoryId)}
+                onClose={() => setAssigningCategory(null)} onSaved={loadMetadata}/>}
             <Drawer className="original-library-drawer" title={t('我的书库')} open={libraryOpen} onClose={() => { setLibraryOpen(false); setLibraryQuery(''); }} width="min(420px, 100vw)">
                 <p className="original-library-description">{t('这里保存导入时的原文件，可重新导入书架。')}</p>
                 <Button className="missing-library-open" size="small" onClick={() => { setMissingOpen(true); loadMissing(); }}>{t('管理缺失书籍')}</Button>
@@ -301,14 +436,19 @@ function BookList(props, ref) {
             <Modal title={t('编辑书籍信息')} open={!!editing} okText={t('保存')} cancelText={t('取消')}
                    onCancel={() => setEditing(null)} onOk={async () => {
                        try {
-                           await Call.ByName('wd-reader/internal/desktop.App.UpdateBookMetadata', editing.id, editing.title,
-                               editing.authorsText.split(/[、,，]/).map(s => s.trim()).filter(Boolean), editing.description || '');
+                           await UpdateBookDetails(editing.id, editing.title,
+                               editing.authorsText.split(/[、,，]/).map(s => s.trim()).filter(Boolean),
+                               editing.description || '', editing.categoryId || '');
                            setEditing(null); await loadMetadata();
                        } catch (error) { message.error(String(error)); }
                    }}>
                 {editing && <div className="book-metadata-form">
                     <label>{t('书名')}<Input value={editing.title} onChange={e => setEditing({...editing, title: e.target.value})}/></label>
                     <label>{t('作者')}<Input value={editing.authorsText} onChange={e => setEditing({...editing, authorsText: e.target.value})}/></label>
+                    <label>{t('分类')}<Select aria-label={t('书籍分类')} value={editing.categoryId || ''}
+                                           options={[{value: '', label: t('不设置分类')}, ...categories.map(category => ({value: category.id, label: category.name}))]}
+                                           onChange={categoryId => setEditing({...editing, categoryId})}/></label>
+                    <Button size="small" onClick={() => setCategoryManagerOpen(true)}>{t('管理分类')}</Button>
                     <label>{t('简介')}<Input.TextArea rows={3} value={editing.description || ''} onChange={e => setEditing({...editing, description: e.target.value})}/></label>
                     <div><Button onClick={async () => { try { if (await Call.ByName('wd-reader/internal/desktop.App.ChooseBookCover', editing.id)) await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('选择封面')}</Button>{' '}
                         <Button onClick={async () => { try { await Call.ByName('wd-reader/internal/desktop.App.RemoveBookCover', editing.id); await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('移除封面')}</Button></div>

@@ -153,14 +153,48 @@
 .reader-drag-strip {
     position: fixed;
     inset: 0 0 auto;
-    height: 30px;
+    height: 38px;
     z-index: 109;
+    display: flex;
+    align-items: center;
+    padding-inline: 4px;
+    gap: 2px;
+}
+
+.reader-drag-strip:hover,
+.reader-drag-strip:focus-within {
+    background-color: #7e9b8766;
+}
+
+.reader-drag-strip-handle {
+    flex: 1;
+    align-self: stretch;
+    min-width: 16px;
     cursor: grab;
     --wails-draggable: drag;
 }
 
-.reader-drag-strip:hover {
-    background-color: #7e9b8766;
+.reader-drag-strip .window-button {
+    --wails-draggable: no-drag;
+    opacity: 0;
+    color: #476654;
+    background: #faf9f5eb;
+    box-shadow: 0 0 0 1px #47665426;
+}
+
+.reader-drag-strip:hover .window-button,
+.reader-drag-strip:focus-within .window-button {
+    opacity: 1;
+}
+
+.reader-drag-strip .window-button:hover,
+.reader-drag-strip .window-button:focus-visible {
+    background: #e6ebe2;
+    color: #303b34;
+}
+
+.reader-drag-strip .window-button.is-favorite {
+    color: #a77a20;
 }
 
 .mini-controls {
@@ -361,6 +395,16 @@
         width: 28px;
         padding: 0;
     }
+}
+
+:lang(zh) .library-originals-label {
+    display: none;
+}
+
+:lang(zh) .library-actions .library-originals-button {
+    gap: 0;
+    width: 28px;
+    padding: 0;
 }
 
 @media (max-width: 440px) {
@@ -690,6 +734,254 @@
 .app-settings-diagnostics {
     color: var(--muted);
     font-size: 12px;
+}
+
+.app-settings-path {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+}
+
+.app-settings-path code {
+    color: var(--ink);
+    overflow-wrap: anywhere;
+    user-select: text;
+}
+
+.library-favorites-filter {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+}
+
+.library-category-toolbar,
+.category-editor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.category-editor .ant-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.library-category-toolbar {
+    align-items: flex-start;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.library-category-tags {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+    padding: 2px;
+}
+
+.library-category-tag {
+    appearance: none;
+    max-width: 100%;
+    padding: 4px 10px;
+    border: 1px solid #dfe5d9;
+    border-radius: 14px;
+    background: #f5f7f0;
+    color: #65735e;
+    font: inherit;
+    font-size: 12px;
+    line-height: 18px;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+}
+
+.library-category-tag:hover {
+    border-color: #9bb09b;
+    background: #e8eee2;
+}
+
+.library-category-tag.is-active {
+    border-color: var(--sage);
+    background: var(--sage);
+    color: #fff;
+}
+
+.library-category-tag:focus-visible {
+    outline: 2px solid #9bb09b;
+    outline-offset: 2px;
+}
+
+.library-category-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.library-category-actions .ant-btn {
+    justify-content: flex-end;
+}
+
+.library-category-actions .ant-btn:not(:disabled) {
+    color: var(--sage);
+}
+
+.category-books .ant-drawer-body {
+    padding: 16px;
+}
+
+.category-books-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.category-books-list .ant-checkbox-wrapper {
+    align-items: flex-start;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffefa;
+}
+
+.category-books-title,
+.category-books-list small {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.category-books-list small {
+    margin-top: 4px;
+    color: var(--muted);
+}
+
+.library-category-heading {
+    grid-column: 1 / -1;
+    padding-top: 6px;
+}
+
+.library-category-toggle {
+    appearance: none;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--sage);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.library-category-toggle:hover {
+    background: #edf0e6;
+}
+
+.library-category-toggle > .anticon {
+    flex-shrink: 0;
+    font-size: 10px;
+    transition: transform .15s;
+}
+
+.library-category-toggle > .is-expanded {
+    transform: rotate(90deg);
+}
+
+.library-category-heading small {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.book-list-ul--grid.is-grouped {
+    grid-auto-rows: auto;
+}
+
+.book-list-ul--grid.is-grouped .library-book {
+    min-height: 190px;
+}
+
+.library-book-category {
+    font-size: 10px;
+    color: var(--sage);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.category-manager .ant-drawer-body {
+    padding: 16px;
+}
+
+.category-manager-list {
+    display: grid;
+    gap: 8px;
+    padding: 0;
+    list-style: none;
+}
+
+.category-manager-list li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-block: 8px;
+    border-bottom: 1px solid var(--line);
+}
+
+.category-manager-list li > span {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.book-favorite {
+    flex-shrink: 0;
+    appearance: none;
+    width: 26px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.book-favorite.is-favorite {
+    color: #a77a20;
+}
+
+.book-favorite:hover {
+    background: #f4ecd9;
+}
+
+.book-favorite:disabled {
+    cursor: wait;
+    opacity: .5;
+}
+
+.book-list-ul--grid .book-favorite {
+    position: absolute;
+    bottom: 9px;
+    right: 11px;
+    width: 22px;
+    height: 22px;
+    background: #fffefae8;
+}
+
+.book-list-ul--grid .library-book {
+    padding-bottom: 36px;
 }
 .original-library-search { margin-bottom: 12px; }
 .original-library-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }

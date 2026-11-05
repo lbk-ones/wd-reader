@@ -8,7 +8,7 @@
     !define INFO_PROJECTNAME "wdreader"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "B、KS"
+    !define INFO_COMPANYNAME "B/K"
 !endif
 !ifndef INFO_PRODUCTNAME
     !define INFO_PRODUCTNAME "wdreader"
@@ -17,7 +17,7 @@
     !define INFO_PRODUCTVERSION "1.0.0"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "Copyright © 2024, B、KS"
+    !define INFO_COPYRIGHT "Copyright © 2024, B/K"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"

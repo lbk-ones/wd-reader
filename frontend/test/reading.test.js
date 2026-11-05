@@ -391,6 +391,43 @@ test('PageUp and PageDown turn pages only when the reader accepts navigation', (
     }
 });
 
+test('arrow shortcuts default on, honor independent preferences and pause outside reading', () => {
+    const reading = {currentBookChapterName: '第一章'};
+    for (const [key, preference] of [
+        ['ArrowUp', 'arrowPage'], ['ArrowDown', 'arrowPage'],
+        ['ArrowLeft', 'arrowChapter'], ['ArrowRight', 'arrowChapter'],
+    ]) {
+        const event = patch => ({key, preventDefault() {this.defaultPrevented = true;}, ...patch});
+        assert.equal(prepareReadingShortcut(event(), reading, true), true);
+        const disabled = event();
+        assert.equal(prepareReadingShortcut(disabled, reading, true, () => false, {[preference]: '0'}), false);
+        assert.equal(disabled.defaultPrevented, undefined);
+        if (preference === 'arrowPage') {
+            const scrolling = event();
+            assert.equal(prepareReadingShortcut(scrolling, reading, true, () => false,
+                {arrowPage: '0', autoScroll: '1'}), true);
+            assert.equal(scrolling.defaultPrevented, true);
+            assert.equal(prepareReadingShortcut(event(), {...reading, settingVisible: true}, true,
+                () => false, {arrowPage: '0', autoScroll: '1'}), false);
+        }
+        const otherPreference = preference === 'arrowPage' ? 'arrowChapter' : 'arrowPage';
+        assert.equal(prepareReadingShortcut(event(), reading, true, () => false, {[otherPreference]: '0'}), true);
+        for (const state of [{}, {...reading, settingVisible: true}, {...reading, muluVisible: true},
+            {...reading, loadingBook: true}, {...reading, miniMenuOpen: true}]) {
+            const blocked = event();
+            assert.equal(prepareReadingShortcut(blocked, state, true), false);
+            assert.equal(blocked.defaultPrevented, undefined);
+        }
+        assert.equal(prepareReadingShortcut(event(), reading, false), false);
+        assert.equal(prepareReadingShortcut(event(), reading, true, () => true), false);
+        assert.equal(prepareReadingShortcut(event({target: {closest: () => true}}), reading, true), false);
+        assert.equal(prepareReadingShortcut(event({ctrlKey: true}), reading, true), false);
+        const repeated = event({repeat: true});
+        assert.equal(prepareReadingShortcut(repeated, reading, true), false);
+        assert.equal(repeated.defaultPrevented, true);
+    }
+});
+
 test('clearing reading history removes all progress, retains preferences and notifies cache subscribers', async t => {
     // Utils.jsx contains plain JavaScript; a data URL lets Node load it without a JSX loader.
     const source = await readFile(new URL('../src/components/Utils.jsx', import.meta.url), 'utf8');

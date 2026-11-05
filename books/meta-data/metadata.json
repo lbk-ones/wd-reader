@@ -173,6 +173,7 @@
       "fileModTime": 1736222772073704400
     },
     {
+      "categoryId": "27cfa562-bff0-4531-a2bf-a95cf2fc9250",
       "id": "fa43bc50-93fe-47c1-8ad4-3dad71c53816",
       "fileName": "很纯很暧昧.txt",
       "originalName": "很纯很暧昧.txt",
@@ -180,9 +181,13 @@
       "authors": [],
       "description": "",
       "cover": "",
-      "sources": {},
+      "sources": {
+        "authors": "user",
+        "description": "user",
+        "title": "user"
+      },
       "importedAt": "2026-06-01T01:42:38.9600585Z",
-      "lastOpenedAt": "2026-10-30T05:48:37.6237175Z",
+      "lastOpenedAt": "2026-11-05T08:12:25.4551145Z",
       "fileHash": "1e121e996ae4fae2f54c5e66d377229b11e598d1b4ebf13ed6e1995626ec6e7d",
       "fileSize": 19713992,
       "fileModTime": 1780278158960058500
@@ -282,6 +287,8 @@
       "fileModTime": 1735223227746146500
     },
     {
+      "categoryId": "3f69c79f-5098-4be3-b994-c70b7d221bcd",
+      "favorite": true,
       "id": "c79efcd8-81c4-4edb-af97-ed992b41dac7",
       "fileName": "明朝那些事儿 (当年明月) (Z-Library).txt",
       "originalName": "明朝那些事儿 (当年明月) (Z-Library).txt",
@@ -297,12 +304,14 @@
         "title": "user"
       },
       "importedAt": "2025-01-07T04:06:12.3098241Z",
-      "lastOpenedAt": "2026-11-05T02:16:12.4225667Z",
+      "lastOpenedAt": "2026-11-05T07:49:11.1154238Z",
       "fileHash": "a2313e5d3b87de084bba698d2616bdad1e7dbb1c5d55019a3253f6c1a4bc0389",
       "fileSize": 4494383,
       "fileModTime": 1736222772309824100
     },
     {
+      "categoryId": "715f66cf-ee2b-47ed-aaa8-60d1125656f2",
+      "favorite": true,
       "id": "910cf1d9-fd76-4454-b738-c819eb23ab2c",
       "fileName": "白夜行 (东野圭吾 (Higashino Keigo)) (Z-Library).txt",
       "originalName": "白夜行 (东野圭吾 (Higashino Keigo)) (Z-Library).txt",
@@ -322,6 +331,7 @@
       "fileModTime": 1738723270175668100
     },
     {
+      "categoryId": "715f66cf-ee2b-47ed-aaa8-60d1125656f2",
       "id": "0e86d871-5329-4f0b-b3c7-4408fcf84691",
       "fileName": "百年孤独 (Raymond校对、批评版) (加西亚•马尔克斯, 范晔) (Z-Library).txt",
       "originalName": "百年孤独 (Raymond校对、批评版) (加西亚•马尔克斯, 范晔) (Z-Library).txt",
@@ -341,6 +351,7 @@
       "fileModTime": 1736222772315331400
     },
     {
+      "categoryId": "715f66cf-ee2b-47ed-aaa8-60d1125656f2",
       "id": "f076f05d-9963-4087-bda4-e2be80144b1a",
       "fileName": "百年孤独.txt",
       "originalName": "百年孤独.txt",
@@ -563,6 +574,8 @@
       "fileModTime": 1735222869742768000
     },
     {
+      "categoryId": "2d16c72c-6f28-4267-b2ab-955dd12569b8",
+      "favorite": true,
       "id": "9d790cde-9392-47c7-8779-6d952d747af2",
       "fileName": "遮天.txt",
       "originalName": "遮天.txt",
@@ -570,7 +583,11 @@
       "authors": [],
       "description": "",
       "cover": "",
-      "sources": {},
+      "sources": {
+        "authors": "user",
+        "description": "user",
+        "title": "user"
+      },
       "importedAt": "2024-12-26T13:25:49.7809477Z",
       "lastOpenedAt": "2024-12-26T13:25:49.7809477Z",
       "fileHash": "9b403679f0c54988f645b4bfb44a419a0457a7301463ec0e2bc4fd8f95767e65",
@@ -608,6 +625,8 @@
       "fileModTime": 1735222526458422200
     },
     {
+      "categoryId": "1fa1c516-b6ce-4a06-b4b1-ede9e0c98086",
+      "favorite": true,
       "id": "a3f1583c-0c0d-4032-a42e-42a5f3f5a8f3",
       "fileName": "贩罪.txt",
       "importType": "epub",
@@ -631,6 +650,7 @@
       "fileModTime": 1793339325593799500
     },
     {
+      "categoryId": "31e44bb1-3a4c-4df3-8da3-8c20925a306f",
       "id": "b8cc3700-c4b2-4ec8-8439-d5ff9e46d1df",
       "fileName": "我有一座冒险屋 (2).txt",
       "importType": "epub",
@@ -654,6 +674,7 @@
       "fileModTime": 1793340356793319900
     },
     {
+      "categoryId": "31e44bb1-3a4c-4df3-8da3-8c20925a306f",
       "id": "b121510f-66d9-4ed0-9dc3-673b6bc095e8",
       "fileName": "捞尸人.txt",
       "importType": "epub",
@@ -677,29 +698,7 @@
       "fileModTime": 1793341193886417700
     },
     {
-      "id": "60744a0f-a135-433a-9bcf-d92d8cce450b",
-      "fileName": "恐怖复苏 (佛前献花) (z-library.sk, 1lib.sk, z-lib.sk).txt",
-      "importType": "epub",
-      "originalName": "恐怖复苏 (佛前献花) (z-library.sk, 1lib.sk, z-lib.sk).epub",
-      "title": "恐怖复苏",
-      "authors": [
-        "佛前献花"
-      ],
-      "description": "\u003cdiv\u003e\n\u003cp style=\"text-indent: 28px; line-height: 24px; background-color: #ffffff; font-family: 'Helvetica Neue','Helvetica','Arial','PingFang SC','Hiragino Sans GB','Microsoft YaHei','WenQuanYi Micro Hei','sans-serif'; font-size: 14px\"\u003e\u003cspan style=\"color: #333333\"\u003e《恐怖复苏》是一部连载于起点中文网的灵异类网络小说，又名《神秘复苏》，作者是佛前献花，于2018年7月16日开始连载，2023年5月20日正文完结，作者陆续更新番外章节共九章，全文共531.52万字。\u003c/span\u003e\u003c/p\u003e\n\u003cp style=\"text-indent: 28px; line-height: 24px; background-color: #ffffff; font-family: 'Helvetica Neue','Helvetica','Arial','PingFang SC','Hiragino Sans GB','Microsoft YaHei','WenQuanYi Micro Hei','sans-serif'; font-size: 14px\"\u003e\u003cspan style=\"color: #333333\"\u003e讲述了一个诡异复苏的世界，杨间依靠自身的智慧和力量，与各种灵异展开激烈斗争，在生死边缘挣扎。在这个世界中有着不同的杀人规律，例如敲门鬼通过敲门声杀人，因脚印重合导致他人死亡。普通人在灵异事件中若能发现的杀人规律也可能存活。驭鬼者通常是被附身的普通人，驾驭能获得其能力，但身体会呈现部分特征，且频繁使用或时间过长都会导致体内复苏。在经历了各种事件，杨间利用自己的力量和智慧，与灵异势力进行的决战，成功击败了所有的灵异势力，终结了灵异时代，并彻底变成了杨戬，他用自己的力量守护人类，为这个世界带来了和平。\u003c/span\u003e\u003c/p\u003e\n\u003cp style=\"text-indent: 28px; line-height: 24px; background-color: #ffffff; font-family: 'Helvetica Neue','Helvetica','Arial','PingFang SC','Hiragino Sans GB','Microsoft YaHei','WenQuanYi Micro Hei','sans-serif'; font-size: 14px\"\u003e\u003cspan style=\"color: #333333\"\u003e《恐怖复苏》在起点中文网获得了2018年更上一层楼徽章、2020年众星捧月徽章、2021年荣耀二星徽章、2022年一呼百应徽章等荣誉。恐怖复苏》漫画在腾讯动漫连载。\u003c/span\u003e\u003c/p\u003e\u003c/div\u003e",
-      "cover": "5013fb0daeda9ed44eeb36f271a1a572e81b1d4b33c75b9df2eec731fdc14304.jpg",
-      "sources": {
-        "authors": "user",
-        "cover": "embedded",
-        "description": "user",
-        "title": "user"
-      },
-      "importedAt": "2026-10-30T06:31:46.7180236Z",
-      "lastOpenedAt": "2026-11-04T12:57:54.4545244Z",
-      "fileHash": "88c7e62d8ab48ed85a6a5c8b2bac6c79d0ef953b206ccf7e54e70d027aa1480f",
-      "fileSize": 16228186,
-      "fileModTime": 1793341906702438500
-    },
-    {
+      "categoryId": "31e44bb1-3a4c-4df3-8da3-8c20925a306f",
       "id": "0a98e678-20af-4732-9e69-6f279b6c7159",
       "fileName": "惊悚我只卖凶宅 (尼古拉斯狗蛋) (z-library.sk, 1lib.sk, z-lib.sk).txt",
       "importType": "mobi",
@@ -722,6 +721,93 @@
       "fileHash": "5480bd187e50db6a905c36a4a1efce6122973251b1c101d7e1aee9b58de39956",
       "fileSize": 4676009,
       "fileModTime": 1793350060239277600
+    },
+    {
+      "categoryId": "31e44bb1-3a4c-4df3-8da3-8c20925a306f",
+      "id": "1e072c04-779b-46ff-b25b-8b276e8298fc",
+      "fileName": "恐怖复苏 (佛前献花) (z-library.sk, 1lib.sk, z-lib.sk).txt",
+      "importType": "epub",
+      "originalName": "恐怖复苏 (佛前献花) (z-library.sk, 1lib.sk, z-lib.sk).epub",
+      "title": "恐怖复苏",
+      "authors": [
+        "佛前献花"
+      ],
+      "description": "\u003cdiv\u003e\n\u003cp style=\"text-indent: 28px; line-height: 24px; background-color: #ffffff; font-family: 'Helvetica Neue','Helvetica','Arial','PingFang SC','Hiragino Sans GB','Microsoft YaHei','WenQuanYi Micro Hei','sans-serif'; font-size: 14px\"\u003e\u003cspan style=\"color: #333333\"\u003e《恐怖复苏》是一部连载于起点中文网的灵异类网络小说，又名《神秘复苏》，作者是佛前献花，于2018年7月16日开始连载，2023年5月20日正文完结，作者陆续更新番外章节共九章，全文共531.52万字。\u003c/span\u003e\u003c/p\u003e\n\u003cp style=\"text-indent: 28px; line-height: 24px; background-color: #ffffff; font-family: 'Helvetica Neue','Helvetica','Arial','PingFang SC','Hiragino Sans GB','Microsoft YaHei','WenQuanYi Micro Hei','sans-serif'; font-size: 14px\"\u003e\u003cspan style=\"color: #333333\"\u003e讲述了一个诡异复苏的世界，杨间依靠自身的智慧和力量，与各种灵异展开激烈斗争，在生死边缘挣扎。在这个世界中有着不同的杀人规律，例如敲门鬼通过敲门声杀人，因脚印重合导致他人死亡。普通人在灵异事件中若能发现的杀人规律也可能存活。驭鬼者通常是被附身的普通人，驾驭能获得其能力，但身体会呈现部分特征，且频繁使用或时间过长都会导致体内复苏。在经历了各种事件，杨间利用自己的力量和智慧，与灵异势力进行的决战，成功击败了所有的灵异势力，终结了灵异时代，并彻底变成了杨戬，他用自己的力量守护人类，为这个世界带来了和平。\u003c/span\u003e\u003c/p\u003e\n\u003cp style=\"text-indent: 28px; line-height: 24px; background-color: #ffffff; font-family: 'Helvetica Neue','Helvetica','Arial','PingFang SC','Hiragino Sans GB','Microsoft YaHei','WenQuanYi Micro Hei','sans-serif'; font-size: 14px\"\u003e\u003cspan style=\"color: #333333\"\u003e《恐怖复苏》在起点中文网获得了2018年更上一层楼徽章、2020年众星捧月徽章、2021年荣耀二星徽章、2022年一呼百应徽章等荣誉。恐怖复苏》漫画在腾讯动漫连载。\u003c/span\u003e\u003c/p\u003e\u003c/div\u003e",
+      "cover": "5013fb0daeda9ed44eeb36f271a1a572e81b1d4b33c75b9df2eec731fdc14304.jpg",
+      "sources": {
+        "authors": "embedded",
+        "cover": "embedded",
+        "description": "embedded",
+        "title": "embedded"
+      },
+      "importedAt": "2026-11-05T08:44:08.4758159Z",
+      "lastOpenedAt": "2026-11-05T08:44:08.4758159Z",
+      "fileHash": "88c7e62d8ab48ed85a6a5c8b2bac6c79d0ef953b206ccf7e54e70d027aa1480f",
+      "fileSize": 16228186,
+      "fileModTime": 1793868248459379700
     }
-  ]
+  ],
+  "categories": [
+    {
+      "id": "0e1c510f-18ef-493b-857b-e69a79661429",
+      "name": "言情"
+    },
+    {
+      "id": "2d16c72c-6f28-4267-b2ab-955dd12569b8",
+      "name": "玄幻"
+    },
+    {
+      "id": "966dbfaa-d7c3-4b8a-ba24-0e919d811a43",
+      "name": "武侠"
+    },
+    {
+      "id": "248c6118-fc37-4827-9d41-c9d04c763721",
+      "name": "科幻"
+    },
+    {
+      "id": "3deaf443-4a1f-469a-a5e9-1e792da0a7fa",
+      "name": "脑洞"
+    },
+    {
+      "id": "3f69c79f-5098-4be3-b994-c70b7d221bcd",
+      "name": "历史"
+    },
+    {
+      "id": "1fa1c516-b6ce-4a06-b4b1-ede9e0c98086",
+      "name": "悬疑"
+    },
+    {
+      "id": "31e44bb1-3a4c-4df3-8da3-8c20925a306f",
+      "name": "恐怖"
+    },
+    {
+      "id": "a9f391f6-2faa-419f-8f43-764042217c57",
+      "name": "同人"
+    },
+    {
+      "id": "89c7b1f6-7714-4918-8af5-ae27eef14d72",
+      "name": "克苏鲁"
+    },
+    {
+      "id": "f1fd6e08-9976-4b22-9857-c5b439653634",
+      "name": "无限流"
+    },
+    {
+      "id": "27cfa562-bff0-4531-a2bf-a95cf2fc9250",
+      "name": "青春"
+    },
+    {
+      "id": "2b7f3093-6364-44d6-af3a-b873102d69ba",
+      "name": "耽美"
+    },
+    {
+      "id": "a3a1afb6-f5b2-49ce-b8b5-8e3048480297",
+      "name": "另类"
+    },
+    {
+      "id": "715f66cf-ee2b-47ed-aaa8-60d1125656f2",
+      "name": "出版"
+    }
+  ],
+  "categoryPresetsAdded": true
 }

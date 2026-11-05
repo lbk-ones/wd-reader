@@ -1,7 +1,7 @@
 import {t, useI18n} from '../../i18n/index.jsx';
 import {memo} from 'react';
 import {isEmpty} from 'lodash-es';
-import {Application, Window} from '@wailsio/runtime';
+import {Window} from '@wailsio/runtime';
 import {
     BorderInnerOutlined,
     BorderOutlined,
@@ -15,6 +15,8 @@ import {
     QuestionCircleOutlined,
     RedoOutlined,
     SettingOutlined,
+    StarOutlined,
+    StarFilled,
 } from '@ant-design/icons';
 import {setCacheItem} from '../Utils.jsx';
 import appIcon from '../../../../build/appicon.png';
@@ -41,7 +43,25 @@ function Header(props) {
         </aside>;
     }
     if (!state.showTitle && reading) {
-        return <div className="reader-drag-strip" title={t("按住此处拖动窗口")}/>;
+        const book = state.bookMetadata?.[state.currentBookName];
+        return <div className="reader-drag-strip" onClick={event => event.stopPropagation()}>
+            <button type="button" className="window-button" title={t('返回书架')} aria-label={t('返回书架')}
+                    onClick={() => props.backBookList()}><DatabaseOutlined/></button>
+            <button type="button" className="window-button" title={t('最小化')} aria-label={t('最小化')}
+                    onClick={() => Window.Minimise()}><MinusOutlined/></button>
+            <div className="reader-drag-strip-handle" title={t('按住此处拖动窗口')}/>
+            <button type="button" className="window-button" title={t('显示标题栏')} aria-label={t('显示标题栏')}
+                    onClick={() => props.toggleTitle(true)}><BorderInnerOutlined/></button>
+            <button type="button" className="window-button" title={t('阅读设置')} aria-label={t('阅读设置')}
+                    onClick={() => props.setState({settingVisible: true})}><SettingOutlined/></button>
+            <button type="button" className={`window-button ${book?.favorite ? 'is-favorite' : ''}`}
+                    title={t(book?.favorite ? '取消收藏' : '收藏书籍')}
+                    aria-label={t(book?.favorite ? '取消收藏' : '收藏书籍')}
+                    aria-pressed={!!book?.favorite} disabled={!book?.id}
+                    onClick={() => props.onToggleFavorite(state.currentBookName)}>
+                {book?.favorite ? <StarFilled/> : <StarOutlined/>}
+            </button>
+        </div>;
     }
 
     function toggleSetting(key) {
@@ -86,7 +106,7 @@ function Header(props) {
             <span className="window-controls-divider"/>
             {control(t("最小化"), <MinusOutlined/>, () => Window.Minimise())}
             {control(t("切换窗口大小"), <BorderOutlined/>, resizeWindow)}
-            {control(t("关闭应用"), <CloseOutlined/>, () => Application.Quit(), false, 'window-button--close')}
+            {control(t("关闭并最小化"), <CloseOutlined/>, () => Window.Minimise(), false, 'window-button--close')}
         </nav>
     </header>;
 }
