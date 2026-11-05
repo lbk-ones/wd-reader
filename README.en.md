@@ -25,9 +25,10 @@ A lightweight, distraction-free desktop ebook reader for Windows, macOS and Linu
 
 | Feature | What you can do |
 | --- | --- |
-| Local library | Add books or drop files into the window, switch between List and Grid, search titles or pinyin initials, and return to recent books |
+| Local bookshelf | Add books or drop files into the window, switch between List and Grid, and search by title, author or pinyin. Recently opened books appear first |
+| Book details and originals | Extract metadata and covers from EPUB, MOBI and AZW files, edit titles, authors, descriptions and covers, and re-import original files from My library |
 | Text layout | Choose Compact, Standard, Comfort or Large presets, or adjust text size and line height individually |
-| Reading colors | Choose Paper, Warm, Green or Night, or customize background and text colors |
+| Reading appearance | Choose Paper, Warm, Green or Night, customize colors, and add a ginkgo, willow or bamboo corner decoration |
 | Flexible window | Keep the reader on top, use transparency, hide the title bar, hide content when the pointer leaves, or read in a 1–4 line mini window |
 | Quick hiding | Minimize or restore the window with `Ctrl / ⌘ + Space` |
 | Chapter navigation | Detect chapters, search contents, move between chapters, or split text by paragraph count or a custom regular expression |
@@ -54,15 +55,17 @@ Visit **[GitHub Releases](https://github.com/lbk-ones/wd-reader/releases)** and 
 
 In filenames, `amd64` means x64 / Intel; `arm64` means Windows ARM or Apple Silicon.
 
+Release builds check GitHub Releases on startup by default. Open **App settings** from the bookshelf to check manually or turn off startup checks. When an update is available, open its release page to download the package.
+
 Windows requires the WebView2 Runtime. Linux uses GTK4 / WebKitGTK 6, and AppImage also needs the corresponding system runtime dependencies. macOS builds target version 12.0 or later; the current packaging tasks use ad-hoc signing without Developer ID notarization.
 
 ## Screenshots
 
-Some screenshots show earlier layouts and Chinese interface text. The current home screen uses a compact toolbar, and the grid fits three columns in the default 400px window, adapting to narrower windows.
+The screenshots show the current Simplified Chinese interface with sample books.
 
 ### Default window size
 
-These screenshots use the default **400 × 690** window. The library adapts to the available width, text wraps to fit, and preferences scroll within their panel.
+The default window is **400 × 690**. The grid fits three columns and adapts to the window width. Reading text wraps to fit, and preferences scroll within their panel.
 
 | List library | Reading | Preferences |
 | :---: | :---: | :---: |
@@ -71,26 +74,30 @@ These screenshots use the default **400 × 690** window. The library adapts to t
 <details>
 <summary><strong>Grid library and contents in a small window</strong></summary>
 
-| Earlier grid layout | Chapter contents |
+| Three-column grid | Chapter contents |
 | :---: | :---: |
-| <img src="images/screenshots/compact-bookshelf-grid.jpg" width="280" alt="Earlier two-column grid layout in a 400×690 window" /> | <img src="images/screenshots/compact-catalog.jpg" width="280" alt="Chapter contents beside the text in a small window" /> |
+| <img src="images/screenshots/compact-bookshelf-grid.jpg" width="280" alt="Three-column grid in the default 400×690 window" /> | <img src="images/screenshots/compact-catalog.jpg" width="280" alt="Chapter contents beside the text in a small window" /> |
 
 </details>
 
 ### Library and reading
 
-Use List for quick scanning or Grid for browsing. Both layouts support title and pinyin-initial searches, and your layout choice is saved.
+Search by title, author or pinyin in either layout. Book cards show the author, import format and import date. The app remembers your last layout.
 
 <details>
-<summary><strong>List library: importing, search and everyday controls</strong></summary>
+<summary><strong>List view, book details and original files</strong></summary>
 
-![List library with import actions, search, layout switching, help and app settings](images/screenshots/bookshelf-list.jpg)
+![List view with search, import controls and book details](images/screenshots/bookshelf-list.jpg)
+
+![Book information editor with title, author, description and cover controls](images/screenshots/book-metadata.jpg)
+
+![My library with original file search, re-import actions and missing book management](images/screenshots/original-library.jpg)
 
 </details>
 
-The Warm palette pairs a centered chapter heading with a bottom bar showing the chapter title, number and overall chapter progress. Click the current title to open contents.
+The Warm palette is shown with a ginkgo corner decoration. The bottom bar shows the chapter title, number and overall progress. Open contents with `F2` or from the reading context menu.
 
-![Warm reading view with chapter heading, navigation and progress](images/screenshots/reading-warm.jpg)
+![Warm reading view with a ginkgo decoration, chapter navigation and progress](images/screenshots/reading-warm.jpg)
 
 <details>
 <summary><strong>Night palette: dark background and light text</strong></summary>
@@ -108,29 +115,29 @@ Search chapter titles, jump to a chapter and see the current position in the con
 <details>
 <summary><strong>Custom chapter detection for each book</strong></summary>
 
-If automatic detection does not work well for a book, split by paragraph count or enter a regular expression. Applying the rule prompts you to clear the book’s saved chapter position.
+When automatic detection misses a chapter, split by paragraph count, choose a regular expression preset for common chapter headings, or enter your own expression. Applying the rule prompts you to clear the book’s saved chapter history.
 
-![Custom chapter regular expression and reading preferences](images/screenshots/chapter-settings.jpg)
+![Chapter detection settings with a regular expression preset, input and Apply button](images/screenshots/chapter-settings.jpg)
 
 </details>
 
 ### Reading preferences
 
-The preferences panel groups the most-used controls:
+The preferences panel groups the most-used controls.
 
-- **Text and colors:** four text-size / line-height presets, four palettes and custom colors.
-- **Reading and window:** click to turn, progress, always on top, auto hide, transparency, title bar and mini-mode line count.
-- **Auto reading:** page intervals of 1–3600 seconds or scrolling at 5–100 pixels per second. Enabling either mode disables the other.
-- **Chapter detection:** smart detection, paragraph counts or a custom regular expression.
+- **Text and colors** include four text-size and line-height presets, four palettes, and custom colors. Corner decoration is independent of the palette and saves automatically.
+- **Reading and window** covers click to turn, progress, always on top, auto hide, transparency, the title bar and mini-mode line count.
+- **Auto reading** supports page intervals of 1–3600 seconds or scrolling at 5–100 pixels per second. Enabling either mode disables the other. Set a minimum chapter-end pause of 1–120 seconds for auto scroll.
+- **Chapter detection** offers smart detection, paragraph counts or a custom regular expression per book.
 
-![Reading preferences for typography, colors, window behavior, auto reading and chapter detection](images/screenshots/reading-preferences.jpg)
+![Reading preferences for typography, colors, corner decorations, window behavior and auto reading](images/screenshots/reading-preferences.jpg)
 
 <details>
 <summary><strong>Built-in help and keyboard shortcuts</strong></summary>
 
 Press `F1` to open help. Browse Getting started, Reading preferences and Shortcuts. The instructions are available offline.
 
-![Built-in help explaining F1–F9, Esc, Enter and the boss key](images/screenshots/keyboard-guide.jpg)
+![Built-in reading shortcuts, including PageUp and PageDown](images/screenshots/keyboard-guide.jpg)
 
 </details>
 
@@ -138,8 +145,14 @@ Press `F1` to open help. Browse Getting started, Reading preferences and Shortcu
 
 1. Click **Add books** or drop local files into the library window. You can also enter a direct file URL under **Download books**.
 2. Double-click a book, or focus it with the keyboard and press `Enter`.
-3. Click the text to turn pages, scroll with the mouse wheel, use the bottom bar to change chapters, or click the chapter title to open contents.
+3. Click the text to turn pages or scroll with the mouse wheel. Use the bottom bar to change chapters and press `F2` to open contents.
 4. Open **Reading preferences** with the gear button to adjust colors, text, window behavior and auto reading.
+
+### Manage books
+
+After importing a book, you can edit its title, author, description and cover. To edit it later, hover over or focus the book card and choose **Edit book information**.
+
+Open **My library** to search or re-import original files. Deleting a book from the bookshelf removes its reading copy and metadata and leaves the original available for re-import. Deleting the original in My library leaves the existing reading copy available. Open **Manage missing books** to restore or relink missing files, or remove stale entries.
 
 ### Supported formats
 
@@ -158,9 +171,9 @@ TXT and EPUB are recommended for everyday reading. This reader focuses on text; 
 - **Mini context menu:** right-click the text to open all actions in a separate always-on-top window. Page and chapter navigation keep mini mode; contents, preferences and other panels restore the normal window. Press `Esc` or focus another window to dismiss the menu.
 - **Transparent mode:** use a transparent background and white text over other windows. Choosing a color preset turns transparency off.
 - **Auto hide:** hide reading content when the pointer leaves the window and reveal it when the pointer returns.
-- **Hidden title bar:** right-click the text and choose Title bar to restore it, or Preferences to reopen settings.
+- **Hidden title bar** leaves a drag area along the top edge of the reading window. Right-click the text and choose **Title bar** to restore the bar.
 
-Auto page turn defaults to 30 seconds; auto scroll defaults to 20 pixels per second. Both pause in settings, contents or help, while loading books, or when content is hidden. Manual activity restarts the page-turn timer and briefly pauses scrolling.
+Auto page turn defaults to 30 seconds and auto scroll defaults to 20 pixels per second. Auto scroll pauses for at least 4 seconds by default before opening the next chapter. Both modes pause in settings, contents or help, while loading books, or when content is hidden. Manual activity restarts the page-turn timer and briefly pauses scrolling.
 
 ### Keyboard shortcuts
 
@@ -168,7 +181,7 @@ Auto page turn defaults to 30 seconds; auto scroll defaults to 20 pixels per sec
 | --- | --- |
 | `F1` | Open help |
 | `F2` | Toggle contents |
-| `F3` / `F4` | Previous / next page |
+| `F3` or `PageUp` / `F4` or `PageDown` | Previous / next page |
 | `F5` / `F6` | Previous / next chapter |
 | `F7` | Toggle auto page turn |
 | `F8` | Toggle mini mode |
@@ -177,7 +190,7 @@ Auto page turn defaults to 30 seconds; auto scroll defaults to 20 pixels per sec
 | `Enter` | Open the focused book in the library |
 | `Ctrl + Space` / `⌘ + Space` | Boss key: minimize / restore the window |
 
-`F2`–`F9` mainly apply while reading and pause when editing inputs or using other panels. The boss key requires successful system shortcut registration and may conflict with other apps. Linux support depends on the desktop environment.
+`F2`–`F9`, `PageUp` and `PageDown` mainly apply while reading and pause when editing inputs or using other panels. The boss key requires successful system shortcut registration and may conflict with other apps. Linux support depends on the desktop environment.
 
 ### Where are books and preferences stored?
 
@@ -185,9 +198,10 @@ Auto page turn defaults to 30 seconds; auto scroll defaults to 20 pixels per sec
 | --- | --- |
 | Windows books | `books/` in the working directory at startup; launching from the repository root uses its `books/` folder |
 | macOS / Linux books | `~/books/` |
+| Book folder structure | `pure/` holds imported originals, `parse/` holds TXT reading copies, and `meta-data/` holds book details, covers and metadata backups |
 | Reading positions and preferences | Local WebView localStorage, using the `Wd-` prefix |
 
-**Clear reading history** removes recent books, saved chapters and reading positions while preserving typography, colors, language and library layout. **Clear all cache** also removes preferences. When moving to another device, book files and WebView reading data must be handled separately.
+**Clear reading history** removes the WebView’s recent book entries, saved chapters and reading positions while preserving typography, colors, language and library layout. **Clear all cache** also removes preferences. Back up the book folder and WebView data separately when moving to another device.
 
 ## Development and builds
 
