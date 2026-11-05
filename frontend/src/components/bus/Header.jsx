@@ -3,7 +3,6 @@ import {memo} from 'react';
 import {isEmpty} from 'lodash-es';
 import {Application, Window} from '@wailsio/runtime';
 import {
-    BookOutlined,
     BorderInnerOutlined,
     BorderOutlined,
     CloseOutlined,
@@ -18,6 +17,7 @@ import {
     SettingOutlined,
 } from '@ant-design/icons';
 import {setCacheItem} from '../Utils.jsx';
+import appIcon from '../../../../build/appicon.png';
 
 function Header(props) {
     useI18n();
@@ -70,7 +70,7 @@ function Header(props) {
                  event.stopPropagation();
                  Window.ToggleMaximise()
              }}>
-            <span className="brand-mark" aria-hidden="true"><BookOutlined/></span>
+            <img className="brand-mark" src={appIcon} alt="" draggable={false}/>
             <span
                 className="title-name">{reading ? bookTitle : props.title}</span>
         </div>

@@ -42,9 +42,14 @@ jobs:
         run: |
           wails3 task linux:create:deb VERSION="$APP_VERSION"
           wails3 task linux:create:appimage VERSION="$APP_VERSION"
+          cd bin
+          asset="wdreader-update_${APP_VERSION}_linux_amd64.AppImage"
+          mv -- ./*.AppImage "$asset"
+          sha256sum "$asset" > wdreader-update_linux_amd64.AppImage.sha256
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.APP_VERSION }}
           files: |
             bin/*.deb
             bin/*.AppImage
+            bin/wdreader-update_*.sha256

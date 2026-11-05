@@ -55,7 +55,7 @@ Open **App settings → Language** from the library, or use the language selecto
 
 文件名中的 `amd64` 对应 x64 / Intel，`arm64` 对应 Windows ARM 或 Apple Silicon。
 
-正式版默认在启动时检查 GitHub Releases。可在书架右下角打开 **应用设置**，手动检查更新或关闭启动检查。发现新版本后可打开发布页下载安装包。
+正式版默认在启动时检查 GitHub Releases。可在书架右下角打开 **应用设置**，手动检查更新或关闭启动检查。检测到带校验文件的更新包时，Windows 便携版、macOS 应用和 Linux AppImage 可选择 **安装更新并重启**。也可以打开发布页手动下载安装包，Linux DEB 通过安装新包更新。
 
 Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还需要系统具备相应运行依赖。macOS 构建目标为 12.0 及以上，当前打包任务使用 ad-hoc 签名，未配置 Developer ID 公证。
 
@@ -204,6 +204,8 @@ Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还
 ## 开发与构建
 
 项目使用 **Go + Wails 3 + React + Ant Design + Vite**。Wails Go 模块、CLI 与前端 runtime 固定在 `v3.1.0`，开发时请保持一致。
+
+根目录的 `main.go` 是 Wails 启动入口，负责嵌入前端和图标。`internal/desktop/` 管理桌面窗口和前端服务，`internal/book/` 负责书籍解析与存储，`cmd/` 存放独立命令行工具。
 
 ### 环境要求
 

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"wd-reader/go/book/mobi"
+	"wd-reader/internal/book/mobi"
 )
 
 func main() {

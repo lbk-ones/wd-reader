@@ -55,7 +55,7 @@ Visit **[GitHub Releases](https://github.com/lbk-ones/wd-reader/releases)** and 
 
 In filenames, `amd64` means x64 / Intel; `arm64` means Windows ARM or Apple Silicon.
 
-Release builds check GitHub Releases on startup by default. Open **App settings** from the bookshelf to check manually or turn off startup checks. When an update is available, open its release page to download the package.
+Release builds check GitHub Releases on startup by default. Open **App settings** from the bookshelf to check manually or turn off startup checks. When a release includes a checksummed update for your Windows portable build, macOS app or Linux AppImage, choose **Install and restart**. To update a Linux DEB installation, download and install the new package from the release page.
 
 Windows requires the WebView2 Runtime. Linux uses GTK4 / WebKitGTK 6, and AppImage also needs the corresponding system runtime dependencies. macOS builds target version 12.0 or later; the current packaging tasks use ad-hoc signing without Developer ID notarization.
 
@@ -206,6 +206,8 @@ Auto page turn defaults to 30 seconds and auto scroll defaults to 20 pixels per 
 ## Development and builds
 
 Built with **Go + Wails 3 + React + Ant Design + Vite**. Keep the Wails Go module, CLI and frontend runtime aligned at `v3.1.0`.
+
+The root `main.go` embeds the frontend and icon and starts Wails. Desktop windows and frontend services live in `internal/desktop/`, book parsing and storage in `internal/book/`, and standalone command-line tools in `cmd/`.
 
 ### Requirements
 

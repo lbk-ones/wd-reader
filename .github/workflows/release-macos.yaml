@@ -54,7 +54,14 @@ jobs:
         run: |
           wails3 task darwin:package:dmg ARCH=${{ matrix.arch }} VERSION=${{ env.APP_VERSION }} DMG_FILES="fix-app=build/dmg/fix-app,fix-app_zh=build/dmg/fix-app_zh"
           mv bin/wdreader.dmg "bin/WdReader_${APP_VERSION}_mac_${{ matrix.arch }}.dmg"
+          cd bin
+          asset="wdreader-update_${APP_VERSION}_darwin_${{ matrix.arch }}.zip"
+          ditto -c -k --keepParent wdreader.app "$asset"
+          shasum -a 256 "$asset" > "wdreader-update_darwin_${{ matrix.arch }}.zip.sha256"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.APP_VERSION }}
-          files: bin/*.dmg
+          files: |
+            bin/*.dmg
+            bin/wdreader-update_*.zip
+            bin/wdreader-update_*.sha256

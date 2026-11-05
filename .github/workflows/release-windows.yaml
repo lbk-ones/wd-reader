@@ -45,7 +45,14 @@ jobs:
           Copy-Item bin/wdreader.exe $stage
           Copy-Item build/books "$stage/books" -Recurse
           Compress-Archive -Path "$stage/*" -DestinationPath "bin/wdreader_$env:APP_VERSION`_windows_${{ matrix.arch }}.zip"
+          $asset = "wdreader-update_${env:APP_VERSION}_windows_${{ matrix.arch }}.exe"
+          Copy-Item bin/wdreader.exe "bin/$asset"
+          $hash = (Get-FileHash "bin/$asset" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $asset" | Set-Content -Encoding ascii "bin/wdreader-update_windows_${{ matrix.arch }}.exe.sha256"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.APP_VERSION }}
-          files: bin/*.zip
+          files: |
+            bin/*.zip
+            bin/wdreader-update_*.exe
+            bin/wdreader-update_*.sha256

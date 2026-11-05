@@ -3,20 +3,37 @@ import LanguageSelect from './i18n/LanguageSelect.jsx';
 import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from 'react';
 import pinyin from 'pinyin'
 import './App.css';
-import {Alert, App as AntdApp, Button, Drawer, Input, message, notification, Space, Spin, Switch, theme} from 'antd';
+import {
+    Alert,
+    App as AntdApp,
+    Button,
+    Drawer,
+    Input,
+    InputNumber,
+    message,
+    notification,
+    Space,
+    Spin,
+    Switch,
+    theme
+} from 'antd';
 import {presetPalettes} from '@ant-design/colors';
 import {filter, find, findIndex, get, isEmpty, throttle, trim} from 'lodash-es'
 import {
     AddFile,
+    AutostartStatus,
+    SetAutostart,
     GetBookList,
     GetBooksPath,
     GetChapterListByFileName,
     GetServerUrl,
     GetVersion,
+    InstallUpdate,
+    SetReminder,
     OpenFileDialog,
     LogError
-} from "../bindings/wd-reader/app";
-import {GetChapterContentByChapterName} from "../bindings/wd-reader/app.js";
+} from "../bindings/wd-reader/internal/desktop/app";
+import {GetChapterContentByChapterName} from "../bindings/wd-reader/internal/desktop/app.js";
 import useAllState from "./components/lib/hooks/UseAllState";
 import {Application, Browser, Call, Events, Window} from "@wailsio/runtime";
 import {LineOutlined, PlusOutlined} from "@ant-design/icons";
@@ -48,7 +65,7 @@ import {DEFAULT_READING_TYPOGRAPHY} from "./components/readingTypography.js";
 import {DEFAULT_READING_COLORS} from "./components/readingColors.js";
 import {runMiniMenuAction} from './components/readerMenu.js';
 import {importedBookName} from './components/importedBookName.js';
-import {CloseMiniMenu, OpenMiniMenu} from '../bindings/wd-reader/app.js';
+import {CloseMiniMenu, OpenMiniMenu} from '../bindings/wd-reader/internal/desktop/app.js';
 
 
 const CACHE_SCROLL_TOP = "scroll-top"
@@ -56,6 +73,20 @@ const CACHE_SCROLL_TOP = "scroll-top"
 
 function App() {
     const {language} = useI18n();
+    const [waterReminder, setWaterReminder] = useState(() => getCacheItem('waterReminder') === '1');
+    const [movementReminder, setMovementReminder] = useState(() => getCacheItem('movementReminder') === '1');
+    const [waterMinutes, setWaterMinutes] = useState(() => Number(getCacheItem('waterReminderMinutes')) || 45);
+    const [movementMinutes, setMovementMinutes] = useState(() => Number(getCacheItem('movementReminderMinutes')) || 60);
+
+    useEffect(() => {
+        SetReminder('water', waterReminder ? waterMinutes : 0, language)
+            .catch(error => LogError(String(error)));
+    }, [waterReminder, waterMinutes, language]);
+
+    useEffect(() => {
+        SetReminder('movement', movementReminder ? movementMinutes : 0, language)
+            .catch(error => LogError(String(error)));
+    }, [movementReminder, movementMinutes, language]);
     const {modal} = AntdApp.useApp();
     const cacheCount = useSyncExternalStore(subscribeCacheChanges, getCacheCount);
     const [display, setDisplay] = useState(true)
@@ -70,24 +101,67 @@ function App() {
     const autoScrollSaveTimeRef = useRef(0);
 
     const [api, contextHolder] = notification.useNotification();
+    const [autostart, setAutostart] = useState(null);
+    const [savingAutostart, setSavingAutostart] = useState(false);
+
+    const changeAutostart = async (enabled) => {
+        setSavingAutostart(true);
+        try {
+            setAutostart(await SetAutostart(enabled));
+        } catch (error) {
+            LogError(String(error)).catch(() => {});
+            message.error(t('无法修改开机自启'));
+        } finally {
+            setSavingAutostart(false);
+        }
+    };
+
     const [checkingUpdates, setCheckingUpdates] = useState(false);
     const [updateInfo, setUpdateInfo] = useState(null);
     const [checkUpdatesOnStartup, setCheckUpdatesOnStartup] = useState(() => getCacheItem('checkUpdatesOnStartup') !== '0');
     const updateCheckBusyRef = useRef(false);
+
+    const [installingUpdate, setInstallingUpdate] = useState(false);
+    const installUpdate = useMemoizedFn(async (info) => {
+        if (updateCheckBusyRef.current) return;
+        updateCheckBusyRef.current = true;
+        setInstallingUpdate(true);
+        try {
+            progressRef.current.save();
+            await InstallUpdate(info.latestVersion);
+        } catch (error) {
+            LogError(String(error)).catch(() => {
+            });
+            message.error(t('安装更新失败，请重试或前往发布页下载安装包'));
+        } finally {
+            updateCheckBusyRef.current = false;
+            setInstallingUpdate(false);
+        }
+    });
+    const updateButton = (info) => info.installable && info.available
+        ? <Button type="primary" size="small" loading={installingUpdate}
+                  onClick={() => installUpdate(info)}>{t('安装更新并重启')}</Button>
+        : null;
 
     const checkForUpdates = useMemoizedFn(async (manual = false) => {
         if (updateCheckBusyRef.current) return;
         updateCheckBusyRef.current = true;
         setCheckingUpdates(true);
         try {
-            const info = await Call.ByName('main.App.CheckForUpdates', manual);
+            const info = await Call.ByName('wd-reader/internal/desktop.App.CheckForUpdates', manual);
             setUpdateInfo(info);
-            if (info.available) {
+            if (info.available && (manual || getCacheItem('dismissedUpdateVersion') !== info.latestVersion)) {
                 api.info({
                     key: 'new-release', message: t('发现新版本 {0}', {0: info.latestVersion}),
                     description: t('当前版本：{0}', {0: info.currentVersion}), duration: 0,
-                    btn: <Button type="primary" size="small"
-                                 onClick={() => Browser.OpenURL(info.url)}>{t('查看新版本')}</Button>
+                    btn: <Space wrap>
+                        {updateButton(info)}
+                        <Button size="small" onClick={() => Browser.OpenURL(info.url)}>{t('查看新版本')}</Button>
+                        <Button size="small" onClick={() => {
+                            setCacheItem('dismissedUpdateVersion', info.latestVersion);
+                            api.destroy('new-release');
+                        }}>{t('不再提示')}</Button>
+                    </Space>
                 });
             } else if (manual) {
                 message.info(info.comparable ? t('当前已是最新版本') : t('当前为开发版本，最新正式版：{0}', {0: info.latestVersion}));
@@ -280,14 +354,28 @@ function App() {
         LogError("unhandledrejection:" + e.reason).catch(console.error)
     }
 
+    useEffect(() => {
+        if (!state.sysSettingVisible) return;
+        let active = true;
+        AutostartStatus().then(status => {
+            if (active) setAutostart(status);
+        }).catch(error => {
+            if (active) setAutostart('error');
+            LogError(String(error)).catch(() => {});
+        });
+        return () => { active = false; };
+    }, [state.sysSettingVisible]);
+
     useEffect(function () {
         if (getCacheItem('backgroundPreset') === 'night') {
-            const patch = {backgroundPreset: '', bgColor: DEFAULT_READING_COLORS.bgColor,
-                fontColor: DEFAULT_READING_COLORS.fontColor};
+            const patch = {
+                backgroundPreset: '', bgColor: DEFAULT_READING_COLORS.bgColor,
+                fontColor: DEFAULT_READING_COLORS.fontColor
+            };
             Object.entries(patch).forEach(([key, value]) => setCacheItem(key, value));
             setSettingState(patch);
         }
-        // error log collect
+        // error logs collect
         window.addEventListener("error", handlerError)
         window.addEventListener('unhandledrejection', unhandledrejection)
         GetVersion().then(res => {
@@ -1076,7 +1164,7 @@ function App() {
                                 loadingBook: true,
                                 loadingBookTip: "解析中。。,非txt和 epub解析时间随文件大小递增"
                             });
-                            Call.ByName('main.App.ImportBook', r).then(name => {
+                            Call.ByName('wd-reader/internal/desktop.App.ImportBook', r).then(name => {
                                 reloadBookList(() => bookListRef.current?.editImportedBook(name));
                                 message.info(t('成功导入 {count} 份文件', {count: 1}));
                             }).catch(error => {
@@ -1341,84 +1429,140 @@ function App() {
             </Drawer>
 
 
-            {/*系统设置*/}
-            {
-                display && (
-                    <Drawer
-                        title={t("系统设置")}
-                        placement={"bottom"}
-                        height={'80%'}
-                        onClose={function () {
-                            setState({
-                                sysSettingVisible: false
-                            })
-                        }}
-                        open={getState().sysSettingVisible}
-                    >
-                        <div className={"flex flex-column gap10"}>
-
+            {display && (
+                <Drawer
+                    className="app-settings-drawer"
+                    title={t("系统设置")}
+                    placement="bottom"
+                    height="80%"
+                    onClose={() => setState({sysSettingVisible: false})}
+                    open={state.sysSettingVisible}
+                >
+                    <div className="app-settings">
+                        <section className="app-settings-section">
+                            <h3>{t('通用')}</h3>
                             <LanguageSelect/>
-                            <div className="update-settings">
-                                <span>{t('当前版本：{0}', {0: state.version || 'dev'})}</span>
-                                <Button size="small" loading={checkingUpdates}
-                                        onClick={() => checkForUpdates(true)}>{t('检查更新')}</Button>
-                                {updateInfo?.latestVersion &&
-                                    <span>{t('最新正式版：{0}', {0: updateInfo.latestVersion})}{' '}
-                                        <Button size="small" type="link"
-                                                onClick={() => Browser.OpenURL(updateInfo.url)}>{t('查看发布页')}</Button></span>}
-                                <label className="update-settings-switch"><Switch size="small"
-                                                                                  checked={checkUpdatesOnStartup}
-                                                                                  onChange={enabled => {
-                                                                                      setCheckUpdatesOnStartup(enabled);
-                                                                                      setCacheItem('checkUpdatesOnStartup', enabled ? '1' : '0');
-                                                                                  }}/>{t('启动时检查更新')}</label>
+                            <div className="app-settings-row">
+                                <label htmlFor="autostart-switch">{t('开机自启')}</label>
+                                <Switch id="autostart-switch" size="small" loading={savingAutostart}
+                                        disabled={autostart === null || autostart === 'unsupported' || autostart === 'error'}
+                                        checked={autostart === 'enabled'} onChange={changeAutostart}/>
+                                {autostart === 'unsupported' && <small>{t('此版本不支持开机自启')}</small>}
+                                {autostart === 'error' && <small>{t('无法读取开机自启状态')}</small>}
                             </div>
+                            <label className="app-settings-field">
+                                <span>{t('自定义应用标题')}</span>
+                                <Input placeholder={t('自定义应用标题')} value={getSettingState().appTitle}
+                                       onChange={event => {
+                                           const appTitle = event.target.value;
+                                           setCacheItem('AppTitle', appTitle);
+                                           setSettingState({appTitle});
+                                       }}/>
+                            </label>
+                            <div className="app-settings-actions">
+                                <Button size="small" onClick={openUsageGuide}>{t('使用说明（F1）')}</Button>
+                            </div>
+                        </section>
 
-                            <Button onClick={openUsageGuide}>{t("使用说明（F1）")}</Button>
+                        <section className="app-settings-section">
+                            <h3>{t('软件更新')}</h3>
+                            <div className="app-settings-row">
+                                <span>{t('当前版本：{0}', {0: state.version || 'dev'})}</span>
+                                <Button size="small" loading={checkingUpdates} disabled={installingUpdate}
+                                        onClick={() => checkForUpdates(true)}>{t('检查更新')}</Button>
+                            </div>
+                            {updateInfo?.latestVersion && (
+                                <div className="app-settings-row">
+                                    <span>{t('最新正式版：{0}', {0: updateInfo.latestVersion})}</span>
+                                    <Button size="small" type="link"
+                                            onClick={() => Browser.OpenURL(updateInfo.url)}>{t('查看发布页')}</Button>
+                                </div>
+                            )}
+                            {updateInfo?.installable && updateInfo.available &&
+                                <div className="app-settings-actions">{updateButton(updateInfo)}</div>}
+                            <label className="app-settings-row app-settings-toggle">
+                                <span>{t('启动时检查更新')}</span>
+                                <Switch size="small" aria-label={t('启动时检查更新')}
+                                        checked={checkUpdatesOnStartup} onChange={enabled => {
+                                    setCheckUpdatesOnStartup(enabled);
+                                    setCacheItem('checkUpdatesOnStartup', enabled ? '1' : '0');
+                                }}/>
+                            </label>
+                        </section>
 
-                            <span>{t("自定义标题：")}<Input placeholder={t("自定义应用标题")}
-                                                           value={getSettingState().appTitle}
-                                                           onChange={(e) => {
-                                                               let value = e.target.value;
+                        <section className="app-settings-section">
+                            <h3>{t('健康提醒')}</h3>
+                            {[
+                                {
+                                    key: 'waterReminder',
+                                    label: '喝水提醒',
+                                    enabled: waterReminder,
+                                    setEnabled: setWaterReminder,
+                                    minutes: waterMinutes,
+                                    setMinutes: setWaterMinutes
+                                },
+                                {
+                                    key: 'movementReminder',
+                                    label: '久坐提醒',
+                                    enabled: movementReminder,
+                                    setEnabled: setMovementReminder,
+                                    minutes: movementMinutes,
+                                    setMinutes: setMovementMinutes
+                                },
+                            ].map(({key, label, enabled, setEnabled, minutes, setMinutes}) => (
+                                <div className="app-settings-row" key={key}>
+                                    <label className="app-settings-toggle-label">
+                                        <Switch size="small" aria-label={t(label)} checked={enabled}
+                                                onChange={value => {
+                                                    setCacheItem(key, value ? '1' : '0');
+                                                    setEnabled(value);
+                                                }}/>
+                                        <span>{t(label)}</span>
+                                    </label>
+                                    <label className="app-settings-reminder-interval">
+                                        <InputNumber size="small" min={1} max={720} precision={0}
+                                                     aria-label={t('{0}间隔（分钟）', {0: t(label)})}
+                                                     value={minutes} onChange={value => {
+                                            if (!Number.isInteger(value) || value < 1 || value > 720) return;
+                                            setCacheItem(key + 'Minutes', String(value));
+                                            setMinutes(value);
+                                        }}/>
+                                        <span>{t('分钟')}</span>
+                                    </label>
+                                </div>
+                            ))}
+                        </section>
 
-                                                               setCacheItem("AppTitle", value)
-                                                               setSettingState({
-                                                                   appTitle: value
-                                                               })
-
-                                                           }}/></span>
-                            <span title={state.booksPath}>{t("工作目录: ***")}</span>
-                            <span title={window.location.href}>{t("地址: ***")}</span>
-                            <span>{t("缓存:")}{cacheCount}</span>
-                            {/*<span>linux系统要切换到xorg(x11)显示协议才生效</span>*/}
-                            {/*<span>windows/linux系统老板键：ctrl+space</span>*/}
-                            {/*<span>Mac系统老板键：command+space</span>*/}
-
-                            <span>
-                                <Button size={"small"} onClick={function () {
-                                    modal.confirm({
-                                        title: t("警告！"),
-                                        type: 'warning',
-                                        okText: t("我确定"),
-                                        cancelText: t("取消"),
-                                        content: t("清空缓存会丢失所有文本的阅读记录"),
-                                        onOk: () => {
-                                            progressRef.current.stop(false);
-                                            clearCache();
-                                            Window.ForceReload();
-                                        }
-                                    })
-                                }}>{t("清空所有缓存")}</Button></span>
-                            <span><Button size={"small"} onClick={function () {
-                                progressRef.current.stop(false);
-                                clearReadingHistory();
-                                Window.ForceReload();
-                            }}>{t("清除阅读记录")}</Button></span>
-
-                        </div>
-                    </Drawer>
-                )
-            }
+                        <section className="app-settings-section">
+                            <h3>{t('本地数据')}</h3>
+                            <div className="app-settings-diagnostics">
+                                <span title={state.booksPath}>{t('工作目录: ***')}</span>
+                                <span title={window.location.href}>{t('地址: ***')}</span>
+                                <span>{t('缓存:')}{cacheCount}</span>
+                            </div>
+                            <div className="app-settings-actions">
+                                <Button size="small" onClick={() => {
+                                    progressRef.current.stop(false);
+                                    clearReadingHistory();
+                                    Window.ForceReload();
+                                }}>{t('清除阅读记录')}</Button>
+                                <Button size="small" danger onClick={() => modal.confirm({
+                                    title: t('警告！'),
+                                    type: 'warning',
+                                    okText: t('我确定'),
+                                    cancelText: t('取消'),
+                                    content: t('清空缓存会丢失所有文本的阅读记录'),
+                                    onOk: () => {
+                                        progressRef.current.stop(false);
+                                        clearCache();
+                                        Window.ForceReload();
+                                    }
+                                })}>{t('清空所有缓存')}</Button>
+                            </div>
+                        </section>
+                    </div>
+                </Drawer>
+            )}
 
             <UsageGuide open={state.helpVisible} onClose={() => setState({helpVisible: false})}/>
             {contextHolder}

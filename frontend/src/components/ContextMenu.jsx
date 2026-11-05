@@ -29,7 +29,7 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
 
         const handleClick = (e) => {
             setShowMenu(false);
-            // console.log('点击。。。。')
+            // console.logs('点击。。。。')
         };
         let parentNode = menuRef.current.parentNode ? menuRef.current.parentNode : document;
         parentNode.addEventListener('contextmenu', handleContextMenu);

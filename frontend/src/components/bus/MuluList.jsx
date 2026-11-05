@@ -27,7 +27,7 @@ function MuluList(props) {
 
     // useTrackedEffect(
     //     (changes) => {
-    //         console.log('Index of changed dependencies: ', changes);
+    //         console.logs('Index of changed dependencies: ', changes);
     //     },
     //     [...Object.keys(props)],
     // );

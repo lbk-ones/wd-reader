@@ -5,7 +5,7 @@ import {
     CloseOutlined, DatabaseOutlined, ExpandOutlined, LeftOutlined, LogoutOutlined,
     MinusOutlined, QuestionCircleOutlined, ReadOutlined, RightOutlined, SettingOutlined, PauseCircleOutlined,
 } from '@ant-design/icons';
-import {CloseMiniMenu, GetMiniMenuState, SelectMiniMenuAction} from '../../bindings/wd-reader/app.js';
+import {CloseMiniMenu, GetMiniMenuState, SelectMiniMenuAction} from '../../bindings/wd-reader/internal/desktop/app.js';
 import {useI18n} from '../i18n/index.jsx';
 import {MINI_MENU_GROUPS} from './readerMenu.js';
 import './MiniReaderMenu.css';

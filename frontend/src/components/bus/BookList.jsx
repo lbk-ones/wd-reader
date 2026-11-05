@@ -17,7 +17,7 @@ import {
 import {Button, Drawer, Input, Modal, message} from "antd";
 import {getCacheItem, setCacheItem, getSplitMap, putSplitMap} from "../Utils";
 import classNames from "classnames";
-import {DeleteFile, GetScOne} from "../../../bindings/wd-reader/app";
+import {DeleteFile, GetScOne} from "../../../bindings/wd-reader/internal/desktop/app";
 import {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {Browser, Call} from "@wailsio/runtime";
 import {getCurrentlyReadingBook, sortBooksByLastOpened} from '../bookSorting.js';
@@ -54,16 +54,16 @@ function BookList(props, ref) {
         .map(({item}) => item), [indexedOriginals, libraryQuery]);
 
     async function loadOriginals() {
-        try { setOriginals(await Call.ByName('main.App.ListOriginalBooks')); }
+        try { setOriginals(await Call.ByName('wd-reader/internal/desktop.App.ListOriginalBooks')); }
         catch (error) { message.error(String(error)); }
     }
     async function loadMissing() {
-        try { setMissingBooks(await Call.ByName('main.App.ListMissingBooks')); }
+        try { setMissingBooks(await Call.ByName('wd-reader/internal/desktop.App.ListMissingBooks')); }
         catch (error) { message.error(String(error)); }
     }
     async function relinkMissing(item, name) {
         try {
-            await Call.ByName('main.App.RelinkMissingBook', item.id, name);
+            await Call.ByName('wd-reader/internal/desktop.App.RelinkMissingBook', item.id, name);
             for (const prefix of ['', 'scroll-top']) {
                 const value = getCacheItem(prefix + item.fileName);
                 if (value !== null && getCacheItem(prefix + name) === null) setCacheItem(prefix + name, value);
@@ -79,7 +79,7 @@ function BookList(props, ref) {
     }
     async function restoreOriginal(item) {
         try {
-            await Call.ByName('main.App.RestoreOriginalBook', item.name, item.inShelf);
+            await Call.ByName('wd-reader/internal/desktop.App.RestoreOriginalBook', item.name, item.inShelf);
             props.reloadBookList();
             await loadOriginals();
             message.success(t('已重新导入书架'));
@@ -89,12 +89,12 @@ function BookList(props, ref) {
     async function loadMetadata() {
         const request = ++metadataRequestRef.current;
         try {
-            const books = await Call.ByName('main.App.GetBookMetadata');
+            const books = await Call.ByName('wd-reader/internal/desktop.App.GetBookMetadata');
             if (request !== metadataRequestRef.current) return books;
             props.onMetadataLoaded?.(books);
             setMetadata(Object.fromEntries(books.map(book => [book.fileName, book])));
             const images = await Promise.all(books.filter(book => book.cover).map(async book => {
-                try { return [book.id, await Call.ByName('main.App.GetBookCover', book.id)]; }
+                try { return [book.id, await Call.ByName('wd-reader/internal/desktop.App.GetBookCover', book.id)]; }
                 catch { return [book.id, '']; }
             }));
             if (request === metadataRequestRef.current) setCovers(Object.fromEntries(images));
@@ -130,7 +130,7 @@ function BookList(props, ref) {
         let item = getCacheItem(tem);
         props.goChapterByName(tem, item, () => {
             props.clickBookToFirst(tem);
-            Call.ByName('main.App.RecordBookOpened', tem).then(loadMetadata).catch(error => message.error(String(error)));
+            Call.ByName('wd-reader/internal/desktop.App.RecordBookOpened', tem).then(loadMetadata).catch(error => message.error(String(error)));
             props.beginRecordTop(tem)
             props.setState({loadingBook: false})
             props.calculateFontLines()
@@ -258,7 +258,7 @@ function BookList(props, ref) {
                         <Button size="small" danger icon={<DeleteOutlined/>} aria-label={t('删除原文件')} title={t('删除原文件')} onClick={() => Modal.confirm({
                             title: t('删除原文件'), content: t('删除后将无法从书库恢复此原文件，书架中的书不会删除。'),
                             okText: t('删除'), cancelText: t('取消'), onOk: async () => {
-                                try { await Call.ByName('main.App.DeleteOriginalBook', item.name); await loadOriginals(); }
+                                try { await Call.ByName('wd-reader/internal/desktop.App.DeleteOriginalBook', item.name); await loadOriginals(); }
                                 catch (error) { message.error(String(error)); }
                             }
                         })}><span className="original-library-action-label">{t('删除')}</span></Button>
@@ -277,12 +277,12 @@ function BookList(props, ref) {
                         <div className="missing-library-filename" title={item.fileName}>{item.fileName}</div>
                         <div className="missing-library-actions">
                             {item.canRestore && <Button size="small" onClick={async () => {
-                                try { await Call.ByName('main.App.RestoreOriginalBook', item.originalName, false); props.reloadBookList(); await loadMissing(); await loadOriginals(); message.success(t('已重新导入书架')); }
+                                try { await Call.ByName('wd-reader/internal/desktop.App.RestoreOriginalBook', item.originalName, false); props.reloadBookList(); await loadMissing(); await loadOriginals(); message.success(t('已重新导入书架')); }
                                 catch (error) { message.error(String(error)); }
                             }}>{t('从原件恢复')}</Button>}
                             <Button size="small" danger onClick={() => Modal.confirm({title: t('删除缺失记录'),
                                 content: t('将删除该书的元信息和封面，不删除原文件。'), okText: t('删除'), cancelText: t('取消'),
-                                onOk: async () => { try { await Call.ByName('main.App.DeleteMissingBook', item.id); await loadMissing(); } catch (error) { message.error(String(error)); } }
+                                onOk: async () => { try { await Call.ByName('wd-reader/internal/desktop.App.DeleteMissingBook', item.id); await loadMissing(); } catch (error) { message.error(String(error)); } }
                             })}>{t('删除记录')}</Button>
                         </div>
                         {item.candidates.length > 0 && <div className="missing-library-candidates">
@@ -301,7 +301,7 @@ function BookList(props, ref) {
             <Modal title={t('编辑书籍信息')} open={!!editing} okText={t('保存')} cancelText={t('取消')}
                    onCancel={() => setEditing(null)} onOk={async () => {
                        try {
-                           await Call.ByName('main.App.UpdateBookMetadata', editing.id, editing.title,
+                           await Call.ByName('wd-reader/internal/desktop.App.UpdateBookMetadata', editing.id, editing.title,
                                editing.authorsText.split(/[、,，]/).map(s => s.trim()).filter(Boolean), editing.description || '');
                            setEditing(null); await loadMetadata();
                        } catch (error) { message.error(String(error)); }
@@ -310,8 +310,8 @@ function BookList(props, ref) {
                     <label>{t('书名')}<Input value={editing.title} onChange={e => setEditing({...editing, title: e.target.value})}/></label>
                     <label>{t('作者')}<Input value={editing.authorsText} onChange={e => setEditing({...editing, authorsText: e.target.value})}/></label>
                     <label>{t('简介')}<Input.TextArea rows={3} value={editing.description || ''} onChange={e => setEditing({...editing, description: e.target.value})}/></label>
-                    <div><Button onClick={async () => { try { if (await Call.ByName('main.App.ChooseBookCover', editing.id)) await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('选择封面')}</Button>{' '}
-                        <Button onClick={async () => { try { await Call.ByName('main.App.RemoveBookCover', editing.id); await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('移除封面')}</Button></div>
+                    <div><Button onClick={async () => { try { if (await Call.ByName('wd-reader/internal/desktop.App.ChooseBookCover', editing.id)) await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('选择封面')}</Button>{' '}
+                        <Button onClick={async () => { try { await Call.ByName('wd-reader/internal/desktop.App.RemoveBookCover', editing.id); await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('移除封面')}</Button></div>
                     <small>{t('封面修改立即保存')}</small>
                 </div>}
             </Modal>
