@@ -633,8 +633,11 @@ function ContentSetting(props) {
                     </Form.Item>
                     <h3 className="settings-section-title settings-split-title">
                         {t('断章方式')}
+                        {/* 智能模式的目录优先与误判过滤由后端统一处理，其他分章方式仍按用户配置独立执行。 */}
                         <Tooltip
-                            title={t('默认智能识别章节。章节混乱时可切换为按段落数或自定义正则分章，修改后点击应用。')}
+                            title={t(
+                                '智能识别优先使用原书目录，结合标题特征、全书风格和上下文过滤正文误判。也可切换为按段落数或自定义正则分章，修改后点击应用。',
+                            )}
                         >
                             <ExclamationCircleOutlined />
                         </Tooltip>

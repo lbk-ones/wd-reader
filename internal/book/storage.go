@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"wd-reader/internal/book/epub/epubbook"
 	"wd-reader/internal/book/mobi"
 	"wd-reader/internal/constant"
 	"wd-reader/internal/server"
@@ -141,31 +140,27 @@ func sameFileContents(a, b string) (bool, error) {
 	return string(x) == string(y), nil
 }
 
+// parseOriginal 将原书转换为书库阅读文本，由导入或迁移流程负责提交目标文件。
+// 支持原生目录的格式统一解码正文与锚点并保存指纹索引；纯文本直接复制，远程转换结果再按电子书处理。
 func parseOriginal(source, dest string) error {
 	ext := strings.ToLower(filepath.Ext(source))
 	switch ext {
 	case ".txt":
 		return copyExclusive(source, dest)
 	case ".epub":
-		b, err := EpubBook.ParseEpub(source, dest)
+		// 正文按原书阅读顺序提取，目录目标同步映射到相同的物理行坐标。
+		document, err := readNativeSource(source)
 		if err != nil {
 			return err
 		}
-		defer b.ZipReader.Close()
-		return b.WriteEpub()
+		return writeNativeSource(dest, document)
 	case ".mobi", ".azw", ".azw3":
-		r, err := mobi.NewReader(source)
+		// 解压与格式适配在书库层完成，目录不可定位时仍保留正文供智能检测回退。
+		document, err := readNativeSource(source)
 		if err != nil {
 			return err
 		}
-		text, err := r.ExtractText()
-		if err != nil {
-			return err
-		}
-		if text == "" {
-			return fmt.Errorf("未提取到正文")
-		}
-		return os.WriteFile(dest, append([]byte{0xef, 0xbb, 0xbf}, []byte(text)...), 0644)
+		return writeNativeSource(dest, document)
 	case ".pdf", ".doc", ".docx", ".html", ".htmlz":
 		data, err := os.ReadFile(source)
 		if err != nil {

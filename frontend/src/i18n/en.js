@@ -1,4 +1,7 @@
 export default {
+    // 智能分章说明与设置页提示保持一致，提示文案通过现有国际化入口展示。
+    '智能识别优先使用原书目录，结合标题特征、全书风格和上下文过滤正文误判。也可切换为按段落数或自定义正则分章，修改后点击应用。':
+        'Smart detection prefers the original table of contents and checks title features, book-wide style and context to avoid splitting body paragraphs. You can also split by paragraph count or a custom regex, then click Apply.',
     资源导入与导出: 'Import and export resources',
     '导出 books 目录和全部前端缓存，包括书籍、封面、分类、收藏、阅读进度及设置。':
         'Export the books folder and all browser storage, including books, covers, categories, favorites, reading progress and settings.',

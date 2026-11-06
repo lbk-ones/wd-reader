@@ -1,6 +1,9 @@
 package constant
 
-import "regexp"
+import (
+	"regexp"
+	"wd-reader/internal/chapterdetect"
+)
 
 const (
 	BOOK_PATH    = "books"
@@ -12,5 +15,6 @@ const (
 
 var (
 	//RegChapter = regexp.MustCompile(`第?([ ,、一二三四五六七八九十零百千万亿\d]+)[章巻、]`)
-	RegChapter = regexp.MustCompile(`^(?:(?:第\s*)?[零〇一二三四五六七八九十百千万亿\d]+\s*[卷巻章节回篇集]|[零〇一二三四五六七八九十百千万亿\d]+[、：:]|(?i:NO)\s*\d+[、：:. ]|(?i:chapter|book|part)\s+(?i:[ivxlcdm]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b)`)
+	// RegChapter 为旧调用方提供统一的章节前缀匹配；最终智能边界需由独立检测模块综合判断。
+	RegChapter = regexp.MustCompile(chapterdetect.DefaultPattern)
 )
