@@ -45,6 +45,14 @@ export function AutostartStatus() {
 }
 
 /**
+ * CancelUpdate stops checking or downloading before the restart helper is started.
+ * @returns {$CancellablePromise<void>}
+ */
+export function CancelUpdate() {
+    return $Call.ByName("wd-reader/internal/desktop.App.CancelUpdate");
+}
+
+/**
  * @param {boolean} force
  * @returns {$CancellablePromise<$models.UpdateInfo>}
  */
@@ -67,6 +75,16 @@ export function ChooseBookCover(id) {
  */
 export function CloseMiniMenu() {
     return $Call.ByName("wd-reader/internal/desktop.App.CloseMiniMenu");
+}
+
+/**
+ * @param {string} token
+ * @returns {$CancellablePromise<book$0.ResourceImportStats | null>}
+ */
+export function CommitResourceImport(token) {
+    return $Call.ByName("wd-reader/internal/desktop.App.CommitResourceImport", token).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
+    }));
 }
 
 /**
@@ -112,6 +130,24 @@ export function DeleteOriginalBook(name) {
 }
 
 /**
+ * @param {string} token
+ * @returns {$CancellablePromise<void>}
+ */
+export function DiscardResourceImport(token) {
+    return $Call.ByName("wd-reader/internal/desktop.App.DiscardResourceImport", token);
+}
+
+/**
+ * @param {book$0.FrontendCache} cache
+ * @returns {$CancellablePromise<$models.ResourceExportResult | null>}
+ */
+export function ExportResources(cache) {
+    return $Call.ByName("wd-reader/internal/desktop.App.ExportResources", cache).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType4($result);
+    }));
+}
+
+/**
  * GetAppPath 获取目前程序运行目录
  * @returns {$CancellablePromise<string>}
  */
@@ -140,7 +176,7 @@ export function GetBookList() {
  */
 export function GetBookMetadata() {
     return $Call.ByName("wd-reader/internal/desktop.App.GetBookMetadata").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType2($result);
+        return $$createType6($result);
     }));
 }
 
@@ -181,7 +217,7 @@ export function GetChapterListByFileName(_fileName, splitType, splitValue) {
  */
 export function GetMiniMenuState() {
     return $Call.ByName("wd-reader/internal/desktop.App.GetMiniMenuState").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType3($result);
+        return $$createType7($result);
     }));
 }
 
@@ -245,7 +281,7 @@ export function InstallUpdate(expectedVersion) {
  */
 export function ListCategories() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListCategories").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType5($result);
+        return $$createType9($result);
     }));
 }
 
@@ -254,7 +290,7 @@ export function ListCategories() {
  */
 export function ListMissingBooks() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListMissingBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType7($result);
+        return $$createType11($result);
     }));
 }
 
@@ -263,7 +299,7 @@ export function ListMissingBooks() {
  */
 export function ListOriginalBooks() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListOriginalBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType9($result);
+        return $$createType13($result);
     }));
 }
 
@@ -305,6 +341,15 @@ export function OpenMiniMenu(clientX, clientY, language, bookName, chapterName) 
  */
 export function ParseEpubToTxt(filename) {
     return $Call.ByName("wd-reader/internal/desktop.App.ParseEpubToTxt", filename);
+}
+
+/**
+ * @returns {$CancellablePromise<$models.ResourceImportPreview | null>}
+ */
+export function PrepareResourceImport() {
+    return $Call.ByName("wd-reader/internal/desktop.App.PrepareResourceImport").then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType15($result);
+    }));
 }
 
 /**
@@ -357,7 +402,7 @@ export function RestoreOriginalBook(name, overwrite) {
  */
 export function SaveCategory(id, name) {
     return $Call.ByName("wd-reader/internal/desktop.App.SaveCategory", id, name).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType4($result);
+        return $$createType8($result);
     }));
 }
 
@@ -422,12 +467,18 @@ export function UpdateBookMetadata(id, title, authors, description) {
 
 // Private type creation functions
 const $$createType0 = $models.UpdateInfo.createFrom;
-const $$createType1 = book$0.BookMetadata.createFrom;
-const $$createType2 = $Create.Array($$createType1);
-const $$createType3 = $models.MiniMenuState.createFrom;
-const $$createType4 = book$0.Category.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = book$0.MissingBook.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = book$0.LibraryOriginal.createFrom;
+const $$createType1 = book$0.ResourceImportStats.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = $models.ResourceExportResult.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);
+const $$createType5 = book$0.BookMetadata.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = $models.MiniMenuState.createFrom;
+const $$createType8 = book$0.Category.createFrom;
 const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = book$0.MissingBook.createFrom;
+const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = book$0.LibraryOriginal.createFrom;
+const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = $models.ResourceImportPreview.createFrom;
+const $$createType15 = $Create.Nullable($$createType14);

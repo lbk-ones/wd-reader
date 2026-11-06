@@ -1,4 +1,6 @@
-html, body, #root {
+html,
+body,
+#root {
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -13,12 +15,13 @@ html, body, #root {
 
 body {
     color: #303b34;
-    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
 }
 
-button, input {
+button,
+input {
     font: inherit;
 }
 
@@ -26,7 +29,8 @@ button {
     -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible, a:focus-visible {
+button:focus-visible,
+a:focus-visible {
     outline: 2px solid #789483;
     outline-offset: 2px;
 }

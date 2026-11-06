@@ -1,5 +1,4 @@
-
-.context-optional:hover{
+.context-optional:hover {
     background-color: #b8c2b4;
     color: #555555;
     font-weight: bold;
@@ -22,4 +21,7 @@
     line-height: 25px;
     font-family: inherit;
 }
-.reader-context-menu .context-optional:focus-visible { outline: 1px solid #476654; background: #e8eee0; }
+.reader-context-menu .context-optional:focus-visible {
+    outline: 1px solid #476654;
+    background: #e8eee0;
+}

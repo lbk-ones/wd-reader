@@ -1,5 +1,11 @@
-export function createReadingProgress({getBookName, getContent, read, write,
-    schedule = setTimeout, cancel = clearTimeout}) {
+export function createReadingProgress({
+    getBookName,
+    getContent,
+    read,
+    write,
+    schedule = setTimeout,
+    cancel = clearTimeout,
+}) {
     let restoreTimer = null;
     let active = true;
     const save = () => {
@@ -17,7 +23,7 @@ export function createReadingProgress({getBookName, getContent, read, write,
         restoreTimer = null;
         active = false;
     };
-    const restore = book => {
+    const restore = (book) => {
         stop(false);
         active = true;
         const top = Math.max(0, Number(read(book)) || 0);
@@ -27,5 +33,12 @@ export function createReadingProgress({getBookName, getContent, read, write,
             if (getBookName() === book && content) content.scrollTop = top;
         }, 100);
     };
-    return {save, stop, restore, resume: () => { active = true; }};
+    return {
+        save,
+        stop,
+        restore,
+        resume: () => {
+            active = true;
+        },
+    };
 }

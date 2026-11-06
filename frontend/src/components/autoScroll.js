@@ -1,8 +1,21 @@
-export function createAutoScroll({getContent, canScroll, onEnd,
-    request = requestAnimationFrame, cancel = cancelAnimationFrame, now = () => performance.now()}) {
-    let frame = null, active = false, speed = 20, endPause = 4;
+export function createAutoScroll({
+    getContent,
+    canScroll,
+    onEnd,
+    request = requestAnimationFrame,
+    cancel = cancelAnimationFrame,
+    now = () => performance.now(),
+}) {
+    let frame = null,
+        active = false,
+        speed = 20,
+        endPause = 4;
     let movingContent = null;
-    let previous = null, position = null, applied = null, bottomSince = null, pausedUntil = 0;
+    let previous = null,
+        position = null,
+        applied = null,
+        bottomSince = null,
+        pausedUntil = 0;
     const resetMotion = () => {
         movingContent?.style?.removeProperty?.('--reader-scroll-offset');
         movingContent = null;
@@ -14,7 +27,7 @@ export function createAutoScroll({getContent, canScroll, onEnd,
         frame = null;
         resetMotion();
     };
-    const step = timestamp => {
+    const step = (timestamp) => {
         frame = null;
         if (!active) return;
         const content = getContent();
@@ -28,7 +41,7 @@ export function createAutoScroll({getContent, canScroll, onEnd,
             }
             const elapsed = Math.max(0, Math.min(100, timestamp - previous));
             previous = timestamp;
-            position = Math.min(limit, position + speed * elapsed / 1000);
+            position = Math.min(limit, position + (speed * elapsed) / 1000);
             content.scrollTop = position;
             applied = content.scrollTop;
             movingContent = content;
@@ -36,7 +49,7 @@ export function createAutoScroll({getContent, canScroll, onEnd,
             if (limit - content.scrollTop <= 0.5) {
                 if (bottomSince === null) bottomSince = timestamp;
                 // Leave time to finish the last stationary screen before advancing.
-                const dwell = Math.max(endPause * 1000, content.clientHeight / speed * 1000);
+                const dwell = Math.max(endPause * 1000, (content.clientHeight / speed) * 1000);
                 if (timestamp - bottomSince >= dwell) {
                     stop();
                     onEnd();

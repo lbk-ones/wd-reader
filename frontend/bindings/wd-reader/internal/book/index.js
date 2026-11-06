@@ -5,6 +5,8 @@
 export {
     BookMetadata,
     Category,
+    FrontendCache,
     LibraryOriginal,
-    MissingBook
+    MissingBook,
+    ResourceImportStats
 } from "./models.js";

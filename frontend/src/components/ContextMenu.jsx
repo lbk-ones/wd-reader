@@ -1,17 +1,17 @@
-import React, {useState, useEffect, useLayoutEffect, useRef} from 'react';
-import "./ContextMenu.css"
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import './ContextMenu.css';
 
-const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
+const ContextMenu = ({ options, onSelect, onOpenWindow, fontSize = 14 }) => {
     const [showMenu, setShowMenu] = useState(false);
-    const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const menuRef = useRef(null);
 
     useLayoutEffect(() => {
         if (!showMenu) return;
-        const {width, height} = menuRef.current.getBoundingClientRect();
+        const { width, height } = menuRef.current.getBoundingClientRect();
         const x = Math.max(8, Math.min(menuPosition.x, window.innerWidth - width - 8));
         const y = Math.max(8, Math.min(menuPosition.y, window.innerHeight - height - 8));
-        if (x !== menuPosition.x || y !== menuPosition.y) setMenuPosition({x, y});
+        if (x !== menuPosition.x || y !== menuPosition.y) setMenuPosition({ x, y });
     }, [showMenu, menuPosition.x, menuPosition.y, options]);
 
     useEffect(() => {
@@ -24,7 +24,7 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
                 return;
             }
             setShowMenu(true);
-            setMenuPosition({x: e.clientX, y: e.clientY});
+            setMenuPosition({ x: e.clientX, y: e.clientY });
         };
 
         const handleClick = (e) => {
@@ -46,7 +46,7 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
             ref={menuRef}
             className="reader-context-menu"
             role="menu"
-            onDoubleClick={e => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
             style={{
                 display: showMenu ? 'grid' : 'none',
                 position: 'fixed',
@@ -60,10 +60,10 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
                 width: 'max-content',
                 minWidth: 'min(240px, calc(100vw - 16px))',
                 maxWidth: 'calc(100vw - 16px)',
-                lineHeight: '25px' // 写死吧 不然会受外面的影响
+                lineHeight: '25px', // 写死吧 不然会受外面的影响
             }}
         >
-            {options.map(option => (
+            {options.map((option) => (
                 <button
                     type="button"
                     role="menuitem"
@@ -81,14 +81,13 @@ const ContextMenu = ({options, onSelect, onOpenWindow, fontSize = 14}) => {
                         textAlign: 'center',
                         textIndent: 0,
                         ...(function () {
-
                             if (fontSize) {
                                 return {
-                                    fontSize
-                                }
+                                    fontSize,
+                                };
                             }
-                            return {}
-                        })()
+                            return {};
+                        })(),
                     }}
                     onClick={(e) => {
                         e.preventDefault();

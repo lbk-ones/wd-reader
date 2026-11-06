@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
 	"wd-reader/internal/book"
 	"wd-reader/internal/constant"
 	"wd-reader/internal/logs"
@@ -14,7 +15,7 @@ import (
 )
 
 func Run(assets fs.FS, icon []byte, version string) {
-	if err := restoreAutostartDirectory(); err != nil {
+	if err := restoreAutostartDirectory(os.Args[1:]); err != nil {
 		log.Printf("autostart: could not restore books working directory: %v", err)
 		return
 	}
@@ -35,6 +36,10 @@ func Run(assets fs.FS, icon []byte, version string) {
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "e3984e08-28dc-4e3d-b70a-45e961589cdc",
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				// A duplicate login launch must not bring the reader to the foreground.
+				if isAutostartLaunch(data.Args) {
+					return
+				}
 				if service.window != nil {
 					showReaderWindow(service.window)
 					service.window.EmitEvent("launchArgs", data.Args)
@@ -42,6 +47,8 @@ func Run(assets fs.FS, icon []byte, version string) {
 			},
 		},
 		OnShutdown: func() {
+			service.CancelUpdate()
+			service.DiscardResourceImport("")
 			service.stopReminders()
 			logger.Info("bye bye ...")
 		},
@@ -63,6 +70,7 @@ func Run(assets fs.FS, icon []byte, version string) {
 		MinHeight:        120,
 		Frameless:        true,
 		AlwaysOnTop:      true,
+		Hidden:           isAutostartLaunch(os.Args[1:]),
 		BackgroundType:   application.BackgroundTypeTransparent,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		EnableFileDrop:   true,
@@ -101,11 +109,7 @@ func Run(assets fs.FS, icon []byte, version string) {
 	// Wails 3 owns registration and unregisters shortcuts during shutdown.
 	if err := app.GlobalShortcut.Register("CmdOrCtrl+Space", func() {
 		service.CloseMiniMenu()
-		if service.window.IsMinimised() {
-			showReaderWindow(service.window)
-		} else {
-			service.window.Minimise()
-		}
+		toggleReaderWindow(service.window)
 	}); err != nil {
 		logger.WithError(err).Warn("could not register boss key")
 	}
@@ -113,6 +117,14 @@ func Run(assets fs.FS, icon []byte, version string) {
 	logger.Info("starting wd-reader ", version)
 	if err := app.Run(); err != nil {
 		logger.Error(err)
+	}
+}
+
+func toggleReaderWindow(window application.Window) {
+	if window.IsMinimised() || !window.IsVisible() {
+		showReaderWindow(window)
+	} else {
+		window.Minimise()
 	}
 }
 

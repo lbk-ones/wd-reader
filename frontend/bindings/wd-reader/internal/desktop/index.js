@@ -9,5 +9,7 @@ export {
 
 export {
     MiniMenuState,
+    ResourceExportResult,
+    ResourceImportPreview,
     UpdateInfo
 } from "./models.js";

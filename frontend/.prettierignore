@@ -1,0 +1,8 @@
+# Build output and generated Wails bindings.
+dist/
+bindings/
+node_modules/
+
+# Third-party static resources and dependency lockfile.
+public/
+package-lock.json

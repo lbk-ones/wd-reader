@@ -9,7 +9,10 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-const autostartDirectoryArg = "--autostart-directory="
+const (
+	autostartArg          = "--autostart"
+	autostartDirectoryArg = "--autostart-directory="
+)
 
 func (a *App) AutostartStatus() (string, error) {
 	if a.application == nil || !application.System.IsDesktop() ||
@@ -35,7 +38,7 @@ func (a *App) SetAutostart(enabled bool) (string, error) {
 			if err != nil {
 				return status, err
 			}
-			opts.Arguments = []string{autostartDirectoryArg + dir}
+			opts.Arguments = []string{autostartArg, autostartDirectoryArg + dir}
 		}
 		err = a.application.Autostart.EnableWithOptions(opts)
 	} else {
@@ -47,9 +50,27 @@ func (a *App) SetAutostart(enabled bool) (string, error) {
 	return a.AutostartStatus()
 }
 
-func restoreAutostartDirectory() error {
-	if runtime.GOOS == "windows" && len(os.Args) == 2 {
-		if dir, ok := strings.CutPrefix(os.Args[1], autostartDirectoryArg); ok && filepath.IsAbs(dir) {
+func isAutostartLaunch(args []string) bool {
+	for _, arg := range args {
+		if arg == autostartArg {
+			return true
+		}
+		// Existing Windows registrations only have the working directory argument.
+		if runtime.GOOS == "windows" {
+			if dir, ok := strings.CutPrefix(arg, autostartDirectoryArg); ok && filepath.IsAbs(dir) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func restoreAutostartDirectory(args []string) error {
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+	for _, arg := range args {
+		if dir, ok := strings.CutPrefix(arg, autostartDirectoryArg); ok && filepath.IsAbs(dir) {
 			return os.Chdir(dir)
 		}
 	}

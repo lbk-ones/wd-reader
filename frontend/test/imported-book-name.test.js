@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {importedBookName} from '../src/components/importedBookName.js';
+import { importedBookName } from '../src/components/importedBookName.js';
 
 test('identifies the resulting book for local imports and conversions', () => {
     assert.equal(importedBookName('C:\\Books\\我的书.txt'), '我的书.txt');

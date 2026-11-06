@@ -6,6 +6,10 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as book$0 from "../book/models.js";
+
 /**
  * MiniMenuState contains display context only; commands stay in the reader window.
  */
@@ -55,6 +59,102 @@ export class MiniMenuState {
     static createFrom($$source = {}) {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new MiniMenuState(/** @type {Partial<MiniMenuState>} */($$parsedSource));
+    }
+}
+
+export class ResourceExportResult {
+    /**
+     * Creates a new ResourceExportResult instance.
+     * @param {Partial<ResourceExportResult>} [$$source = {}] - The source object to create the ResourceExportResult.
+     */
+    constructor($$source = {}) {
+        if (!("path" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["path"] = "";
+        }
+        if (!("files" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["files"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResourceExportResult instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {ResourceExportResult}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ResourceExportResult(/** @type {Partial<ResourceExportResult>} */($$parsedSource));
+    }
+}
+
+export class ResourceImportPreview {
+    /**
+     * Creates a new ResourceImportPreview instance.
+     * @param {Partial<ResourceImportPreview>} [$$source = {}] - The source object to create the ResourceImportPreview.
+     */
+    constructor($$source = {}) {
+        if (!("token" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["token"] = "";
+        }
+        if (!("cache" in $$source)) {
+            /**
+             * @member
+             * @type {book$0.FrontendCache}
+             */
+            this["cache"] = (new book$0.FrontendCache());
+        }
+        if (!("bookNames" in $$source)) {
+            /**
+             * @member
+             * @type {{ [_ in string]?: string }}
+             */
+            this["bookNames"] = {};
+        }
+        if (!("stats" in $$source)) {
+            /**
+             * @member
+             * @type {book$0.ResourceImportStats}
+             */
+            this["stats"] = (new book$0.ResourceImportStats());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResourceImportPreview instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {ResourceImportPreview}
+     */
+    static createFrom($$source = {}) {
+        const $$createField1_0 = $$createType0;
+        const $$createField2_0 = $$createType1;
+        const $$createField3_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("cache" in $$parsedSource) {
+            $$parsedSource["cache"] = $$createField1_0($$parsedSource["cache"]);
+        }
+        if ("bookNames" in $$parsedSource) {
+            $$parsedSource["bookNames"] = $$createField2_0($$parsedSource["bookNames"]);
+        }
+        if ("stats" in $$parsedSource) {
+            $$parsedSource["stats"] = $$createField3_0($$parsedSource["stats"]);
+        }
+        return new ResourceImportPreview(/** @type {Partial<ResourceImportPreview>} */($$parsedSource));
     }
 }
 
@@ -120,3 +220,8 @@ export class UpdateInfo {
         return new UpdateInfo(/** @type {Partial<UpdateInfo>} */($$parsedSource));
     }
 }
+
+// Private type creation functions
+const $$createType0 = book$0.FrontendCache.createFrom;
+const $$createType1 = $Create.Map($Create.Any, $Create.Any);
+const $$createType2 = book$0.ResourceImportStats.createFrom;

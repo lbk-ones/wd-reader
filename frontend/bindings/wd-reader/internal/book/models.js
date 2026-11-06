@@ -197,6 +197,49 @@ export class Category {
     }
 }
 
+export class FrontendCache {
+    /**
+     * Creates a new FrontendCache instance.
+     * @param {Partial<FrontendCache>} [$$source = {}] - The source object to create the FrontendCache.
+     */
+    constructor($$source = {}) {
+        if (!("localStorage" in $$source)) {
+            /**
+             * @member
+             * @type {{ [_ in string]?: string }}
+             */
+            this["localStorage"] = {};
+        }
+        if (!("sessionStorage" in $$source)) {
+            /**
+             * @member
+             * @type {{ [_ in string]?: string }}
+             */
+            this["sessionStorage"] = {};
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FrontendCache instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {FrontendCache}
+     */
+    static createFrom($$source = {}) {
+        const $$createField0_0 = $$createType1;
+        const $$createField1_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("localStorage" in $$parsedSource) {
+            $$parsedSource["localStorage"] = $$createField0_0($$parsedSource["localStorage"]);
+        }
+        if ("sessionStorage" in $$parsedSource) {
+            $$parsedSource["sessionStorage"] = $$createField1_0($$parsedSource["sessionStorage"]);
+        }
+        return new FrontendCache(/** @type {Partial<FrontendCache>} */($$parsedSource));
+    }
+}
+
 export class LibraryOriginal {
     /**
      * Creates a new LibraryOriginal instance.
@@ -303,6 +346,55 @@ export class MissingBook {
             $$parsedSource["candidates"] = $$createField5_0($$parsedSource["candidates"]);
         }
         return new MissingBook(/** @type {Partial<MissingBook>} */($$parsedSource));
+    }
+}
+
+export class ResourceImportStats {
+    /**
+     * Creates a new ResourceImportStats instance.
+     * @param {Partial<ResourceImportStats>} [$$source = {}] - The source object to create the ResourceImportStats.
+     */
+    constructor($$source = {}) {
+        if (!("filesAdded" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["filesAdded"] = 0;
+        }
+        if (!("filesSkipped" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["filesSkipped"] = 0;
+        }
+        if (!("filesRenamed" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["filesRenamed"] = 0;
+        }
+        if (!("booksAdded" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["booksAdded"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResourceImportStats instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {ResourceImportStats}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ResourceImportStats(/** @type {Partial<ResourceImportStats>} */($$parsedSource));
     }
 }
 

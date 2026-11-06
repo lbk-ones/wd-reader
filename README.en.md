@@ -203,7 +203,11 @@ Auto page turn defaults to 30 seconds and auto scroll defaults to 20 pixels per 
 | Book folder structure | `pure/` holds imported originals, `parse/` holds TXT reading copies, and `meta-data/` holds book details, covers and metadata backups |
 | Reading positions and preferences | Local WebView localStorage, using the `Wd-` prefix |
 
-**Clear reading history** removes the WebView’s recent book entries, saved chapters and reading positions while preserving typography, colors, language and library layout. **Clear all cache** also removes preferences. Back up the book folder and WebView data separately when moving to another device.
+**Clear reading history** removes the WebView’s recent book entries, saved chapters and reading positions while preserving typography, colors, language and library layout. **Clear all cache** also removes preferences.
+
+Use **App settings → Import and export resources → Export resources** to save the entire `books/` folder and all browser storage (localStorage and sessionStorage) in a ZIP, including books, covers, categories, favorites, progress and settings. Save the archive outside `books/`.
+
+**Import and merge resources** merges a previously exported ZIP into the current library. Identical files are skipped; different files with the same name are kept as renamed copies, with their covers, categories and reading progress remapped. Current settings and progress take priority, while new cache entries, chapter settings and recent books are merged. Click **Reload** when the import finishes.
 
 ## Development and builds
 

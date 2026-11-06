@@ -626,6 +626,7 @@
     },
     {
       "categoryId": "1fa1c516-b6ce-4a06-b4b1-ede9e0c98086",
+      "favorite": true,
       "id": "a3f1583c-0c0d-4032-a42e-42a5f3f5a8f3",
       "fileName": "贩罪.txt",
       "importType": "epub",

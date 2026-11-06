@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "node --test test/*.test.js",
     "dev": "vite",
     "build": "vite build",
@@ -17,7 +19,7 @@
     "ahooks": "^3.8.4",
     "antd": "^5.22.7",
     "classnames": "^2.5.1",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "4.18.0",
     "mobi": "^0.0.1",
     "pinyin": "2.11.2",
     "prop-types": "^15.8.1",
@@ -29,6 +31,7 @@
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@vitejs/plugin-react": "^6.2.1",
+    "prettier": "3.9.10",
     "vite": "^8.3.5"
   }
 }

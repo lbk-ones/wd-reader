@@ -21,6 +21,8 @@ import (
 type App struct {
 	version        string
 	reminders      reminderTimers
+	updateInstall  updateInstallation
+	resources      resourceTransfers
 	application    *application.App
 	window         *application.WebviewWindow
 	miniMenuMu     sync.Mutex

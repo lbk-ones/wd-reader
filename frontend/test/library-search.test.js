@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {indexOriginalName, matchesOriginalName} from '../src/components/librarySearch.js';
+import { indexOriginalName, matchesOriginalName } from '../src/components/librarySearch.js';
 
 test('original library search supports names, initials and full pinyin', () => {
     const book = indexOriginalName('我有一座冒险屋.epub');

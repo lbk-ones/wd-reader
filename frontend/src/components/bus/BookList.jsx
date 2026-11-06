@@ -1,5 +1,5 @@
-import {t, useI18n} from '../../i18n/index.jsx';
-import {isEmpty} from "lodash-es";
+import { t, useI18n } from '../../i18n/index.jsx';
+import { isEmpty } from 'lodash-es';
 import {
     DeleteOutlined,
     BookOutlined,
@@ -17,21 +17,28 @@ import {
     StarFilled,
     TagsOutlined,
     MinusCircleOutlined,
-    RightOutlined
-} from "@ant-design/icons";
-import {Button, Drawer, Input, Modal, Select, message} from "antd";
-import {getCacheItem, setCacheItem, getSplitMap, putSplitMap} from "../Utils";
-import classNames from "classnames";
-import {DeleteFile, GetScOne, SetBookFavorite, ListCategories, UpdateBookDetails, RemoveBookFromCategory} from "../../../bindings/wd-reader/internal/desktop/app";
-import {Fragment, forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
-import {Browser, Call} from "@wailsio/runtime";
-import {getCurrentlyReadingBook, sortBooksByLastOpened} from '../bookSorting.js';
+    RightOutlined,
+} from '@ant-design/icons';
+import { Button, Drawer, Input, Modal, Select, message } from 'antd';
+import { getCacheItem, setCacheItem, getSplitMap, putSplitMap } from '../Utils';
+import classNames from 'classnames';
+import {
+    DeleteFile,
+    GetScOne,
+    SetBookFavorite,
+    ListCategories,
+    UpdateBookDetails,
+    RemoveBookFromCategory,
+} from '../../../bindings/wd-reader/internal/desktop/app';
+import { Fragment, forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Browser, Call } from '@wailsio/runtime';
+import { getCurrentlyReadingBook, sortBooksByLastOpened } from '../bookSorting.js';
 import DefaultBookCover from '../DefaultBookCover.jsx';
-import {indexOriginalName, matchesOriginalName} from '../librarySearch.js';
+import { indexOriginalName, matchesOriginalName } from '../librarySearch.js';
 import CategoryManager from './CategoryManager.jsx';
 import CategoryBooks from './CategoryBooks.jsx';
 
-const TIP = ["翻开一页，暂别喧嚣。", "每一段闲暇，都有书相伴。", "慢慢读，世界会安静下来。"]
+const TIP = ['翻开一页，暂别喧嚣。', '每一段闲暇，都有书相伴。', '慢慢读，世界会安静下来。'];
 
 /**
  * book name list
@@ -40,12 +47,14 @@ const TIP = ["翻开一页，暂别喧嚣。", "每一段闲暇，都有书相�
  * @constructor
  */
 function BookList(props, ref) {
-    const {language} = useI18n();
+    const { language } = useI18n();
 
     const state = props.state;
 
-    const [sc, setSc] = useState("")
-    const [libraryLayout, setLibraryLayout] = useState(() => getCacheItem('libraryLayout') === 'grid' ? 'grid' : 'list');
+    const [sc, setSc] = useState('');
+    const [libraryLayout, setLibraryLayout] = useState(() =>
+        getCacheItem('libraryLayout') === 'grid' ? 'grid' : 'list',
+    );
     const [metadata, setMetadata] = useState({});
     const [covers, setCovers] = useState({});
     const metadataRequestRef = useRef(0);
@@ -65,17 +74,28 @@ function BookList(props, ref) {
     const [libraryQuery, setLibraryQuery] = useState('');
     const [missingOpen, setMissingOpen] = useState(false);
     const [missingBooks, setMissingBooks] = useState([]);
-    const indexedOriginals = useMemo(() => originals.map(item => ({item, index: indexOriginalName(item.name)})), [originals]);
-    const visibleOriginals = useMemo(() => indexedOriginals.filter(({index}) => matchesOriginalName(index, libraryQuery))
-        .map(({item}) => item), [indexedOriginals, libraryQuery]);
+    const indexedOriginals = useMemo(
+        () => originals.map((item) => ({ item, index: indexOriginalName(item.name) })),
+        [originals],
+    );
+    const visibleOriginals = useMemo(
+        () => indexedOriginals.filter(({ index }) => matchesOriginalName(index, libraryQuery)).map(({ item }) => item),
+        [indexedOriginals, libraryQuery],
+    );
 
     async function loadOriginals() {
-        try { setOriginals(await Call.ByName('wd-reader/internal/desktop.App.ListOriginalBooks')); }
-        catch (error) { message.error(String(error)); }
+        try {
+            setOriginals(await Call.ByName('wd-reader/internal/desktop.App.ListOriginalBooks'));
+        } catch (error) {
+            message.error(String(error));
+        }
     }
     async function loadMissing() {
-        try { setMissingBooks(await Call.ByName('wd-reader/internal/desktop.App.ListMissingBooks')); }
-        catch (error) { message.error(String(error)); }
+        try {
+            setMissingBooks(await Call.ByName('wd-reader/internal/desktop.App.ListMissingBooks'));
+        } catch (error) {
+            message.error(String(error));
+        }
     }
     async function relinkMissing(item, name) {
         try {
@@ -89,9 +109,13 @@ function BookList(props, ref) {
                 if (split[item.fileName + suffix] !== undefined && split[name + suffix] === undefined)
                     putSplitMap(name + suffix, split[item.fileName + suffix]);
             }
-            props.reloadBookList(); await loadMissing(); await loadOriginals();
+            props.reloadBookList();
+            await loadMissing();
+            await loadOriginals();
             message.success(t('已关联书籍文件'));
-        } catch (error) { message.error(String(error)); }
+        } catch (error) {
+            message.error(String(error));
+        }
     }
     async function restoreOriginal(item) {
         try {
@@ -99,7 +123,9 @@ function BookList(props, ref) {
             props.reloadBookList();
             await loadOriginals();
             message.success(t('已重新导入书架'));
-        } catch (error) { message.error(String(error)); }
+        } catch (error) {
+            message.error(String(error));
+        }
     }
 
     async function loadMetadata() {
@@ -108,24 +134,39 @@ function BookList(props, ref) {
             const books = await Call.ByName('wd-reader/internal/desktop.App.GetBookMetadata');
             if (request !== metadataRequestRef.current) return books;
             props.onMetadataLoaded?.(books);
-            setMetadata(Object.fromEntries(books.map(book => [book.fileName, book])));
-            const images = await Promise.all(books.filter(book => book.cover).map(async book => {
-                try { return [book.id, await Call.ByName('wd-reader/internal/desktop.App.GetBookCover', book.id)]; }
-                catch { return [book.id, '']; }
-            }));
+            setMetadata(Object.fromEntries(books.map((book) => [book.fileName, book])));
+            const images = await Promise.all(
+                books
+                    .filter((book) => book.cover)
+                    .map(async (book) => {
+                        try {
+                            return [book.id, await Call.ByName('wd-reader/internal/desktop.App.GetBookCover', book.id)];
+                        } catch {
+                            return [book.id, ''];
+                        }
+                    }),
+            );
             if (request === metadataRequestRef.current) setCovers(Object.fromEntries(images));
             return books;
-        } catch (error) { message.error(String(error)); return []; }
+        } catch (error) {
+            message.error(String(error));
+            return [];
+        }
     }
     async function loadCategories() {
         const values = await ListCategories();
         setCategories(values);
-        setEditing(current => current?.categoryId && !values.some(value => value.id === current.categoryId)
-            ? {...current, categoryId: ''} : current);
-        setCategoryID(current => values.some(value => value.id === current) ? current : '');
+        setEditing((current) =>
+            current?.categoryId && !values.some((value) => value.id === current.categoryId)
+                ? { ...current, categoryId: '' }
+                : current,
+        );
+        setCategoryID((current) => (values.some((value) => value.id === current) ? current : ''));
     }
     useEffect(() => {
-        loadCategories().then(loadMetadata).catch(error => message.error(String(error)));
+        loadCategories()
+            .then(loadMetadata)
+            .catch((error) => message.error(String(error)));
     }, [state.currentBookList]);
 
     async function toggleFavorite(book) {
@@ -135,9 +176,9 @@ function BookList(props, ref) {
         const favorite = !book.favorite;
         try {
             await SetBookFavorite(book.id, favorite);
-            setMetadata(current => ({
+            setMetadata((current) => ({
                 ...current,
-                [book.fileName]: {...current[book.fileName], favorite},
+                [book.fileName]: { ...current[book.fileName], favorite },
             }));
             props.onFavoriteChanged(book.fileName, favorite);
         } catch (error) {
@@ -154,318 +195,736 @@ function BookList(props, ref) {
     }
 
     useEffect(function () {
-        GetScOne().then(res => {
+        GetScOne().then((res) => {
             if (res) {
                 try {
                     let parse = JSON.parse(res);
-                    setSc(parse.hitokoto || TIP[parseInt(Math.random() * (TIP.length - 1))])
-                } catch (e) {
-
-                }
+                    setSc(parse.hitokoto || TIP[parseInt(Math.random() * (TIP.length - 1))]);
+                } catch (e) {}
             } else {
-                setSc(res || TIP[parseInt(Math.random() * (TIP.length - 1))])
+                setSc(res || TIP[parseInt(Math.random() * (TIP.length - 1))]);
             }
-        })
-    }, [])
+        });
+    }, []);
 
     function selectBookFun(tem) {
         props.setState({
-            loadingBook: true
-        })
+            loadingBook: true,
+        });
         let item = getCacheItem(tem);
         props.goChapterByName(tem, item, () => {
             props.clickBookToFirst(tem);
-            Call.ByName('wd-reader/internal/desktop.App.RecordBookOpened', tem).then(loadMetadata).catch(error => message.error(String(error)));
-            props.beginRecordTop(tem)
-            props.setState({loadingBook: false})
-            props.calculateFontLines()
+            Call.ByName('wd-reader/internal/desktop.App.RecordBookOpened', tem)
+                .then(loadMetadata)
+                .catch((error) => message.error(String(error)));
+            props.beginRecordTop(tem);
+            props.setState({ loadingBook: false });
+            props.calculateFontLines();
         });
     }
 
     useImperativeHandle(ref, () => ({
-        toggleFavorite: name => toggleFavorite(metadata[name]),
+        toggleFavorite: (name) => toggleFavorite(metadata[name]),
         selectBook: (tem) => {
             if (tem) {
-                selectBookFun(tem)
+                selectBookFun(tem);
             }
         },
         editImportedBook: async (name) => {
             const books = await loadMetadata();
-            const book = books.find(item => item.fileName === name);
-            if (book) setEditing({...book, authorsText: (book.authors || []).join('、')});
+            const book = books.find((item) => item.fileName === name);
+            if (book) setEditing({ ...book, authorsText: (book.authors || []).join('、') });
             else message.error(t('无法读取导入书籍的信息'));
         },
-    }))
+    }));
 
     const allBooks = sortBooksByLastOpened((state.currentBookList || []).filter(Boolean), metadata);
-    const books = allBooks.filter(name =>
-        (searchMatches === null || searchMatches.includes(name)) && (!favoritesOnly || metadata[name]?.favorite));
+    const books = allBooks.filter(
+        (name) =>
+            (searchMatches === null || searchMatches.includes(name)) && (!favoritesOnly || metadata[name]?.favorite),
+    );
     const currentlyReading = getCurrentlyReadingBook(allBooks, metadata);
-    const categoryOptions = [{value: '', label: t('全部')},
-        ...categories.map(category => ({value: category.id, label: category.name}))];
+    const categoryOptions = [
+        { value: '', label: t('全部') },
+        ...categories.map((category) => ({ value: category.id, label: category.name })),
+    ];
     const bookGroups = categoryMode
         ? categories
-            .filter(category => !categoryID || category.id === categoryID)
-            .map(category => ({
-                ...category,
-                books: books.filter(name => metadata[name]?.categoryId === category.id),
-            }))
-        : [{id: '', books}];
+              .filter((category) => !categoryID || category.id === categoryID)
+              .map((category) => ({
+                  ...category,
+                  books: books.filter((name) => metadata[name]?.categoryId === category.id),
+              }))
+        : [{ id: '', books }];
 
     return isEmpty(state.currentBookChapterName) && props.display && isEmpty(state.errorInfo) ? (
-        <section className="book-list" aria-label={t("我的书架")}>
+        <section className="book-list" aria-label={t('我的书架')}>
             <div className="library-heading">
                 <div className="library-heading-row">
-                    <h1>{t("我的书架")}<span className="library-count">{allBooks.length}</span></h1>
+                    <h1>
+                        {t('我的书架')}
+                        <span className="library-count">{allBooks.length}</span>
+                    </h1>
                     <span className="library-version">v{state.version || 'dev'}</span>
                     <div className="library-actions">
-                        <Button type="primary" size="small" icon={<PlusOutlined/>}
-                                aria-label={t("添加书籍")} title={t("添加书籍")} onClick={props.clickBookPlus}>
-                            <span className="library-add-label">{t("添加书籍")}</span>
+                        <Button
+                            type="primary"
+                            size="small"
+                            icon={<PlusOutlined />}
+                            aria-label={t('添加书籍')}
+                            title={t('添加书籍')}
+                            onClick={props.clickBookPlus}
+                        >
+                            <span className="library-add-label">{t('添加书籍')}</span>
                         </Button>
-                        <Button className="library-originals-button" size="small" icon={<FolderOpenOutlined/>}
-                                aria-label={t('我的书库')} title={t('我的书库')}
-                                onClick={() => { setLibraryOpen(true); loadOriginals(); }}><span className="library-originals-label">{t('我的书库')}</span></Button>
-                        <Button className="library-download-button" size="small" icon={<DownloadOutlined/>} aria-label={t("图书下载")}
-                                title={t("图书下载")} onClick={() => props.onSelect({id: 'download'})}>
-                            <span className="library-download-label">{t("图书下载")}</span>
+                        <Button
+                            className="library-originals-button"
+                            size="small"
+                            icon={<FolderOpenOutlined />}
+                            aria-label={t('我的书库')}
+                            title={t('我的书库')}
+                            onClick={() => {
+                                setLibraryOpen(true);
+                                loadOriginals();
+                            }}
+                        >
+                            <span className="library-originals-label">{t('我的书库')}</span>
+                        </Button>
+                        <Button
+                            className="library-download-button"
+                            size="small"
+                            icon={<DownloadOutlined />}
+                            aria-label={t('图书下载')}
+                            title={t('图书下载')}
+                            onClick={() => props.onSelect({ id: 'download' })}
+                        >
+                            <span className="library-download-label">{t('图书下载')}</span>
                         </Button>
                     </div>
                 </div>
                 <div className="library-toolbar">
-                    <Input.Search className="library-search" allowClear placeholder={t("搜索书名、作者或拼音首字母")}
-                                  aria-label={t("搜索书籍")} onSearch={value => {
-                                      const query = value.trim().toLowerCase();
-                                      const matches = query ? Object.values(metadata).filter(book =>
-                                          [book.title, ...(book.authors || [])].some(field => field?.toLowerCase().includes(query)))
-                                          .map(book => book.fileName) : [];
-                                      setSearchMatches(query ? props.onSearch(value, matches) : null);
-                                  }}/>
-                    <Button className="library-favorites-filter" size="small"
-                            type={favoritesOnly ? 'primary' : 'default'}
-                            icon={favoritesOnly ? <StarFilled/> : <StarOutlined/>}
-                            title={t('只看收藏')} aria-label={t('只看收藏')} aria-pressed={favoritesOnly}
-                            onClick={() => {
-                                const enabled = !favoritesOnly;
-                                setCacheItem('libraryFavoritesOnly', enabled ? '1' : '0');
-                                setFavoritesOnly(enabled);
-                            }}/>
-                    <Button className="library-favorites-filter" size="small" icon={<TagsOutlined/>}
-                            type={categoryMode ? 'primary' : 'default'} title={t('按分类展示')}
-                            aria-label={t('按分类展示')} aria-pressed={categoryMode}
-                            onClick={() => setCategoryMode(value => !value)}/>
-                    <div className="library-layout-switch" role="group" aria-label={t("书架布局")}>
-                        <button type="button" aria-label={t("列表布局")} aria-pressed={libraryLayout === 'list'}
-                                title={t("切换为列表布局")} onClick={() => changeLayout('list')}>
-                            <UnorderedListOutlined/>
+                    <Input.Search
+                        className="library-search"
+                        allowClear
+                        placeholder={t('搜索书名、作者或拼音首字母')}
+                        aria-label={t('搜索书籍')}
+                        onSearch={(value) => {
+                            const query = value.trim().toLowerCase();
+                            const matches = query
+                                ? Object.values(metadata)
+                                      .filter((book) =>
+                                          [book.title, ...(book.authors || [])].some((field) =>
+                                              field?.toLowerCase().includes(query),
+                                          ),
+                                      )
+                                      .map((book) => book.fileName)
+                                : [];
+                            setSearchMatches(query ? props.onSearch(value, matches) : null);
+                        }}
+                    />
+                    <Button
+                        className="library-favorites-filter"
+                        size="small"
+                        type={favoritesOnly ? 'primary' : 'default'}
+                        icon={favoritesOnly ? <StarFilled /> : <StarOutlined />}
+                        title={t('只看收藏')}
+                        aria-label={t('只看收藏')}
+                        aria-pressed={favoritesOnly}
+                        onClick={() => {
+                            const enabled = !favoritesOnly;
+                            setCacheItem('libraryFavoritesOnly', enabled ? '1' : '0');
+                            setFavoritesOnly(enabled);
+                        }}
+                    />
+                    <Button
+                        className="library-favorites-filter"
+                        size="small"
+                        icon={<TagsOutlined />}
+                        type={categoryMode ? 'primary' : 'default'}
+                        title={t('按分类展示')}
+                        aria-label={t('按分类展示')}
+                        aria-pressed={categoryMode}
+                        onClick={() => setCategoryMode((value) => !value)}
+                    />
+                    <div className="library-layout-switch" role="group" aria-label={t('书架布局')}>
+                        <button
+                            type="button"
+                            aria-label={t('列表布局')}
+                            aria-pressed={libraryLayout === 'list'}
+                            title={t('切换为列表布局')}
+                            onClick={() => changeLayout('list')}
+                        >
+                            <UnorderedListOutlined />
                         </button>
-                        <button type="button" aria-label={t("矩阵布局")} aria-pressed={libraryLayout === 'grid'}
-                                title={t("切换为矩阵布局")} onClick={() => changeLayout('grid')}>
-                            <AppstoreOutlined/>
+                        <button
+                            type="button"
+                            aria-label={t('矩阵布局')}
+                            aria-pressed={libraryLayout === 'grid'}
+                            title={t('切换为矩阵布局')}
+                            onClick={() => changeLayout('grid')}
+                        >
+                            <AppstoreOutlined />
                         </button>
                     </div>
                 </div>
-                {categoryMode && <div className="library-category-toolbar">
-                    <div className="library-category-tags" role="group" aria-label={t('选择分类')}>
-                        {categoryOptions.map(category => (
-                            <button type="button" key={category.value}
-                                    className={classNames('library-category-tag', {'is-active': categoryID === category.value})}
-                                    title={category.label} aria-pressed={categoryID === category.value}
-                                    onClick={() => setCategoryID(category.value)}>
-                                {category.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="library-category-actions">
-                        <Button size="small" type="text"
-                                onClick={() => setCategoryManagerOpen(true)}>{t('管理分类')}</Button>
-                        <Button size="small" type="text" disabled={!categoryID}
+                {categoryMode && (
+                    <div className="library-category-toolbar">
+                        <div className="library-category-tags" role="group" aria-label={t('选择分类')}>
+                            {categoryOptions.map((category) => (
+                                <button
+                                    type="button"
+                                    key={category.value}
+                                    className={classNames('library-category-tag', {
+                                        'is-active': categoryID === category.value,
+                                    })}
+                                    title={category.label}
+                                    aria-pressed={categoryID === category.value}
+                                    onClick={() => setCategoryID(category.value)}
+                                >
+                                    {category.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="library-category-actions">
+                            <Button size="small" type="text" onClick={() => setCategoryManagerOpen(true)}>
+                                {t('管理分类')}
+                            </Button>
+                            <Button
+                                size="small"
+                                type="text"
+                                disabled={!categoryID}
                                 title={!categoryID ? t('请先选择具体分类') : undefined}
-                                onClick={() => setAssigningCategory(categories.find(category => category.id === categoryID))}>
-                            {t('维护选中分类')}
-                        </Button>
+                                onClick={() =>
+                                    setAssigningCategory(categories.find((category) => category.id === categoryID))
+                                }
+                            >
+                                {t('维护选中分类')}
+                            </Button>
+                        </div>
                     </div>
-                </div>}
+                )}
             </div>
-            <ul className={classNames('book-list-ul', {'book-list-ul--grid': libraryLayout === 'grid', 'is-grouped': categoryMode})} aria-label={t("书籍列表")}>
-                {bookGroups.map(group => <Fragment key={group.id}>
-                    {categoryMode && group.name && <li className="library-category-heading">
-                        <button type="button" className="library-category-toggle"
-                                aria-expanded={!collapsedCategories.has(group.id)}
-                                title={t(collapsedCategories.has(group.id) ? '展开分类' : '折叠分类')}
-                                onClick={() => setCollapsedCategories(current => {
-                                    const next = new Set(current);
-                                    if (next.has(group.id)) next.delete(group.id);
-                                    else next.add(group.id);
-                                    return next;
-                                })}>
-                            <RightOutlined className={collapsedCategories.has(group.id) ? '' : 'is-expanded'}/>
-                            <span>{group.name}</span><small>{group.books.length}</small>
-                        </button>
-                    </li>}
-                    {(!categoryMode || !collapsedCategories.has(group.id)) && group.books.map((name, index) => {
-                        const meta = metadata[name];
-                        const title = meta?.title || name.replace(/\.(txt|epub)$/i, '');
-                        const isRecent = currentlyReading === name;
-                        return <li key={name} className={classNames('library-book', {'library-book--recent': isRecent})}>
-                            <button className="library-book-open" title={t("双击阅读：") + title}
-                                    onDoubleClick={() => selectBookFun(name)}
-                                    onKeyDown={event => {if (event.key === 'Enter') selectBookFun(name)}}>
-                                <span className={'book-spine book-spine--' + index % 4} aria-hidden="true">
-                                    {covers[meta?.id] ? <img className="book-cover" src={covers[meta.id]} alt=""/> : <DefaultBookCover title={title}/>}
-                                </span>
-                                <span className="library-book-info">
-                                    <span className="library-book-title">{title}</span>
-                                    {libraryLayout !== 'grid' && meta?.categoryId && <span className="library-book-category">
-                                        {categories.find(category => category.id === meta.categoryId)?.name}
-                                    </span>}
-                                    <span className="library-book-meta">
-                                        <span>{(meta?.importType || name.split('.').pop()).toUpperCase()}</span>
-                                        {meta?.authors?.length > 0 && <><span className="meta-dot">·</span><span className="library-book-author" title={meta.authors.join('、')}>{meta.authors.join('、')}</span></>}
-                                        <span className="meta-dot">·</span>
-                                        <span className="library-book-hint">{isRecent ? t("上次读到这里") : t("双击开始阅读")}</span>
-                                    </span>
-                                    {meta?.importedAt && <time className="library-book-import-date" dateTime={meta.importedAt} title={t('导入时间')}>
-                                        {t('导入')} {new Date(meta.importedAt).toLocaleDateString(language === 'en' ? 'en' : 'zh-CN')}
-                                    </time>}
-                                </span>
-                                {isRecent && <span className="reading-badge">{t("在读")}</span>}
-                            </button>
-                            {meta && <button className={classNames('book-favorite', {'is-favorite': meta.favorite})}
-                                             aria-label={t(meta.favorite ? '取消收藏' : '收藏书籍') + ' ' + title}
-                                             title={t(meta.favorite ? '取消收藏' : '收藏书籍')}
-                                             aria-pressed={!!meta.favorite} disabled={savingFavorite}
-                                             onClick={() => toggleFavorite(meta)}>
-                                {meta.favorite ? <StarFilled/> : <StarOutlined/>}
-                            </button>}
-                            {meta && <button className="book-edit" aria-label={t('编辑书籍信息') + ' ' + title} title={t('编辑书籍信息')}
-                                             onClick={() => setEditing({...meta, authorsText: (meta.authors || []).join('、')})}><EditOutlined/></button>}
-                            <button className="book-delete" aria-label={t(categoryMode ? '移出分类' : '删除书籍') + ' ' + title}
-                                    title={categoryMode ? t('从“{0}”移出，书籍仍保留在书架', {0: group.name}) : t('删除书籍')}
-                                    onClick={async () => {
-                                        try {
-                                            if (categoryMode) {
-                                                await RemoveBookFromCategory(meta.id, group.id);
-                                                await loadMetadata();
-                                                message.success(t('已移出分类'));
-                                            } else {
-                                                const res = await DeleteFile(name);
-                                                if (!props.hasError(res)) {
-                                                    message.info(t('删除成功！'));
-                                                    props.reloadBookList();
+            <ul
+                className={classNames('book-list-ul', {
+                    'book-list-ul--grid': libraryLayout === 'grid',
+                    'is-grouped': categoryMode,
+                })}
+                aria-label={t('书籍列表')}
+            >
+                {bookGroups.map((group) => (
+                    <Fragment key={group.id}>
+                        {categoryMode && group.name && (
+                            <li className="library-category-heading">
+                                <button
+                                    type="button"
+                                    className="library-category-toggle"
+                                    aria-expanded={!collapsedCategories.has(group.id)}
+                                    title={t(collapsedCategories.has(group.id) ? '展开分类' : '折叠分类')}
+                                    onClick={() =>
+                                        setCollapsedCategories((current) => {
+                                            const next = new Set(current);
+                                            if (next.has(group.id)) next.delete(group.id);
+                                            else next.add(group.id);
+                                            return next;
+                                        })
+                                    }
+                                >
+                                    <RightOutlined className={collapsedCategories.has(group.id) ? '' : 'is-expanded'} />
+                                    <span>{group.name}</span>
+                                    <small>{group.books.length}</small>
+                                </button>
+                            </li>
+                        )}
+                        {(!categoryMode || !collapsedCategories.has(group.id)) &&
+                            group.books.map((name, index) => {
+                                const meta = metadata[name];
+                                const title = meta?.title || name.replace(/\.(txt|epub)$/i, '');
+                                const isRecent = currentlyReading === name;
+                                return (
+                                    <li
+                                        key={name}
+                                        className={classNames('library-book', { 'library-book--recent': isRecent })}
+                                    >
+                                        <button
+                                            className="library-book-open"
+                                            title={t('双击阅读：') + title}
+                                            onDoubleClick={() => selectBookFun(name)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter') selectBookFun(name);
+                                            }}
+                                        >
+                                            <span
+                                                className={'book-spine book-spine--' + (index % 4)}
+                                                aria-hidden="true"
+                                            >
+                                                {covers[meta?.id] ? (
+                                                    <img className="book-cover" src={covers[meta.id]} alt="" />
+                                                ) : (
+                                                    <DefaultBookCover title={title} />
+                                                )}
+                                            </span>
+                                            <span className="library-book-info">
+                                                <span className="library-book-title">{title}</span>
+                                                {libraryLayout !== 'grid' && meta?.categoryId && (
+                                                    <span className="library-book-category">
+                                                        {
+                                                            categories.find(
+                                                                (category) => category.id === meta.categoryId,
+                                                            )?.name
+                                                        }
+                                                    </span>
+                                                )}
+                                                <span className="library-book-meta">
+                                                    <span>
+                                                        {(meta?.importType || name.split('.').pop()).toUpperCase()}
+                                                    </span>
+                                                    {meta?.authors?.length > 0 && (
+                                                        <>
+                                                            <span className="meta-dot">·</span>
+                                                            <span
+                                                                className="library-book-author"
+                                                                title={meta.authors.join('、')}
+                                                            >
+                                                                {meta.authors.join('、')}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                    <span className="meta-dot">·</span>
+                                                    <span className="library-book-hint">
+                                                        {isRecent ? t('上次读到这里') : t('双击开始阅读')}
+                                                    </span>
+                                                </span>
+                                                {meta?.importedAt && (
+                                                    <time
+                                                        className="library-book-import-date"
+                                                        dateTime={meta.importedAt}
+                                                        title={t('导入时间')}
+                                                    >
+                                                        {t('导入')}{' '}
+                                                        {new Date(meta.importedAt).toLocaleDateString(
+                                                            language === 'en' ? 'en' : 'zh-CN',
+                                                        )}
+                                                    </time>
+                                                )}
+                                            </span>
+                                            {isRecent && <span className="reading-badge">{t('在读')}</span>}
+                                        </button>
+                                        {meta && (
+                                            <button
+                                                className="book-edit"
+                                                aria-label={t('编辑书籍信息') + ' ' + title}
+                                                title={t('编辑书籍信息')}
+                                                onClick={() =>
+                                                    setEditing({
+                                                        ...meta,
+                                                        authorsText: (meta.authors || []).join('、'),
+                                                    })
                                                 }
+                                            >
+                                                <EditOutlined />
+                                            </button>
+                                        )}
+                                        <button
+                                            className="book-delete"
+                                            aria-label={t(categoryMode ? '移出分类' : '删除书籍') + ' ' + title}
+                                            title={
+                                                categoryMode
+                                                    ? t('从“{0}”移出，书籍仍保留在书架', { 0: group.name })
+                                                    : t('删除书籍')
                                             }
-                                        } catch (error) { message.error(String(error)); }
-                                    }}>{categoryMode ? <MinusCircleOutlined/> : <DeleteOutlined/>}</button>
-                        </li>
-                })}</Fragment>)}
-                {!books.length && (searchMatches !== null || favoritesOnly) &&
-                    <li className="library-empty">{t(favoritesOnly && searchMatches === null ? '暂无收藏，点击书籍旁的星标添加' : '没有找到匹配的书籍')}</li>}
-                {!allBooks.length && searchMatches === null && !favoritesOnly && <li className="library-empty">
-                    <BookOutlined/>
-                    <h2>{t("留一处安静的书架")}</h2>
-                    <p>{t("添加一本书，或将文件拖入窗口。")}</p>
-                    <Button onClick={props.clickBookPlus}>{t("添加第一本书")}</Button>
-                </li>}
+                                            onClick={async () => {
+                                                try {
+                                                    if (categoryMode) {
+                                                        await RemoveBookFromCategory(meta.id, group.id);
+                                                        await loadMetadata();
+                                                        message.success(t('已移出分类'));
+                                                    } else {
+                                                        const res = await DeleteFile(name);
+                                                        if (!props.hasError(res)) {
+                                                            message.info(t('删除成功！'));
+                                                            props.reloadBookList();
+                                                        }
+                                                    }
+                                                } catch (error) {
+                                                    message.error(String(error));
+                                                }
+                                            }}
+                                        >
+                                            {categoryMode ? <MinusCircleOutlined /> : <DeleteOutlined />}
+                                        </button>
+                                        {meta && (
+                                            <button
+                                                className={classNames('book-favorite', {
+                                                    'is-favorite': meta.favorite,
+                                                })}
+                                                aria-label={t(meta.favorite ? '取消收藏' : '收藏书籍') + ' ' + title}
+                                                title={t(meta.favorite ? '取消收藏' : '收藏书籍')}
+                                                aria-pressed={!!meta.favorite}
+                                                disabled={savingFavorite}
+                                                onClick={() => toggleFavorite(meta)}
+                                            >
+                                                {meta.favorite ? <StarFilled /> : <StarOutlined />}
+                                            </button>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                    </Fragment>
+                ))}
+                {!books.length && (searchMatches !== null || favoritesOnly) && (
+                    <li className="library-empty">
+                        {t(
+                            favoritesOnly && searchMatches === null
+                                ? '暂无收藏，点击书籍旁的星标添加'
+                                : '没有找到匹配的书籍',
+                        )}
+                    </li>
+                )}
+                {!allBooks.length && searchMatches === null && !favoritesOnly && (
+                    <li className="library-empty">
+                        <BookOutlined />
+                        <h2>{t('留一处安静的书架')}</h2>
+                        <p>{t('添加一本书，或将文件拖入窗口。')}</p>
+                        <Button onClick={props.clickBookPlus}>{t('添加第一本书')}</Button>
+                    </li>
+                )}
             </ul>
-            <CategoryManager open={categoryManagerOpen} onClose={() => setCategoryManagerOpen(false)}
-                             categories={categories} onChanged={async () => {
-                                 await loadCategories();
-                                 await loadMetadata();
-                             }}/>
-            {assigningCategory && <CategoryBooks category={assigningCategory}
-                books={allBooks.map(name => metadata[name]).filter(book => book && !book.categoryId)}
-                onClose={() => setAssigningCategory(null)} onSaved={loadMetadata}/>}
-            <Drawer className="original-library-drawer" title={t('我的书库')} open={libraryOpen} onClose={() => { setLibraryOpen(false); setLibraryQuery(''); }} width="min(420px, 100vw)">
+            <CategoryManager
+                open={categoryManagerOpen}
+                onClose={() => setCategoryManagerOpen(false)}
+                categories={categories}
+                onChanged={async () => {
+                    await loadCategories();
+                    await loadMetadata();
+                }}
+            />
+            {assigningCategory && (
+                <CategoryBooks
+                    category={assigningCategory}
+                    books={allBooks.map((name) => metadata[name]).filter((book) => book && !book.categoryId)}
+                    onClose={() => setAssigningCategory(null)}
+                    onSaved={loadMetadata}
+                />
+            )}
+            <Drawer
+                className="original-library-drawer"
+                title={t('我的书库')}
+                open={libraryOpen}
+                onClose={() => {
+                    setLibraryOpen(false);
+                    setLibraryQuery('');
+                }}
+                width="min(420px, 100vw)"
+            >
                 <p className="original-library-description">{t('这里保存导入时的原文件，可重新导入书架。')}</p>
-                <Button className="missing-library-open" size="small" onClick={() => { setMissingOpen(true); loadMissing(); }}>{t('管理缺失书籍')}</Button>
-                <Input.Search className="original-library-search" allowClear value={libraryQuery}
-                              aria-label={t('搜索文件名、首拼或全拼')} placeholder={t('搜索文件名、首拼或全拼')}
-                              onChange={event => setLibraryQuery(event.target.value)}/>
+                <Button
+                    className="missing-library-open"
+                    size="small"
+                    onClick={() => {
+                        setMissingOpen(true);
+                        loadMissing();
+                    }}
+                >
+                    {t('管理缺失书籍')}
+                </Button>
+                <Input.Search
+                    className="original-library-search"
+                    allowClear
+                    value={libraryQuery}
+                    aria-label={t('搜索文件名、首拼或全拼')}
+                    placeholder={t('搜索文件名、首拼或全拼')}
+                    onChange={(event) => setLibraryQuery(event.target.value)}
+                />
                 <ul className="original-library-list">
-                    {visibleOriginals.map(item => <li key={item.name} className="original-library-item">
-                        <span className="original-library-name" title={item.name}>{item.name}</span>
-                        <span className="original-library-actions">
-                        <Button size="small" icon={<ImportOutlined/>} aria-label={t('重新导入')} title={t('重新导入')} onClick={() => item.inShelf ? Modal.confirm({
-                            title: t('书架已有此书'), content: t('重新导入将替换书架中的解析文件，是否继续？'),
-                            okText: t('我确定'), cancelText: t('取消'), onOk: () => restoreOriginal(item)
-                        }) : restoreOriginal(item)}><span className="original-library-action-label">{t('重新导入')}</span></Button>
-                        <Button size="small" danger icon={<DeleteOutlined/>} aria-label={t('删除原文件')} title={t('删除原文件')} onClick={() => Modal.confirm({
-                            title: t('删除原文件'), content: t('删除后将无法从书库恢复此原文件，书架中的书不会删除。'),
-                            okText: t('删除'), cancelText: t('取消'), onOk: async () => {
-                                try { await Call.ByName('wd-reader/internal/desktop.App.DeleteOriginalBook', item.name); await loadOriginals(); }
-                                catch (error) { message.error(String(error)); }
-                            }
-                        })}><span className="original-library-action-label">{t('删除')}</span></Button>
-                        </span>
-                    </li>)}
+                    {visibleOriginals.map((item) => (
+                        <li key={item.name} className="original-library-item">
+                            <span className="original-library-name" title={item.name}>
+                                {item.name}
+                            </span>
+                            <span className="original-library-actions">
+                                <Button
+                                    size="small"
+                                    icon={<ImportOutlined />}
+                                    aria-label={t('重新导入')}
+                                    title={t('重新导入')}
+                                    onClick={() =>
+                                        item.inShelf
+                                            ? Modal.confirm({
+                                                  title: t('书架已有此书'),
+                                                  content: t('重新导入将替换书架中的解析文件，是否继续？'),
+                                                  okText: t('我确定'),
+                                                  cancelText: t('取消'),
+                                                  onOk: () => restoreOriginal(item),
+                                              })
+                                            : restoreOriginal(item)
+                                    }
+                                >
+                                    <span className="original-library-action-label">{t('重新导入')}</span>
+                                </Button>
+                                <Button
+                                    size="small"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    aria-label={t('删除原文件')}
+                                    title={t('删除原文件')}
+                                    onClick={() =>
+                                        Modal.confirm({
+                                            title: t('删除原文件'),
+                                            content: t('删除后将无法从书库恢复此原文件，书架中的书不会删除。'),
+                                            okText: t('删除'),
+                                            cancelText: t('取消'),
+                                            onOk: async () => {
+                                                try {
+                                                    await Call.ByName(
+                                                        'wd-reader/internal/desktop.App.DeleteOriginalBook',
+                                                        item.name,
+                                                    );
+                                                    await loadOriginals();
+                                                } catch (error) {
+                                                    message.error(String(error));
+                                                }
+                                            },
+                                        })
+                                    }
+                                >
+                                    <span className="original-library-action-label">{t('删除')}</span>
+                                </Button>
+                            </span>
+                        </li>
+                    ))}
                     {!originals.length && <li className="library-empty">{t('书库暂无原文件')}</li>}
-                    {originals.length > 0 && !visibleOriginals.length && <li className="library-empty">{t('没有找到匹配的书籍')}</li>}
+                    {originals.length > 0 && !visibleOriginals.length && (
+                        <li className="library-empty">{t('没有找到匹配的书籍')}</li>
+                    )}
                 </ul>
             </Drawer>
-            <Drawer className="original-library-drawer" title={t('管理缺失书籍')} open={missingOpen}
-                    onClose={() => setMissingOpen(false)} width="min(420px, 100vw)">
-                <p className="original-library-description">{t('以下记录的阅读文件已缺失。可从原件恢复，或关联内容相同的文件。')}</p>
+            <Drawer
+                className="original-library-drawer"
+                title={t('管理缺失书籍')}
+                open={missingOpen}
+                onClose={() => setMissingOpen(false)}
+                width="min(420px, 100vw)"
+            >
+                <p className="original-library-description">
+                    {t('以下记录的阅读文件已缺失。可从原件恢复，或关联内容相同的文件。')}
+                </p>
                 <ul className="missing-library-list">
-                    {missingBooks.map(item => <li className="missing-library-item" key={item.id}>
-                        <div className="missing-library-title" title={item.title}>{item.title || item.fileName}</div>
-                        <div className="missing-library-filename" title={item.fileName}>{item.fileName}</div>
-                        <div className="missing-library-actions">
-                            {item.canRestore && <Button size="small" onClick={async () => {
-                                try { await Call.ByName('wd-reader/internal/desktop.App.RestoreOriginalBook', item.originalName, false); props.reloadBookList(); await loadMissing(); await loadOriginals(); message.success(t('已重新导入书架')); }
-                                catch (error) { message.error(String(error)); }
-                            }}>{t('从原件恢复')}</Button>}
-                            <Button size="small" danger onClick={() => Modal.confirm({title: t('删除缺失记录'),
-                                content: t('将删除该书的元信息和封面，不删除原文件。'), okText: t('删除'), cancelText: t('取消'),
-                                onOk: async () => { try { await Call.ByName('wd-reader/internal/desktop.App.DeleteMissingBook', item.id); await loadMissing(); } catch (error) { message.error(String(error)); } }
-                            })}>{t('删除记录')}</Button>
-                        </div>
-                        {item.candidates.length > 0 && <div className="missing-library-candidates">
-                            <span>{t('内容相同的候选文件')}</span>
-                            {item.candidates.map(name => <div className="missing-library-candidate" key={name}>
-                                <span title={name}>{name}</span><Button size="small" onClick={() => Modal.confirm({
-                                    title: t('关联书籍文件'), content: t('将此缺失记录关联到 {0}？', {0: name}),
-                                    okText: t('我确定'), cancelText: t('取消'), onOk: () => relinkMissing(item, name)
-                                })}>{t('关联')}</Button>
-                            </div>)}
-                        </div>}
-                    </li>)}
+                    {missingBooks.map((item) => (
+                        <li className="missing-library-item" key={item.id}>
+                            <div className="missing-library-title" title={item.title}>
+                                {item.title || item.fileName}
+                            </div>
+                            <div className="missing-library-filename" title={item.fileName}>
+                                {item.fileName}
+                            </div>
+                            <div className="missing-library-actions">
+                                {item.canRestore && (
+                                    <Button
+                                        size="small"
+                                        onClick={async () => {
+                                            try {
+                                                await Call.ByName(
+                                                    'wd-reader/internal/desktop.App.RestoreOriginalBook',
+                                                    item.originalName,
+                                                    false,
+                                                );
+                                                props.reloadBookList();
+                                                await loadMissing();
+                                                await loadOriginals();
+                                                message.success(t('已重新导入书架'));
+                                            } catch (error) {
+                                                message.error(String(error));
+                                            }
+                                        }}
+                                    >
+                                        {t('从原件恢复')}
+                                    </Button>
+                                )}
+                                <Button
+                                    size="small"
+                                    danger
+                                    onClick={() =>
+                                        Modal.confirm({
+                                            title: t('删除缺失记录'),
+                                            content: t('将删除该书的元信息和封面，不删除原文件。'),
+                                            okText: t('删除'),
+                                            cancelText: t('取消'),
+                                            onOk: async () => {
+                                                try {
+                                                    await Call.ByName(
+                                                        'wd-reader/internal/desktop.App.DeleteMissingBook',
+                                                        item.id,
+                                                    );
+                                                    await loadMissing();
+                                                } catch (error) {
+                                                    message.error(String(error));
+                                                }
+                                            },
+                                        })
+                                    }
+                                >
+                                    {t('删除记录')}
+                                </Button>
+                            </div>
+                            {item.candidates.length > 0 && (
+                                <div className="missing-library-candidates">
+                                    <span>{t('内容相同的候选文件')}</span>
+                                    {item.candidates.map((name) => (
+                                        <div className="missing-library-candidate" key={name}>
+                                            <span title={name}>{name}</span>
+                                            <Button
+                                                size="small"
+                                                onClick={() =>
+                                                    Modal.confirm({
+                                                        title: t('关联书籍文件'),
+                                                        content: t('将此缺失记录关联到 {0}？', { 0: name }),
+                                                        okText: t('我确定'),
+                                                        cancelText: t('取消'),
+                                                        onOk: () => relinkMissing(item, name),
+                                                    })
+                                                }
+                                            >
+                                                {t('关联')}
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </li>
+                    ))}
                     {!missingBooks.length && <li className="library-empty">{t('没有缺失的书籍')}</li>}
                 </ul>
             </Drawer>
-            <Modal title={t('编辑书籍信息')} open={!!editing} okText={t('保存')} cancelText={t('取消')}
-                   onCancel={() => setEditing(null)} onOk={async () => {
-                       try {
-                           await UpdateBookDetails(editing.id, editing.title,
-                               editing.authorsText.split(/[、,，]/).map(s => s.trim()).filter(Boolean),
-                               editing.description || '', editing.categoryId || '');
-                           setEditing(null); await loadMetadata();
-                       } catch (error) { message.error(String(error)); }
-                   }}>
-                {editing && <div className="book-metadata-form">
-                    <label>{t('书名')}<Input value={editing.title} onChange={e => setEditing({...editing, title: e.target.value})}/></label>
-                    <label>{t('作者')}<Input value={editing.authorsText} onChange={e => setEditing({...editing, authorsText: e.target.value})}/></label>
-                    <label>{t('分类')}<Select aria-label={t('书籍分类')} value={editing.categoryId || ''}
-                                           options={[{value: '', label: t('不设置分类')}, ...categories.map(category => ({value: category.id, label: category.name}))]}
-                                           onChange={categoryId => setEditing({...editing, categoryId})}/></label>
-                    <Button size="small" onClick={() => setCategoryManagerOpen(true)}>{t('管理分类')}</Button>
-                    <label>{t('简介')}<Input.TextArea rows={3} value={editing.description || ''} onChange={e => setEditing({...editing, description: e.target.value})}/></label>
-                    <div><Button onClick={async () => { try { if (await Call.ByName('wd-reader/internal/desktop.App.ChooseBookCover', editing.id)) await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('选择封面')}</Button>{' '}
-                        <Button onClick={async () => { try { await Call.ByName('wd-reader/internal/desktop.App.RemoveBookCover', editing.id); await loadMetadata(); } catch (error) { message.error(String(error)); } }}>{t('移除封面')}</Button></div>
-                    <small>{t('封面修改立即保存')}</small>
-                </div>}
+            <Modal
+                title={t('编辑书籍信息')}
+                open={!!editing}
+                okText={t('保存')}
+                cancelText={t('取消')}
+                onCancel={() => setEditing(null)}
+                onOk={async () => {
+                    try {
+                        await UpdateBookDetails(
+                            editing.id,
+                            editing.title,
+                            editing.authorsText
+                                .split(/[、,，]/)
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            editing.description || '',
+                            editing.categoryId || '',
+                        );
+                        setEditing(null);
+                        await loadMetadata();
+                    } catch (error) {
+                        message.error(String(error));
+                    }
+                }}
+            >
+                {editing && (
+                    <div className="book-metadata-form">
+                        <label>
+                            {t('书名')}
+                            <Input
+                                value={editing.title}
+                                onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                            />
+                        </label>
+                        <label>
+                            {t('作者')}
+                            <Input
+                                value={editing.authorsText}
+                                onChange={(e) => setEditing({ ...editing, authorsText: e.target.value })}
+                            />
+                        </label>
+                        <label>
+                            {t('分类')}
+                            <Select
+                                aria-label={t('书籍分类')}
+                                value={editing.categoryId || ''}
+                                options={[
+                                    { value: '', label: t('不设置分类') },
+                                    ...categories.map((category) => ({ value: category.id, label: category.name })),
+                                ]}
+                                onChange={(categoryId) => setEditing({ ...editing, categoryId })}
+                            />
+                        </label>
+                        <Button size="small" onClick={() => setCategoryManagerOpen(true)}>
+                            {t('管理分类')}
+                        </Button>
+                        <label>
+                            {t('简介')}
+                            <Input.TextArea
+                                rows={3}
+                                value={editing.description || ''}
+                                onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                            />
+                        </label>
+                        <div>
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        if (
+                                            await Call.ByName(
+                                                'wd-reader/internal/desktop.App.ChooseBookCover',
+                                                editing.id,
+                                            )
+                                        )
+                                            await loadMetadata();
+                                    } catch (error) {
+                                        message.error(String(error));
+                                    }
+                                }}
+                            >
+                                {t('选择封面')}
+                            </Button>{' '}
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        await Call.ByName('wd-reader/internal/desktop.App.RemoveBookCover', editing.id);
+                                        await loadMetadata();
+                                    } catch (error) {
+                                        message.error(String(error));
+                                    }
+                                }}
+                            >
+                                {t('移除封面')}
+                            </Button>
+                        </div>
+                        <small>{t('封面修改立即保存')}</small>
+                    </div>
+                )}
             </Modal>
             <footer className="library-footer">
-                <span className="library-quote" title={language === 'en' ? t(TIP[0]) : sc}>{language === 'en' ? t(TIP[0]) : (sc || t(TIP[0]))}</span>
-                <button className="footer-icon" title={t("使用说明（F1）")} aria-label={t("使用说明")}
-                        onClick={props.onOpenHelp}><QuestionCircleOutlined/></button>
-                <button className="footer-icon" title={t("项目主页")} aria-label={t("项目主页")}
-                        onClick={() => Browser.OpenURL('https://github.com/lbk-ones/wd-reader')}><GithubOutlined/></button>
-                <button className="footer-icon" title={t("应用设置")} aria-label={t("应用设置")}
-                        onClick={() => props.setState({sysSettingVisible: true})}><SettingOutlined/></button>
+                <span className="library-quote" title={language === 'en' ? t(TIP[0]) : sc}>
+                    {language === 'en' ? t(TIP[0]) : sc || t(TIP[0])}
+                </span>
+                <button
+                    className="footer-icon"
+                    title={t('使用说明（F1）')}
+                    aria-label={t('使用说明')}
+                    onClick={props.onOpenHelp}
+                >
+                    <QuestionCircleOutlined />
+                </button>
+                <button
+                    className="footer-icon"
+                    title={t('项目主页')}
+                    aria-label={t('项目主页')}
+                    onClick={() => Browser.OpenURL('https://github.com/lbk-ones/wd-reader')}
+                >
+                    <GithubOutlined />
+                </button>
+                <button
+                    className="footer-icon"
+                    title={t('应用设置')}
+                    aria-label={t('应用设置')}
+                    onClick={() => props.setState({ sysSettingVisible: true })}
+                >
+                    <SettingOutlined />
+                </button>
             </footer>
         </section>
     ) : null;
 }
 
-export default forwardRef(BookList)
+export default forwardRef(BookList);

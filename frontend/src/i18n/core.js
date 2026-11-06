@@ -13,7 +13,7 @@ export function resolveLanguage(saved, browserLanguage = 'zh-CN') {
 export function translate(language, source, values = {}) {
     const english = Object.hasOwn(en, source) ? en[source] : Object.hasOwn(enHelp, source) ? enHelp[source] : source;
     const text = language === 'en' ? english : source;
-    return text.replace(/\{(\w+)\}/g, (match, key) => Object.hasOwn(values, key) ? String(values[key]) : match);
+    return text.replace(/\{(\w+)\}/g, (match, key) => (Object.hasOwn(values, key) ? String(values[key]) : match));
 }
 
 // Preserve the Go wire format; translate only known application errors for display.
@@ -27,20 +27,28 @@ export function translateBackendMessage(language, message) {
         if (source.startsWith(prefix)) return translate(language, prefix) + source.slice(prefix.length);
     }
     const missingFile = source.match(/^未找到([.\w]+)文件$/);
-    if (missingFile) return translate(language, '未找到{suffix}文件', {suffix: missingFile[1]});
+    if (missingFile) return translate(language, '未找到{suffix}文件', { suffix: missingFile[1] });
     return translate(language, source);
 }
 
-export function createLanguageStore({storage, browserLanguage = 'zh-CN', onChange = () => {}}) {
+export function createLanguageStore({ storage, browserLanguage = 'zh-CN', onChange = () => {} }) {
     const read = () => {
-        try { return storage?.getItem(LANGUAGE_KEY); } catch { return null; }
+        try {
+            return storage?.getItem(LANGUAGE_KEY);
+        } catch {
+            return null;
+        }
     };
     let language = resolveLanguage(read(), browserLanguage);
     return {
         getLanguage: () => language,
         setLanguage(value) {
             if (!LANGUAGES.includes(value)) return;
-            try { storage?.setItem(LANGUAGE_KEY, value); } catch { /* Keep switching available without storage. */ }
+            try {
+                storage?.setItem(LANGUAGE_KEY, value);
+            } catch {
+                /* Keep switching available without storage. */
+            }
             language = value;
             onChange();
         },
