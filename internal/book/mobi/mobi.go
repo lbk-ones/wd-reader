@@ -376,21 +376,22 @@ func (r *Reader) analysisHeaders() error {
 	return nil
 }
 
-// ExtractHtml 提取电子书的原始 HTML 内容 (不移除标签)
-func (r *Reader) ExtractHtml() (string, error) {
+// extractRawText 解压正文记录；preserveOffsets 为真时严格保留格式索引使用的原始字节坐标。
+// 严格模式不能跳过损坏记录或启发式保留尾部数据，否则后续全部分片位置都会错位。
+func (r *Reader) extractRawText(preserveOffsets bool) ([]byte, error) {
 	if r.MobiBook == nil || r.MobiBook.Headers == nil {
-		return "", errors.New("book not initialized")
+		return nil, errors.New("book not initialized")
 	}
 
 	numTextRecords := r.MobiBook.Headers.PalmdocHeader.NumTextRecords
 	if numTextRecords == 0 {
-		return "", nil
+		return nil, nil
 	}
 
-	// Buffer to hold all text record data
+	// 统一在解压后拼接字节，避免跨记录的多字节字符被提前解码破坏。
 	var buf bytes.Buffer
 
-	// Text records start at 1. Record 0 is header.
+	// 混合格式的正文从第二个格式头之后开始，不能假定总是文件中的第一条记录。
 	start := r.FirstTextRecord
 	if start <= 0 {
 		start = 1
@@ -399,50 +400,46 @@ func (r *Reader) ExtractHtml() (string, error) {
 	for i := 0; i < int(numTextRecords); i++ {
 		raw, err := r.LoadRecord(start + i)
 		if err != nil {
+			if preserveOffsets {
+				return nil, fmt.Errorf("读取正文记录 %d 失败: %w", start+i, err)
+			}
 			continue
 		}
 
-		// Remove trailing entries
-		// Strategy:
-		// 1. Calculate the 'potential' trailing size.
-		// 2. If it's very large (e.g. > 100 bytes) AND the record is full-sized (4096),
-		//    it's suspicious. Valid trailing entries are usually small (signatures, multibyte flags).
-		//    But wait, some signatures can be long?
-		//    Foliate's logic is just "remove".
-		//
-		// Let's try to detect if we are cutting off too much.
-
+		// 索引定位必须按格式规则剥离尾部附加项；旧文本提取路径保留原先的兼容性兜底。
 		rawLen := len(raw)
 		data := r.MobiBook.RemoveTrailEntries(raw)
 		removedCount := rawLen - len(data)
 
-		// Heuristic: If we removed a lot of data (e.g. > 16 bytes) and the resulting data is suspiciously small
-		// or if we suspect false positive.
-		// For "很纯很暧昧.mobi", maybe the records are full but get cut?
-		// Let's print debug info for now.
-		if removedCount > 0 {
-			//fmt.Printf("DEBUG: Record %d removed %d bytes (Original: %d -> New: %d)\n", start+i, removedCount, rawLen, len(data))
-		}
-		if removedCount > 8 {
-			// fmt.Printf("DEBUG: Skipped removal for record %d (would remove %d/%d bytes)\n", start+i, removedCount, rawLen)
+		if removedCount > 8 && !preserveOffsets {
 			data = raw
 		}
 
-		// Decompress
 		decompressed, err := r.MobiBook.Decompress(data)
 		if err != nil {
+			if preserveOffsets {
+				return nil, fmt.Errorf("解压正文记录 %d 失败: %w", start+i, err)
+			}
 			continue
 		}
 
-		// Write to buffer
+		if preserveOffsets && len(decompressed) > (512<<20)-buf.Len() {
+			return nil, fmt.Errorf("解压正文超过解析限制")
+		}
 		buf.Write(decompressed)
 	}
+	return buf.Bytes(), nil
+}
 
-	// Decode the entire buffer
-	text, err := decode(buf.Bytes(), r.MobiBook.Headers.MobiHeader.Encoding)
+// ExtractHtml 保留旧格式的原始文本提取行为；需要精确定位的 KF8 书籍使用 ExtractKF8。
+func (r *Reader) ExtractHtml() (string, error) {
+	raw, err := r.extractRawText(false)
 	if err != nil {
-		// fallback
-		text = buf.String()
+		return "", err
+	}
+	text, err := decode(raw, r.MobiBook.Headers.MobiHeader.Encoding)
+	if err != nil {
+		text = string(raw)
 	}
 	idx := strings.LastIndex(text, ">")
 	if idx == -1 {

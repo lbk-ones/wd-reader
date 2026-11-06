@@ -40,6 +40,26 @@ func writeEPUB(t *testing.T, files map[string]string) string {
 	return filename
 }
 
+// TestGuidedSectionTOCKeepsFollowingBody 验证导引目录隐藏不影响前后正文，并且各文档头部不会泄漏。
+func TestGuidedSectionTOCKeepsFollowingBody(t *testing.T) {
+	sections := []HTMLSection{
+		{HTML: `<html><head><title>隐藏标题甲</title></head><body><span id="first"></span><p>这是首章正文。</p><p><a href="kindle:pos:fid:2:off:0">正文普通引用</a></p></body></html>`, Targets: map[string][]string{"first": {"第一章"}}},
+		{HTML: `<html><head><title>隐藏标题乙</title></head><body><span id="second"></span><p>这是次章首段。</p><span id="toc-start"></span><p>Table of Contents</p><p><a href="kindle:pos:fid:1:off:0">第一章</a></p><p><a href="kindle:pos:fid:2:off:0">第二章</a></p><p>必须保留的后续附录。</p></body></html>`, Targets: map[string][]string{"second": {"第二章"}}, TOCStart: "toc-start"},
+	}
+	document, err := ReadHTMLSections(sections)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertNativeTitles(t, document, "第一章", "第二章")
+	text := document.Text()
+	if strings.Contains(text, "隐藏标题") || strings.Contains(text, "Table of Contents") || !strings.Contains(text, "必须保留的后续附录。") || !strings.Contains(text, "正文普通引用") {
+		t.Fatalf("目录范围或正文提取错误：%q", text)
+	}
+	if !document.Native[0].KeepLine || !document.Native[1].KeepLine {
+		t.Fatal("正文起点没有保留首段标记")
+	}
+}
+
 // assertNativeTitles 同时校验目录数量、锚点有效性和标题顺序，避免仅检查章名而漏掉行号错位。
 func assertNativeTitles(t *testing.T, document Document, titles ...string) {
 	t.Helper()

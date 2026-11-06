@@ -9,7 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"wd-reader/internal/book/mobi"
 	"wd-reader/internal/chapterdetect"
+	"wd-reader/internal/chapterdetect/source"
 )
 
 // TestSmartSplitPreservesRejectedParagraphsAndExplicitInlineBodies 验证智能过滤完整保留正文，并兼容同行边界。
@@ -34,6 +36,96 @@ func TestSmartSplitPreservesRejectedParagraphsAndExplicitInlineBodies(t *testing
 	paragraphs, err := parseReadableChapters(bufio.NewScanner(strings.NewReader(text)), "2", "2")
 	if err != nil || len(paragraphs) != 2 || paragraphs[0].Body[0] != "第一章 初见" {
 		t.Fatalf("smart filtering leaked into paragraph mode: %+v %v", paragraphs, err)
+	}
+}
+
+// TestCenturyAZW3NativeChapters 验证真实无标题正文的二十章定位、首段保留及旧转换文本恢复。
+// 新导入和旧书恢复均在临时书库中进行，不覆盖实际书籍与阅读进度。
+func TestCenturyAZW3NativeChapters(t *testing.T) {
+	original, err := filepath.Abs(filepath.Join("..", "..", "test", "百年孤独.azw3"))
+	if _, err := os.Stat(original); os.IsNotExist(err) {
+		t.Skip("未提供可选的真实书籍样本")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	resourceLibrary(t)
+	filename, err := ImportLocal(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	document, err := readNativeSource(original)
+	if err != nil || len(document.Native) != 20 {
+		t.Fatalf("原生目录=%d，错误=%v", len(document.Native), err)
+	}
+	assertChapters := func(name string) {
+		t.Helper()
+		chapters, err := readBookChapters(name, "1", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := 0
+		for _, chapter := range chapters {
+			if chapter.Name == "正文" {
+				continue
+			}
+			if found >= len(document.Native) || chapter.Name != document.Native[found].Title || len(chapter.Body) < 5 {
+				t.Fatalf("章节定位错误：%q，正文段数=%d", chapter.Name, len(chapter.Body))
+			}
+			first := chapterTextKey(document.Lines[document.Native[found].Line])
+			if chapterTextKey(chapter.Body[0]) != first {
+				t.Fatalf("章节%q首段丢失或错位", chapter.Name)
+			}
+			for _, line := range chapter.Body {
+				if chapterTextKey(line) == "TableofContents" || chapterTextKey(line) == "第1章" {
+					t.Fatalf("章节%q混入了书末目录", chapter.Name)
+				}
+			}
+			found++
+		}
+		if found != 20 {
+			t.Fatalf("可阅读章节=%d，期望20", found)
+		}
+		t.Logf("%s：20个章节均有正文，首段与原生目录位置一致", name)
+	}
+	assertChapters(filename)
+	// 模拟修复前导入的拼接正文，验证按首段对齐可避开书末二十个同名目录标题。
+	reader, err := mobi.NewReader(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := reader.ExtractHtml()
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := source.ReadMOBIHTML(strings.NewReader(raw), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 排除旧拼接方式泄漏的头部书名及目录展示行后，整本可见文字必须与重建结果一致。
+	// 此断言覆盖全部章节，而不是只验证二十个起点，防止分片重建遗漏中间正文。
+	nativeTitles := map[string]bool{}
+	for _, anchor := range document.Native {
+		nativeTitles[chapterTextKey(anchor.Title)] = true
+	}
+	var legacyBody strings.Builder
+	for _, line := range legacy.Lines {
+		key := chapterTextKey(line)
+		if key == "百年孤独（范晔译本）" || key == "TableofContents" || nativeTitles[key] {
+			continue
+		}
+		legacyBody.WriteString(key)
+	}
+	if legacyBody.String() != chapterTextKey(document.Text()) {
+		t.Fatal("重建结果与旧正文中的可见文字不一致")
+	}
+	putResource(t, filepath.Join(ParsePath(), "legacy.txt"), legacy.Text())
+	if err := RecordImport("legacy.txt", filepath.Base(original)); err != nil {
+		t.Fatal(err)
+	}
+	assertChapters("legacy.txt")
+	if resourceContent(t, filepath.Join(ParsePath(), "legacy.txt")) != legacy.Text() {
+		t.Fatal("恢复目录时改写了旧正文")
 	}
 }
 

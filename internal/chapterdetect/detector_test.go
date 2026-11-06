@@ -15,6 +15,23 @@ func titles(result Result) []string {
 	return values
 }
 
+// TestLegacyBodyAnchorUsesParagraphInsteadOfTOC 验证正文锚点按首段对齐，拒绝用书末目录标题替代。
+func TestLegacyBodyAnchorUsesParagraphInsteadOfTOC(t *testing.T) {
+	reference := []string{"首章首段。", "后续正文。", "次章首段。"}
+	anchors := []Anchor{{Line: 0, Title: "第1章", KeepLine: true}, {Line: 2, Title: "第2章", KeepLine: true}}
+	legacy := []string{"旧版前言", "首章首段。", "后续正文。", "次章首段。", "目录", "第1章", "第2章"}
+	got := AlignNativeLines(legacy, reference, anchors)
+	if len(got) != 2 || got[0].Line != 1 || got[1].Line != 3 || !got[0].KeepLine {
+		t.Fatalf("旧正文定位错误：%+v", got)
+	}
+	if got := AlignNativeLines([]string{"目录", "第1章", "第2章"}, reference, anchors); got != nil {
+		t.Fatalf("用目录替代了正文：%+v", got)
+	}
+	if got := AlignNativeTitles(legacy, anchors); got != nil {
+		t.Fatalf("不应按标题恢复正文锚点：%+v", got)
+	}
+}
+
 // TestDetectWholeLinesAndBookContext 覆盖整行评分、长短标题、全书风格及编号上下文的组合行为。
 // 同时包含真实章节和形似章节的正文，防止过滤误判时损伤合法标题。
 func TestDetectWholeLinesAndBookContext(t *testing.T) {

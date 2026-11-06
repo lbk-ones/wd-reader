@@ -493,7 +493,7 @@
       "cover": "",
       "sources": {},
       "importedAt": "2026-01-26T00:52:45.6162206Z",
-      "lastOpenedAt": "2026-01-26T00:52:45.6162206Z",
+      "lastOpenedAt": "2026-11-06T03:48:45.2609066Z",
       "fileHash": "3e955b09b5131c6e458a977791ff5ed82d70d96af7889d0e9447708a7bf5d3d4",
       "fileSize": 6463914,
       "fileModTime": 1769388765616220600
@@ -745,6 +745,54 @@
       "fileHash": "88c7e62d8ab48ed85a6a5c8b2bac6c79d0ef953b206ccf7e54e70d027aa1480f",
       "fileSize": 16228186,
       "fileModTime": 1793868248459379700
+    },
+    {
+      "id": "2a07c9aa-1860-455c-9040-2553c2f69de2",
+      "fileName": "百年孤独 (2).txt",
+      "importType": "azw3",
+      "originalName": "百年孤独 (2).azw3",
+      "title": "百年孤独(马尔克斯指定译本,无增删)",
+      "authors": [
+        "加西亚•马尔克斯",
+        "范晔"
+      ],
+      "description": "\u003cp\u003e《百年孤独》是魔幻现实主义文学的代表作，描写了布恩迪亚家族七代人的传奇故事，以及加勒比海沿岸小镇马孔多的百年兴衰，反映了拉丁美洲一个世纪以来风云 变幻的历史。作品融入神话传说、民间故事、宗教典故等神秘因素，巧妙地糅合了现实与虚幻，展现出一个瑰丽的想象世界，成为20世界重要的经典文学巨著之一。1982年加西亚•马尔克斯获得诺贝尔文学奖，奠定世界级文学大师的地位，很大程度上乃是凭借《百年孤独》的巨大影响。  \u003c/p\u003e\n\u003cp\u003e海报：  \u003c/p\u003e\n\u003cp\u003e**\u003c/p\u003e",
+      "cover": "01ab61ff6c85b8d16b4e265728039eb847ab39e9f881ff373cf48210cfcf06a9.jpg",
+      "coverChecked": true,
+      "sources": {
+        "authors": "embedded",
+        "cover": "embedded",
+        "description": "embedded",
+        "title": "embedded"
+      },
+      "importedAt": "2026-11-06T06:17:17.571519Z",
+      "lastOpenedAt": "2026-11-06T06:17:19.705701Z",
+      "fileHash": "ab4165e6dcdfe86a607d80c7adc0d749e265d1babc40e87c947c1ca157179989",
+      "fileSize": 696352,
+      "fileModTime": 1793945837550580000
+    },
+    {
+      "id": "1c8eb45a-6b85-4598-acff-b9ca1cae97da",
+      "fileName": "诡舍 (2).txt",
+      "importType": "azw3",
+      "originalName": "诡舍 (2).azw3",
+      "title": "诡舍",
+      "authors": [
+        "夜来风雨声、"
+      ],
+      "description": "",
+      "cover": "f415ac952bfcb944b7ed549a3b0283e77ca714c98537fea7641715bb116bac2f.jpg",
+      "coverChecked": true,
+      "sources": {
+        "authors": "embedded",
+        "cover": "embedded",
+        "title": "embedded"
+      },
+      "importedAt": "2026-11-06T06:19:11.5372335Z",
+      "lastOpenedAt": "2026-11-06T06:19:14.7368393Z",
+      "fileHash": "139be5e8132f5e89e2b363cfe4391047a34447e3ae4de027a7557fc6da8f0767",
+      "fileSize": 6454108,
+      "fileModTime": 1793945951515244500
     }
   ],
   "categories": [

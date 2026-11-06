@@ -93,6 +93,7 @@ func parseChapterLines(lines []string, splitType, splitValue string, native []ch
 	var name string
 	var body []string
 	nativeTitles := map[string]bool{}
+	directoryLines := nativeDirectoryLines(lines, native)
 	for _, anchor := range native {
 		nativeTitles[chapterTextKey(anchor.Title)] = true
 	}
@@ -148,6 +149,10 @@ func parseChapterLines(lines []string, splitType, splitValue string, native []ch
 
 	// 顺序消费原行；修剪后的 line 仅用于识别与兼容旧模式，智能模式正文继续使用 raw。
 	for index, raw := range lines {
+		// 旧转换文本可能保留书末目录；仅跳过与整份原生目录逐项一致的展示区域。
+		if directoryLines[index] {
+			continue
+		}
 		line := strings.TrimSpace(strings.TrimPrefix(raw, "\ufeff"))
 		if chapterTextKey(line) == "" || strings.HasPrefix(line, "<img") || strings.HasPrefix(line, "<script") || strings.HasPrefix(line, "<style") {
 			continue
@@ -193,6 +198,39 @@ func parseChapterLines(lines []string, splitType, splitValue string, native []ch
 	}
 	flush()
 	return chapters, nil
+}
+
+// nativeDirectoryLines 找出旧正文中带明确目录标签、且连续列出全部原生标题的展示行。
+// 必须完整匹配才标记；正文中偶尔出现章名或不完整的列表一律保留。
+func nativeDirectoryLines(lines []string, native []chapterdetect.Anchor) map[int]bool {
+	result := map[int]bool{}
+	if len(native) < 2 || !chapterdetect.ValidateAnchors(lines, native) {
+		return result
+	}
+	for i, line := range lines {
+		label := strings.ToLower(chapterTextKey(line))
+		if label != "目录" && label != "contents" && label != "tableofcontents" {
+			continue
+		}
+		rows, next := []int{i}, 0
+		for j := i + 1; j < len(lines) && next < len(native); j++ {
+			key := chapterTextKey(lines[j])
+			if key == "" {
+				continue
+			}
+			if key != chapterTextKey(native[next].Title) || j == native[next].Line {
+				break
+			}
+			rows = append(rows, j)
+			next++
+		}
+		if next == len(native) {
+			for _, row := range rows {
+				result[row] = true
+			}
+		}
+	}
+	return result
 }
 
 // readBookChapters 读取书库中的转换正文，仅在智能模式下恢复原生目录，再交给统一解析入口。

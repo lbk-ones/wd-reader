@@ -59,11 +59,37 @@ func ValidateAnchors(lines []string, anchors []Anchor) bool {
 // 按目录顺序逐个精确匹配归一化标题，优先选择后接正文的位置，以绕过连续的内嵌目录标题。
 // 全部标题均可按顺序定位时才返回新锚点，任一标题缺失则整体放弃，由调用方回退到文本检测。
 func AlignNativeTitles(lines []string, anchors []Anchor) []Anchor {
+	keys := make([]string, len(anchors))
+	for i, anchor := range anchors {
+		// 指向正文的目录没有独立标题行，不能拿书末同名目录项冒充实际章节位置。
+		if anchor.KeepLine {
+			return nil
+		}
+		keys[i] = TextKey(anchor.Title)
+	}
+	return alignNativeKeys(lines, anchors, keys)
+}
+
+// AlignNativeLines 依据新解码正文的目标行恢复旧正文中的章节位置，不改写任一正文。
+// 标题锚点按标题对齐，正文锚点按首段内容对齐；任何位置无法按顺序定位时整体放弃。
+func AlignNativeLines(lines, reference []string, anchors []Anchor) []Anchor {
+	if !ValidateAnchors(reference, anchors) {
+		return nil
+	}
+	keys := make([]string, len(anchors))
+	for i, anchor := range anchors {
+		keys[i] = TextKey(reference[anchor.Line])
+	}
+	return alignNativeKeys(lines, anchors, keys)
+}
+
+// alignNativeKeys 对指定标题或首段建立位置索引，并避开连续的内嵌目录标签。
+func alignNativeKeys(lines []string, anchors []Anchor, keys []string) []Anchor {
 	known := map[string]bool{}
 	positions := map[string][]int{}
 	bodyPositions := map[string][]int{}
-	for _, anchor := range anchors {
-		known[TextKey(anchor.Title)] = true
+	for _, key := range keys {
+		known[key] = true
 	}
 	// 反向缓存每行之后的首个非空行，后续判断标题后是否有正文时无需重复跨越空行。
 	nextVisible := make([]int, len(lines))
@@ -86,9 +112,9 @@ func AlignNativeTitles(lines []string, anchors []Anchor) []Anchor {
 	}
 	var result []Anchor
 	last := -1
-	for _, anchor := range anchors {
+	for i, anchor := range anchors {
 		chosen := -1
-		key := TextKey(anchor.Title)
+		key := keys[i]
 		// 候选行号天然有序，二分查找上一锚点之后的位置，避免同名标题导致反复线性扫描。
 		for _, choices := range [][]int{bodyPositions[key], positions[key]} {
 			if index := sort.SearchInts(choices, last+1); index < len(choices) {
@@ -99,7 +125,7 @@ func AlignNativeTitles(lines []string, anchors []Anchor) []Anchor {
 		if chosen < 0 {
 			return nil
 		}
-		result = append(result, Anchor{Line: chosen, Title: anchor.Title})
+		result = append(result, Anchor{Line: chosen, Title: anchor.Title, KeepLine: anchor.KeepLine})
 		last = chosen
 	}
 	return result

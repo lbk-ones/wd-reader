@@ -84,6 +84,18 @@ func readNativeSource(filename string) (source.Document, error) {
 		if err != nil {
 			return source.Document{}, err
 		}
+		// KF8 先重建独立文档，并将二进制目录转换为安全标记；失败时沿用原文本回退路径。
+		if reader.MobiBook.Headers.Kf8Header != nil {
+			if sections, err := reader.ExtractKF8(); err == nil {
+				inputs := make([]source.HTMLSection, 0, len(sections))
+				for _, section := range sections {
+					inputs = append(inputs, source.HTMLSection{HTML: section.HTML, Targets: section.Targets, TOCStart: section.TOCStart})
+				}
+				if document, err := source.ReadHTMLSections(inputs); err == nil {
+					return document, nil
+				}
+			}
+		}
 		raw, err := reader.ExtractHtml()
 		if err != nil {
 			return source.Document{}, err
@@ -151,8 +163,8 @@ func nativeBookChapters(filename string, lines []string) []chapterdetect.Anchor 
 	if err == nil && len(document.Native) > 0 {
 		anchors := document.Native
 		if chapterdetect.Fingerprint(document.Lines) != fingerprint {
-			// 旧转换器产生的分行方式可能不同，只按完整标题顺序对齐，不直接套用新解码行号。
-			anchors = chapterdetect.AlignNativeTitles(lines, anchors)
+			// 旧转换文本不套用新行号：独立标题按标题对齐，无标题章节按已定位的首段正文对齐。
+			anchors = chapterdetect.AlignNativeLines(lines, document.Lines, anchors)
 		}
 		if chapterdetect.ValidateAnchors(lines, anchors) {
 			// 阅读路径的索引保存为尽力而为；即使书库只读，本次请求仍可使用内存中恢复出的目录。
