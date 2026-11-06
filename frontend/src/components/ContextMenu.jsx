@@ -28,24 +28,29 @@ const ContextMenu = ({ options, onSelect, onOpenWindow, fontSize = 14 }) => {
         };
 
         const handleClick = (e) => {
+            // 在捕获阶段消费菜单外的关闭点击，避免事件先到阅读区触发翻页或其他操作。
+            // 菜单内部点击仍交给菜单项处理，菜单未打开时不影响正常阅读交互。
+            if (!showMenu || menuRef.current?.contains(e.target)) return;
+            e.preventDefault();
+            e.stopPropagation();
             setShowMenu(false);
-            // console.logs('点击。。。。')
         };
         let parentNode = menuRef.current.parentNode ? menuRef.current.parentNode : document;
         parentNode.addEventListener('contextmenu', handleContextMenu);
-        document.addEventListener('click', handleClick);
+        document.addEventListener('click', handleClick, true);
 
         return () => {
             parentNode.removeEventListener('contextmenu', handleContextMenu);
-            parentNode.removeEventListener('click', handleClick);
+            document.removeEventListener('click', handleClick, true);
         };
-    }, [onOpenWindow]);
+    }, [onOpenWindow, showMenu]);
 
     return (
         <div
             ref={menuRef}
             className="reader-context-menu"
             role="menu"
+            onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             style={{
                 display: showMenu ? 'grid' : 'none',

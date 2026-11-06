@@ -1012,9 +1012,15 @@ function App() {
         } else if (option.id === 'help') {
             openUsageGuide();
         } else if (option.id === 'quit') {
-            Application.Quit();
+            quitApplication();
         }
     };
+
+    function quitApplication() {
+        progressRef.current.save();
+        // 直接退出应用，避免触发窗口关闭时的最小化逻辑。
+        Application.Quit().catch((error) => message.error(localizeError(error)));
+    }
 
     const openMiniMenu = useMemoizedFn(async (x, y) => {
         setState({ miniMenuOpen: true });
@@ -1674,6 +1680,14 @@ function App() {
                             <div className="app-settings-actions">
                                 <Button size="small" onClick={openUsageGuide}>
                                     {t('使用说明（F1）')}
+                                </Button>
+                                <Button
+                                    size="small"
+                                    danger
+                                    disabled={resourcesBusy || installingUpdate}
+                                    onClick={quitApplication}
+                                >
+                                    {t('退出软件')}
                                 </Button>
                             </div>
                         </section>
