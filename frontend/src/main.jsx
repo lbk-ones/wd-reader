@@ -6,6 +6,8 @@ import App from './App';
 import { message } from 'antd';
 import { I18nProvider } from './i18n/index.jsx';
 import MiniReaderMenu from './components/MiniReaderMenu.jsx';
+import ResourceConfigWindow from './components/ResourceConfigWindow.jsx';
+const view = new URLSearchParams(window.location.search).get('view');
 const container = document.getElementById('root');
 
 const root = createRoot(container);
@@ -32,7 +34,13 @@ root.render(
                 },
             }}
         >
-            {new URLSearchParams(window.location.search).get('view') === 'mini-menu' ? <MiniReaderMenu /> : <App />}
+            {view === 'mini-menu' ? (
+                <MiniReaderMenu />
+            ) : view === 'resource-config' ? (
+                <ResourceConfigWindow />
+            ) : (
+                <App />
+            )}
         </I18nProvider>
     </React.StrictMode>,
 );

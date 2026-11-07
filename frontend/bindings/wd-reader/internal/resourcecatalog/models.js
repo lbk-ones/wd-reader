@@ -6,6 +6,9 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+/**
+ * Book 表示一个来源中的书籍及其可下载版本；同书不同来源保持独立。
+ */
 export class Book {
     /**
      * Creates a new Book instance.
@@ -14,6 +17,7 @@ export class Book {
     constructor($$source = {}) {
         if (/** @type {any} */(false)) {
             /**
+             * 书名匹配类型：exact 表示同名或别名，related 表示相关作品；部分适配器不设置。
              * @member
              * @type {string | undefined}
              */
@@ -21,6 +25,7 @@ export class Book {
         }
         if (!("id" in $$source)) {
             /**
+             * 来源内的书籍标识，可以是资源编号、详情 URL 或目录文件路径。
              * @member
              * @type {string}
              */
@@ -28,6 +33,7 @@ export class Book {
         }
         if (!("title" in $$source)) {
             /**
+             * 书名；HTML 下载文件名可另从详情页提取。
              * @member
              * @type {string}
              */
@@ -35,6 +41,7 @@ export class Book {
         }
         if (!("author" in $$source)) {
             /**
+             * 作者名称，可能来自详情元数据或配置中的作者提示。
              * @member
              * @type {string}
              */
@@ -42,6 +49,7 @@ export class Book {
         }
         if (!("url" in $$source)) {
             /**
+             * 原站书籍详情地址。
              * @member
              * @type {string}
              */
@@ -49,6 +57,7 @@ export class Book {
         }
         if (!("sourceId" in $$source)) {
             /**
+             * 所属来源标识，用于结果过滤。
              * @member
              * @type {string}
              */
@@ -56,6 +65,7 @@ export class Book {
         }
         if (!("sourceName" in $$source)) {
             /**
+             * 所属来源显示名称。
              * @member
              * @type {string}
              */
@@ -63,6 +73,7 @@ export class Book {
         }
         if (!("files" in $$source)) {
             /**
+             * 已发现的下载文件；无可下载文件的书籍不会进入最终结果。
              * @member
              * @type {File[]}
              */
@@ -87,6 +98,9 @@ export class Book {
     }
 }
 
+/**
+ * ConfigFile 将配置文件的位置、原文和解析结果一起返回，便于界面编辑或修复错误。
+ */
 export class ConfigFile {
     /**
      * Creates a new ConfigFile instance.
@@ -95,6 +109,7 @@ export class ConfigFile {
     constructor($$source = {}) {
         if (!("path" in $$source)) {
             /**
+             * 配置文件路径；配置解析失败时也保留此值。
              * @member
              * @type {string}
              */
@@ -102,6 +117,7 @@ export class ConfigFile {
         }
         if (!("content" in $$source)) {
             /**
+             * 磁盘上的完整 JSON 原文。
              * @member
              * @type {string}
              */
@@ -109,6 +125,7 @@ export class ConfigFile {
         }
         if (!("sources" in $$source)) {
             /**
+             * 解析后的来源列表。
              * @member
              * @type {Source[]}
              */
@@ -116,6 +133,7 @@ export class ConfigFile {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 供界面展示的配置加载错误，由桌面服务填充。
              * @member
              * @type {string | undefined}
              */
@@ -140,6 +158,9 @@ export class ConfigFile {
     }
 }
 
+/**
+ * File 描述一个可下载文件，也保留重试和 ZIP 解压所需的信息。
+ */
 export class File {
     /**
      * Creates a new File instance.
@@ -148,6 +169,7 @@ export class File {
     constructor($$source = {}) {
         if (/** @type {any} */(false)) {
             /**
+             * ZIP 内要提取的电子书格式；普通文件留空。
              * @member
              * @type {string | undefined}
              */
@@ -155,6 +177,7 @@ export class File {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 下载请求使用的来源页面地址，用于需要 Referer 的站点。
              * @member
              * @type {string | undefined}
              */
@@ -162,6 +185,7 @@ export class File {
         }
         if (!("url" in $$source)) {
             /**
+             * 实际下载地址，必须为不含用户凭据的 HTTP(S) URL。
              * @member
              * @type {string}
              */
@@ -169,6 +193,7 @@ export class File {
         }
         if (!("name" in $$source)) {
             /**
+             * 建议的本地文件名，下载前还会执行文件名清理。
              * @member
              * @type {string}
              */
@@ -176,6 +201,7 @@ export class File {
         }
         if (!("format" in $$source)) {
             /**
+             * 界面显示格式，例如 TXT、EPUB 或 TXT (ZIP)。
              * @member
              * @type {string}
              */
@@ -183,6 +209,7 @@ export class File {
         }
         if (!("size" in $$source)) {
             /**
+             * 已知文件大小，单位字节；未知时为 0。
              * @member
              * @type {number}
              */
@@ -203,6 +230,9 @@ export class File {
     }
 }
 
+/**
+ * SearchResponse 区分可下载结果、无文件条目及读取失败条目，允许部分来源详情失败。
+ */
 export class SearchResponse {
     /**
      * Creates a new SearchResponse instance.
@@ -211,6 +241,7 @@ export class SearchResponse {
     constructor($$source = {}) {
         if (!("books" in $$source)) {
             /**
+             * 包含实际下载文件的书籍列表。
              * @member
              * @type {Book[]}
              */
@@ -218,6 +249,7 @@ export class SearchResponse {
         }
         if (!("skipped" in $$source)) {
             /**
+             * 详情读取成功但无可用文件的候选数量。
              * @member
              * @type {number}
              */
@@ -225,6 +257,7 @@ export class SearchResponse {
         }
         if (!("failed" in $$source)) {
             /**
+             * 详情读取或等待并发槽位失败的候选数量。
              * @member
              * @type {number}
              */
@@ -249,6 +282,9 @@ export class SearchResponse {
     }
 }
 
+/**
+ * Source 定义单个下载来源的检索、元数据提取与下载规则；配置字段按来源类型选择使用。
+ */
 export class Source {
     /**
      * Creates a new Source instance.
@@ -257,6 +293,7 @@ export class Source {
     constructor($$source = {}) {
         if (/** @type {any} */(false)) {
             /**
+             * HTML 搜索请求方法；空值按 GET 处理，也可配置 POST。
              * @member
              * @type {string | undefined}
              */
@@ -264,6 +301,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * POST 表单参数模板，值中的 {query} 替换为当前检索词。
              * @member
              * @type {{ [_ in string]?: string } | undefined}
              */
@@ -271,6 +309,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * file-index 来源的 JSON 文件目录地址。
              * @member
              * @type {string | undefined}
              */
@@ -278,6 +317,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 中转下载页的路径正则；详情页无直接链接时使用。
              * @member
              * @type {string | undefined}
              */
@@ -285,6 +325,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 无文件扩展名的下载接口所返回的电子书格式。
              * @member
              * @type {string | undefined}
              */
@@ -292,6 +333,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 是否从下载链接文字读取文件名，用于保留分卷章节范围。
              * @member
              * @type {boolean | undefined}
              */
@@ -299,6 +341,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 从详情页提取书名的正则，第一捕获组为结果。
              * @member
              * @type {string | undefined}
              */
@@ -306,6 +349,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 从详情页提取作者的正则，第一捕获组为结果。
              * @member
              * @type {string | undefined}
              */
@@ -313,6 +357,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 书名对应的作者提示；HTML 来源用于补充查询和排序，文件目录来源用于显示作者标签。
              * @member
              * @type {{ [_ in string]?: string } | undefined}
              */
@@ -320,6 +365,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 每个检索词最多读取的搜索页数；0 按 1 页处理。
              * @member
              * @type {number | undefined}
              */
@@ -327,6 +373,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * HTML 搜索结果中书籍详情链接的路径正则。
              * @member
              * @type {string | undefined}
              */
@@ -334,6 +381,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 实际下载地址的完整 URL 正则，用于排除无关链接。
              * @member
              * @type {string | undefined}
              */
@@ -341,6 +389,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 详情页中存放书名的 meta 标签名称或 property 值。
              * @member
              * @type {string | undefined}
              */
@@ -348,6 +397,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 详情页中存放作者的 meta 标签名称或 property 值。
              * @member
              * @type {string | undefined}
              */
@@ -355,6 +405,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * ZIP 内预期的电子书格式，如 txt；空值表示不接收 ZIP 链接。
              * @member
              * @type {string | undefined}
              */
@@ -362,6 +413,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 书名及别名分组，用于同一本书的多名称检索。
              * @member
              * @type {{ [_ in string]?: string[] } | undefined}
              */
@@ -369,6 +421,7 @@ export class Source {
         }
         if (!("id" in $$source)) {
             /**
+             * 来源唯一标识，供前端选择、过滤和后端查找配置。
              * @member
              * @type {string}
              */
@@ -376,6 +429,7 @@ export class Source {
         }
         if (!("name" in $$source)) {
             /**
+             * 来源显示名称。
              * @member
              * @type {string}
              */
@@ -383,6 +437,7 @@ export class Source {
         }
         if (!("enabled" in $$source)) {
             /**
+             * 是否允许从该来源发起检索。
              * @member
              * @type {boolean}
              */
@@ -390,6 +445,7 @@ export class Source {
         }
         if (!("kind" in $$source)) {
             /**
+             * 适配器类型：archive、gutenberg、html 或 file-index。
              * @member
              * @type {string}
              */
@@ -397,6 +453,7 @@ export class Source {
         }
         if (!("description" in $$source)) {
             /**
+             * 来源说明，供前端提示资源类型和下载特点。
              * @member
              * @type {string}
              */
@@ -404,6 +461,7 @@ export class Source {
         }
         if (!("searchUrl" in $$source)) {
             /**
+             * 搜索地址模板，通常使用 {query} 占位符。
              * @member
              * @type {string}
              */
@@ -411,6 +469,7 @@ export class Source {
         }
         if (!("detailUrl" in $$source)) {
             /**
+             * 结构化来源的详情接口模板，使用 {id} 占位符。
              * @member
              * @type {string}
              */
@@ -418,6 +477,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 下载地址模板；按来源使用 {id}、{file} 占位符。
              * @member
              * @type {string | undefined}
              */
@@ -425,6 +485,7 @@ export class Source {
         }
         if (!("bookUrl" in $$source)) {
             /**
+             * 书籍原站详情地址模板，供用户查看来源。
              * @member
              * @type {string}
              */

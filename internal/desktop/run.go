@@ -61,6 +61,7 @@ func Run(assets fs.FS, icon []byte, version string) {
 		startURL = "wails://wails/"
 	}
 	service.miniMenuURL = startURL + "?view=mini-menu"
+	service.resourceConfigURL = startURL + "?view=resource-config"
 	// 主窗口
 	service.window = app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "reader",

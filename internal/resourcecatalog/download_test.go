@@ -68,3 +68,21 @@ func TestSafeFileNames(t *testing.T) {
 		}
 	}
 }
+
+// TestDownloadAZW 使用本地响应验证 AZW 扩展名与 MOBI 文件头能够进入现有下载流程。
+func TestDownloadAZW(t *testing.T) {
+	content := strings.Repeat("\x00", 60) + "BOOKMOBI" + "ebook content"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		fmt.Fprint(w, content)
+	}))
+	defer server.Close()
+	path, err := Download(context.Background(), server.Client(), File{URL: server.URL, Name: "book.azw"}, t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != content {
+		t.Fatalf("AZW download mismatch: %v", err)
+	}
+}

@@ -6,18 +6,17 @@ import {
     Drawer,
     Empty,
     Input,
-    Modal,
     Progress,
+    Select,
     Space,
     Spin,
     Tabs,
     Tag,
-    Typography,
     Tooltip,
     message,
 } from 'antd';
 import { DownloadOutlined, ExportOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
-import { Browser, Call } from '@wailsio/runtime';
+import { Browser, Call, Events } from '@wailsio/runtime';
 import { t, useI18n } from '../../i18n/index.jsx';
 import {
     formatResourceSize,
@@ -42,6 +41,7 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
     const [config, setConfig] = useState(null);
     const [selected, setSelected] = useState([]);
     const [query, setQuery] = useState('');
+    const [resourceType, setResourceType] = useState('all');
     const [searched, setSearched] = useState('');
     const [books, setBooks] = useState([]);
     const [statuses, setStatuses] = useState({});
@@ -49,19 +49,23 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
     const [starting, setStarting] = useState('');
     const [tab, setTab] = useState('books');
     const [error, setError] = useState('');
-    const [editing, setEditing] = useState(false);
-    const [content, setContent] = useState('');
-    const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [nativeConfig, setNativeConfig] = useState(null);
+    useEffect(() => {
+        invoke('ResourceConfigUsesNativeWindow')
+            .then(setNativeConfig)
+            .catch((failure) => setError(String(failure)));
+    }, []);
     const generation = useRef(0);
     const seenCompleted = useRef(new Set());
     const downloadedRef = useRef(onDownloaded);
     downloadedRef.current = onDownloaded;
     const active = tasks.some(isDownloadActive);
     const busy = Object.values(statuses).some((s) => s.state === 'loading');
+    const filteredBooks = useMemo(() => mergeResourceResults(books, resourceType), [books, resourceType]);
     const visibleBooks = useMemo(
-        () => mergeResourceResults(books.filter((book) => selected.includes(book.sourceId))),
-        [books, selected],
+        () => filteredBooks.filter((book) => selected.includes(book.sourceId)),
+        [filteredBooks, selected],
     );
 
     async function load() {
@@ -73,7 +77,6 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
             const next = await invoke('GetResourceSources');
             if (token !== generation.current) return;
             setConfig(next);
-            setContent(next.content);
             setError(next.error || '');
             setSelected(next.sources.filter((s) => s.enabled).map((s) => s.id));
         } catch (failure) {
@@ -162,40 +165,60 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
             message.error(String(failure));
         }
     }
-    async function save() {
-        setSaving(true);
+    async function openConfig() {
         try {
-            await invoke('SaveResourceSources', content);
-            setEditing(false);
-            await load();
-            message.success(t('资源配置已保存'));
+            await invoke('OpenResourceConfig');
         } catch (failure) {
             message.error(String(failure));
-        } finally {
-            setSaving(false);
         }
     }
+    useEffect(() => {
+        if (!open) return;
+        const off = Events.On('resource-sources-changed', () => load());
+        const channel =
+            typeof BroadcastChannel === 'function' ? new BroadcastChannel('wd-reader-resource-sources') : null;
+        if (channel) channel.onmessage = () => load();
+        return () => {
+            off();
+            channel?.close();
+        };
+    }, [open]);
 
     const results = (
         <>
             <p className="resource-download-intro">
                 {t('输入书名，只列出含可下载文件的资源。下载完成后自动加入书架。')}
             </p>
-            <Input.Search
-                value={query}
-                maxLength={100}
-                allowClear
-                aria-label={t('输入书名查找资源')}
-                placeholder={t('输入书名，例如：红楼梦 / Alice')}
-                onChange={(event) => setQuery(event.target.value)}
-                onSearch={search}
-                enterButton={t('查找资源')}
-                className="resource-search-input"
-                disabled={loading || !config || !selected.length}
-            />
+            <div className="resource-search-toolbar">
+                <Input.Search
+                    value={query}
+                    maxLength={100}
+                    allowClear
+                    aria-label={t('输入书名查找资源')}
+                    placeholder={t('输入书名，例如：红楼梦 / Alice')}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onSearch={search}
+                    enterButton={t('查找资源')}
+                    className="resource-search-input"
+                    disabled={loading || !config || !selected.length}
+                />
+                <Select
+                    aria-label={t('资源类型')}
+                    value={resourceType}
+                    onChange={setResourceType}
+                    className="resource-type-select"
+                    options={[
+                        { value: 'all', label: t('全部') },
+                        { value: 'txt', label: 'txt' },
+                        { value: 'epub', label: 'epub' },
+                        { value: 'kindle', label: 'mobi/azw/azw3' },
+                    ]}
+                />
+            </div>
             <div className="resource-catalog-sources">
                 {config?.sources.map((source) => {
                     const status = statuses[source.id];
+                    const count = filteredBooks.filter((book) => book.sourceId === source.id).length;
                     return (
                         <div className="resource-source-chip" key={source.id}>
                             <Tooltip title={source.description}>
@@ -215,11 +238,8 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
                             </Tooltip>
                             {status?.state === 'loading' && <Spin size="small" />}
                             {status?.state === 'done' && (
-                                <Tag
-                                    color={status.count ? 'green' : 'default'}
-                                    title={t('{0} 项可下载资源', { 0: status.count })}
-                                >
-                                    {status.count}
+                                <Tag color={count ? 'green' : 'default'} title={t('{0} 项可下载资源', { 0: count })}>
+                                    {count}
                                 </Tag>
                             )}
                             {status?.failed > 0 && (
@@ -368,7 +388,15 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
                         onClick={load}
                         aria-label={t('重新加载来源')}
                     />
-                    <Button size="small" icon={<SettingOutlined />} onClick={() => setEditing(true)}>
+                    <Button
+                        size="small"
+                        icon={<SettingOutlined />}
+                        disabled={nativeConfig === null}
+                        href={nativeConfig === false ? '?view=resource-config' : undefined}
+                        target={nativeConfig === false ? 'wd-reader-resource-config' : undefined}
+                        rel="noopener"
+                        onClick={nativeConfig ? openConfig : undefined}
+                    >
                         {t('资源配置')}
                     </Button>
                 </Space>
@@ -388,30 +416,6 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
                     },
                 ]}
             />
-            <Modal
-                title={t('资源配置')}
-                open={editing}
-                onCancel={() => setEditing(false)}
-                onOk={save}
-                confirmLoading={saving}
-                okText={t('保存并重新加载')}
-                width={720}
-            >
-                <p>{t('来源配置保存在独立文件中，仅展示具有可下载文件的资源。')}</p>
-                {config?.path && (
-                    <Typography.Paragraph copyable className="resource-config-path">
-                        {config.path}
-                    </Typography.Paragraph>
-                )}
-                <Input.TextArea
-                    value={content}
-                    onChange={(event) => setContent(event.target.value)}
-                    rows={18}
-                    spellCheck={false}
-                    aria-label={t('资源配置')}
-                    className="resource-config-editor"
-                />
-            </Modal>
         </Drawer>
     );
 }

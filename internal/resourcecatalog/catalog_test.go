@@ -31,6 +31,31 @@ func TestConfigPreservesUserFile(t *testing.T) {
 	}
 }
 
+func TestDefaultConfigRestoresSourcesWithoutChangingDraftOnDisk(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "resource-sources.json")
+	original := DefaultConfig()
+	config, err := Parse([]byte(original))
+	if err != nil || len(config.Sources) == 0 {
+		t.Fatalf("invalid built-in sources: %v", err)
+	}
+	custom := strings.Replace(original, config.Sources[0].Name, "自定义下载来源", 1)
+	if err := Save(path, custom); err != nil {
+		t.Fatal(err)
+	}
+	draft := DefaultConfig()
+	stored, err := os.ReadFile(path)
+	if err != nil || string(stored) != custom {
+		t.Fatal("loading defaults overwrote the saved configuration")
+	}
+	if err := Save(path, draft); err != nil {
+		t.Fatal(err)
+	}
+	file, err := Load(path)
+	if err != nil || file.Content != original {
+		t.Fatalf("could not restore built-in sources: %v", err)
+	}
+}
+
 func TestArchiveOnlyListsActualPublicFiles(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

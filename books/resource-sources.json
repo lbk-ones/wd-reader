@@ -56,7 +56,9 @@
       "authorPattern": "作者[：:]([^<]+)</a>",
       "maxSearchPages": 2,
       "aliases": {
-        "时停起手": ["时停起手，邪神也得给我跪下！"]
+        "时停起手": [
+          "时停起手，邪神也得给我跪下！"
+        ]
       },
       "authorHints": {
         "斗破苍穹": "天蚕土豆",
@@ -78,7 +80,9 @@
       "authorMeta": "og:novel:author",
       "zipFormat": "txt",
       "aliases": {
-        "我有一座冒险屋": ["我有一座恐怖屋"]
+        "我有一座冒险屋": [
+          "我有一座恐怖屋"
+        ]
       },
       "maxSearchPages": 4,
       "authorHints": {

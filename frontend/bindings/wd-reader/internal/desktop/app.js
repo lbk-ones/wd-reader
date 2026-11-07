@@ -48,6 +48,7 @@ export function AutostartStatus() {
 }
 
 /**
+ * CancelResourceDownload 取消排队或下载阶段的任务；进入入库阶段后不再允许取消。
  * @param {string} id
  * @returns {$CancellablePromise<void>}
  */
@@ -86,6 +87,14 @@ export function ChooseBookCover(id) {
  */
 export function CloseMiniMenu() {
     return $Call.ByName("wd-reader/internal/desktop.App.CloseMiniMenu");
+}
+
+/**
+ * CloseResourceConfig 隐藏配置窗口并保留未保存的编辑内容；未创建窗口时返回 false。
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function CloseResourceConfig() {
+    return $Call.ByName("wd-reader/internal/desktop.App.CloseResourceConfig");
 }
 
 /**
@@ -159,6 +168,7 @@ export function ExportResources(cache) {
 }
 
 /**
+ * FindDownloadableBooks 每次读取最新配置，仅对存在且已启用的指定来源执行搜索。
  * @param {string} id
  * @param {string} query
  * @returns {$CancellablePromise<resourcecatalog$0.SearchResponse>}
@@ -234,6 +244,14 @@ export function GetChapterListByFileName(_fileName, splitType, splitValue) {
 }
 
 /**
+ * GetDefaultResourceSources 读取内置默认配置供编辑器恢复草稿，不直接写入磁盘。
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetDefaultResourceSources() {
+    return $Call.ByName("wd-reader/internal/desktop.App.GetDefaultResourceSources");
+}
+
+/**
  * GetMiniMenuState also handles the first load before frontend event listeners exist.
  * @returns {$CancellablePromise<$models.MiniMenuState>}
  */
@@ -244,6 +262,7 @@ export function GetMiniMenuState() {
 }
 
 /**
+ * GetResourceSources 向界面返回配置原文和来源；解析失败时附带错误，仍允许用户打开编辑器修复。
  * @returns {$CancellablePromise<resourcecatalog$0.ConfigFile>}
  */
 export function GetResourceSources() {
@@ -335,6 +354,7 @@ export function ListOriginalBooks() {
 }
 
 /**
+ * ListResourceDownloads 在锁内复制任务快照，按创建时间倒序返回给前端轮询。
  * @returns {$CancellablePromise<$models.DownloadTask[]>}
  */
 export function ListResourceDownloads() {
@@ -372,6 +392,14 @@ export function OpenFileDialog(title) {
  */
 export function OpenMiniMenu(clientX, clientY, language, bookName, chapterName) {
     return $Call.ByName("wd-reader/internal/desktop.App.OpenMiniMenu", clientX, clientY, language, bookName, chapterName);
+}
+
+/**
+ * OpenResourceConfig 创建或复用默认最大化的配置窗口，并将其显示到前台；返回值表示是否使用原生窗口。
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function OpenResourceConfig() {
+    return $Call.ByName("wd-reader/internal/desktop.App.OpenResourceConfig");
 }
 
 /**
@@ -427,6 +455,14 @@ export function RemoveBookFromCategory(bookID, categoryID) {
 }
 
 /**
+ * ResourceConfigUsesNativeWindow 判断是否具备原生桌面窗口；浏览器预览需使用独立页面。
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function ResourceConfigUsesNativeWindow() {
+    return $Call.ByName("wd-reader/internal/desktop.App.ResourceConfigUsesNativeWindow");
+}
+
+/**
  * @param {string} name
  * @param {boolean} overwrite
  * @returns {$CancellablePromise<string>}
@@ -447,6 +483,7 @@ export function SaveCategory(id, name) {
 }
 
 /**
+ * SaveResourceSources 校验并保存配置，成功后通知主窗口刷新下载来源。
  * @param {string} content
  * @returns {$CancellablePromise<void>}
  */
@@ -491,6 +528,7 @@ export function SetReminder(kind, minutes, language) {
 }
 
 /**
+ * StartResourceDownload 校验并去重活动任务，限制队列数量，创建 5 分钟超时任务后异步下载和入库。
  * @param {resourcecatalog$0.File} file
  * @returns {$CancellablePromise<$models.DownloadTask>}
  */

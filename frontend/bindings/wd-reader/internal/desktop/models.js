@@ -13,6 +13,9 @@ import * as book$0 from "../book/models.js";
 // @ts-ignore: Unused imports
 import * as resourcecatalog$0 from "../resourcecatalog/models.js";
 
+/**
+ * DownloadTask 是返回给前端的任务快照，前端轮询它更新进度和操作状态。
+ */
 export class DownloadTask {
     /**
      * Creates a new DownloadTask instance.
@@ -21,6 +24,7 @@ export class DownloadTask {
     constructor($$source = {}) {
         if (!("file" in $$source)) {
             /**
+             * 原始下载描述，供失败重试时恢复 Referer、ZIP 格式等参数。
              * @member
              * @type {resourcecatalog$0.File}
              */
@@ -28,6 +32,7 @@ export class DownloadTask {
         }
         if (!("id" in $$source)) {
             /**
+             * 本次任务的 UUID，用于取消和查询。
              * @member
              * @type {string}
              */
@@ -35,6 +40,7 @@ export class DownloadTask {
         }
         if (!("name" in $$source)) {
             /**
+             * 清理后的下载文件名。
              * @member
              * @type {string}
              */
@@ -42,6 +48,7 @@ export class DownloadTask {
         }
         if (!("url" in $$source)) {
             /**
+             * 下载地址，用于识别同一资源的活动任务。
              * @member
              * @type {string}
              */
@@ -49,6 +56,7 @@ export class DownloadTask {
         }
         if (!("status" in $$source)) {
             /**
+             * 任务状态：queued、downloading、importing、done、cancelled 或 error。
              * @member
              * @type {string}
              */
@@ -56,6 +64,7 @@ export class DownloadTask {
         }
         if (!("received" in $$source)) {
             /**
+             * 已接收的网络数据字节数；ZIP 解压进度不计入此值。
              * @member
              * @type {number}
              */
@@ -63,6 +72,7 @@ export class DownloadTask {
         }
         if (!("total" in $$source)) {
             /**
+             * 响应声明的总字节数；为 0 或负数时表示未知。
              * @member
              * @type {number}
              */
@@ -70,6 +80,7 @@ export class DownloadTask {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 失败原因，成功或未失败时为空。
              * @member
              * @type {string | undefined}
              */
@@ -77,6 +88,7 @@ export class DownloadTask {
         }
         if (/** @type {any} */(false)) {
             /**
+             * 成功导入书架后返回的书籍名称。
              * @member
              * @type {string | undefined}
              */
@@ -84,6 +96,7 @@ export class DownloadTask {
         }
         if (!("createdAt" in $$source)) {
             /**
+             * 任务创建时间，Unix 毫秒，用于排序和清理历史任务。
              * @member
              * @type {number}
              */

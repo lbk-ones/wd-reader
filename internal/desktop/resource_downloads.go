@@ -17,33 +17,57 @@ import (
 	"github.com/google/uuid"
 )
 
+// DownloadTask 是返回给前端的任务快照，前端轮询它更新进度和操作状态。
 type DownloadTask struct {
-	File      resourcecatalog.File `json:"file"`
-	ID        string               `json:"id"`
-	Name      string               `json:"name"`
-	URL       string               `json:"url"`
-	Status    string               `json:"status"`
-	Received  int64                `json:"received"`
-	Total     int64                `json:"total"`
-	Error     string               `json:"error,omitempty"`
-	BookName  string               `json:"bookName,omitempty"`
-	CreatedAt int64                `json:"createdAt"`
+	// 原始下载描述，供失败重试时恢复 Referer、ZIP 格式等参数。
+	File resourcecatalog.File `json:"file"`
+	// 本次任务的 UUID，用于取消和查询。
+	ID string `json:"id"`
+	// 清理后的下载文件名。
+	Name string `json:"name"`
+	// 下载地址，用于识别同一资源的活动任务。
+	URL string `json:"url"`
+	// 任务状态：queued、downloading、importing、done、cancelled 或 error。
+	Status string `json:"status"`
+	// 已接收的网络数据字节数；ZIP 解压进度不计入此值。
+	Received int64 `json:"received"`
+	// 响应声明的总字节数；为 0 或负数时表示未知。
+	Total int64 `json:"total"`
+	// 失败原因，成功或未失败时为空。
+	Error string `json:"error,omitempty"`
+	// 成功导入书架后返回的书籍名称。
+	BookName string `json:"bookName,omitempty"`
+	// 任务创建时间，Unix 毫秒，用于排序和清理历史任务。
+	CreatedAt int64 `json:"createdAt"`
 }
+
+// resourceDownload 将前端可见状态与后台取消函数绑定；状态读写由下载管理器的锁保护。
 type resourceDownload struct {
-	task   DownloadTask
+	// 当前任务状态，读取快照或修改字段前均需持有管理器互斥锁。
+	task DownloadTask
+	// 取消排队或 HTTP 请求，并释放超时上下文资源。
 	cancel context.CancelFunc
 }
+
+// resourceDownloads 管理当前进程的下载队列和历史；不持久化，也不支持重启后续传。
 type resourceDownloads struct {
-	mu    sync.Mutex
+	// 保护任务表及任务字段的并发访问。
+	mu sync.Mutex
+	// 按任务 ID 索引的任务表，最多保留约 100 条记录。
 	tasks map[string]*resourceDownload
+	// 容量为 2 的信号量；排队任务获得槽位后才开始下载，入库结束后释放。
 	slots chan struct{}
 }
 
+// resourceSourcesPath 返回与应用书库目录一致的独立下载来源配置路径。
 func resourceSourcesPath() string {
 	return filepath.Join(book.GetAppPath(), "books", "resource-sources.json")
 }
+
+// GetResourceSources 向界面返回配置原文和来源；解析失败时附带错误，仍允许用户打开编辑器修复。
 func (a *App) GetResourceSources() (resourcecatalog.ConfigFile, error) {
 	file, err := resourcecatalog.Load(resourceSourcesPath())
+	// 已读到文件但解析失败时保留原文，让编辑器仍可打开并修复配置。
 	if err != nil && file.Path != "" {
 		file.Error = err.Error()
 		file.Sources = []resourcecatalog.Source{}
@@ -51,9 +75,22 @@ func (a *App) GetResourceSources() (resourcecatalog.ConfigFile, error) {
 	}
 	return file, err
 }
+
+// SaveResourceSources 校验并保存配置，成功后通知主窗口刷新下载来源。
 func (a *App) SaveResourceSources(content string) error {
-	return resourcecatalog.Save(resourceSourcesPath(), content)
+	if err := resourcecatalog.Save(resourceSourcesPath(), content); err != nil {
+		return err
+	}
+	if a.window != nil {
+		a.window.EmitEvent("resource-sources-changed")
+	}
+	return nil
 }
+
+// GetDefaultResourceSources 读取内置默认配置供编辑器恢复草稿，不直接写入磁盘。
+func (a *App) GetDefaultResourceSources() string { return resourcecatalog.DefaultConfig() }
+
+// FindDownloadableBooks 每次读取最新配置，仅对存在且已启用的指定来源执行搜索。
 func (a *App) FindDownloadableBooks(id, query string) (resourcecatalog.SearchResponse, error) {
 	config, err := resourcecatalog.Load(resourceSourcesPath())
 	if err != nil {
@@ -66,6 +103,8 @@ func (a *App) FindDownloadableBooks(id, query string) (resourcecatalog.SearchRes
 	}
 	return resourcecatalog.SearchResponse{}, fmt.Errorf("资源来源不存在或已禁用")
 }
+
+// ListResourceDownloads 在锁内复制任务快照，按创建时间倒序返回给前端轮询。
 func (a *App) ListResourceDownloads() []DownloadTask {
 	a.downloads.mu.Lock()
 	defer a.downloads.mu.Unlock()
@@ -76,6 +115,8 @@ func (a *App) ListResourceDownloads() []DownloadTask {
 	sort.Slice(tasks, func(i, j int) bool { return tasks[i].CreatedAt > tasks[j].CreatedAt })
 	return tasks
 }
+
+// StartResourceDownload 校验并去重活动任务，限制队列数量，创建 5 分钟超时任务后异步下载和入库。
 func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, error) {
 	if err := resourcecatalog.ValidateDownload(file); err != nil {
 		return DownloadTask{}, err
@@ -87,6 +128,7 @@ func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, er
 		a.downloads.tasks = map[string]*resourceDownload{}
 		a.downloads.slots = make(chan struct{}, 2)
 	}
+	// 相同 URL 的活动任务直接复用；已完成或失败的任务允许重新创建。
 	active := 0
 	for _, item := range a.downloads.tasks {
 		if item.task.Status == "queued" || item.task.Status == "downloading" || item.task.Status == "importing" {
@@ -96,9 +138,11 @@ func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, er
 			}
 		}
 	}
+	// 活动任务包含排队、下载和入库，防止不断提交导致队列无限增长。
 	if active >= 20 {
 		return DownloadTask{}, fmt.Errorf("下载队列已满，请等待当前任务完成")
 	}
+	// 历史达到上限时只淘汰最早的终态任务，不能删除协程仍持有的活动任务。
 	if len(a.downloads.tasks) >= 100 {
 		var oldestID string
 		oldest := int64(1<<63 - 1)
@@ -112,6 +156,7 @@ func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, er
 			delete(a.downloads.tasks, oldestID)
 		}
 	}
+	// 超时从创建任务时开始，排队时间计入；HTTP 下载遵守此上下文，入库前再次检查。
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	task := DownloadTask{ID: uuid.NewString(), Name: resourcecatalog.SafeFileName(file.Name, ext), URL: file.URL, Status: "queued", Total: file.Size, CreatedAt: time.Now().UnixMilli()}
 	task.File = file
@@ -119,6 +164,8 @@ func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, er
 	go a.runResourceDownload(ctx, task.ID, file)
 	return task, nil
 }
+
+// CancelResourceDownload 取消排队或下载阶段的任务；进入入库阶段后不再允许取消。
 func (a *App) CancelResourceDownload(id string) error {
 	a.downloads.mu.Lock()
 	defer a.downloads.mu.Unlock()
@@ -126,6 +173,7 @@ func (a *App) CancelResourceDownload(id string) error {
 	if item == nil {
 		return nil
 	}
+	// 入库会解析并更新书架文件，此阶段拒绝取消，等待导入流程完成。
 	if item.task.Status == "importing" {
 		return fmt.Errorf("正在加入书架，请等待完成")
 	}
@@ -135,6 +183,8 @@ func (a *App) CancelResourceDownload(id string) error {
 	}
 	return nil
 }
+
+// stopResourceDownloads 应用退出时取消所有任务的上下文，唤醒排队任务并中断未完成的网络请求。
 func (a *App) stopResourceDownloads() {
 	a.downloads.mu.Lock()
 	defer a.downloads.mu.Unlock()
@@ -142,11 +192,14 @@ func (a *App) stopResourceDownloads() {
 		item.cancel()
 	}
 }
+
+// runResourceDownload 后台执行排队、下载和入库，统一更新终态并清理专用临时目录。
 func (a *App) runResourceDownload(ctx context.Context, id string, file resourcecatalog.File) {
 	a.downloads.mu.Lock()
 	item := a.downloads.tasks[id]
 	a.downloads.mu.Unlock()
 	defer item.cancel()
+	// 统一收敛终态：主动取消为 cancelled，超时为 error，导入成功才记为 done。
 	finish := func(name string, err error) {
 		a.downloads.mu.Lock()
 		defer a.downloads.mu.Unlock()
@@ -166,6 +219,7 @@ func (a *App) runResourceDownload(ctx context.Context, id string, file resourcec
 			item.task.BookName = name
 		}
 	}
+	// 等待并发槽位时也监听取消；获得后直到下载和入库结束才归还。
 	select {
 	case a.downloads.slots <- struct{}{}:
 		defer func() { <-a.downloads.slots }()
@@ -181,16 +235,19 @@ func (a *App) runResourceDownload(ctx context.Context, id string, file resourcec
 	}
 	item.task.Status = "downloading"
 	a.downloads.mu.Unlock()
+	// 每个任务单独创建临时目录，失败或成功退出时均清理。
 	dir, err := os.MkdirTemp("", "wd-reader-resource-")
 	if err != nil {
 		finish("", err)
 		return
 	}
 	defer func() {
+		// 同时检查目录位于系统临时目录内且前缀符合约定，避免误删其他目录。
 		if rel, e := filepath.Rel(os.TempDir(), dir); e == nil && !strings.HasPrefix(rel, "..") && strings.HasPrefix(filepath.Base(dir), "wd-reader-resource-") {
 			os.RemoveAll(dir)
 		}
 	}()
+	// 下载回调只更新网络字节进度；书架导入是否成功由后续流程单独决定。
 	local, err := resourcecatalog.Download(ctx, http.DefaultClient, file, dir, func(received, total int64) {
 		a.downloads.mu.Lock()
 		defer a.downloads.mu.Unlock()
@@ -207,8 +264,10 @@ func (a *App) runResourceDownload(ctx context.Context, id string, file resourcec
 		finish("", ctx.Err())
 		return
 	}
+	// 在锁内完成取消检查和入库状态切换，避免已开始导入后又被标记为取消。
 	item.task.Status = "importing"
 	a.downloads.mu.Unlock()
+	// 复用本地导入流程进行解析、保留原文件及同名处理，成功后前端再刷新书架。
 	name, err := book.ImportLocal(local)
 	finish(name, err)
 }

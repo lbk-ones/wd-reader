@@ -19,6 +19,7 @@ import (
 
 // App struct
 type App struct {
+	// 下载队列、历史记录及并发槽位管理器。
 	downloads      resourceDownloads
 	version        string
 	reminders      reminderTimers
@@ -30,6 +31,12 @@ type App struct {
 	miniMenuWindow *application.WebviewWindow
 	miniMenuURL    string
 	miniMenuState  MiniMenuState
+	// 保护独立资源配置窗口的创建和访问。
+	resourceConfigMu sync.Mutex
+	// 可复用的资源配置编辑窗口，关闭时隐藏以保留草稿。
+	resourceConfigWindow *application.WebviewWindow
+	// 资源配置页面地址，使用与阅读器一致的资源来源。
+	resourceConfigURL string
 }
 
 // NewApp creates a new App application struct

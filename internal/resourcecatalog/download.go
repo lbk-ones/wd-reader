@@ -13,8 +13,10 @@ import (
 	"time"
 )
 
+// MaxDownloadBytes 限制单次网络下载及解压后电子书的大小，单位字节。
 const MaxDownloadBytes int64 = 100 * 1024 * 1024
 
+// ValidateDownload 校验下载地址、文件扩展名和可选 Referer；ZIP 必须声明内部电子书格式。
 func ValidateDownload(file File) error {
 	ext := strings.ToLower(filepath.Ext(file.Name))
 	if !IsWebURL(file.URL) || (!supportedExtension(ext) && !(ext == ".zip" && supportedExtension("."+file.ArchiveFormat))) {
@@ -26,7 +28,9 @@ func ValidateDownload(file File) error {
 	return nil
 }
 
-// Download writes only a complete resource into the caller's dedicated temporary directory.
+// Download 将完整资源写入调用方专用临时目录；检查大小和文件头，失败删除半成品，ZIP 返回解压后的文件路径。
+// progress 可为空，参数依次为已接收字节数、响应总字节数；总长度未知时可能为负数。
+// ctx 控制网络请求及写入循环；返回路径仅在文件下载完成后可用于书架导入。
 func Download(ctx context.Context, client *http.Client, file File, dir string, progress func(int64, int64)) (string, error) {
 	ext := strings.ToLower(filepath.Ext(file.Name))
 	if err := ValidateDownload(file); err != nil {
@@ -51,6 +55,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	if resp.ContentLength > MaxDownloadBytes {
 		return "", fmt.Errorf("文件超过 100 MiB 下载限制")
 	}
+	// 先窥视文件头，拒绝验证页、空文件和不符合格式特征的数据；Peek 不消耗内容。
 	reader := bufio.NewReader(resp.Body)
 	prefix, _ := reader.Peek(512)
 	if len(prefix) == 0 {
@@ -67,7 +72,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	if ext == ".zip" && (len(prefix) < 4 || string(prefix[:4]) != "PK\x03\x04") {
 		return "", fmt.Errorf("下载内容不是有效的 ZIP 文件")
 	}
-	if (ext == ".mobi" || ext == ".azw3") && (len(prefix) < 68 || string(prefix[60:68]) != "BOOKMOBI") {
+	if (ext == ".mobi" || ext == ".azw" || ext == ".azw3") && (len(prefix) < 68 || string(prefix[60:68]) != "BOOKMOBI") {
 		return "", fmt.Errorf("下载内容不是有效的 MOBI/AZW3 文件")
 	}
 	name := SafeFileName(file.Name, ext)
@@ -76,6 +81,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	if err != nil {
 		return "", err
 	}
+	// 只有完整写入并关闭成功才标记完成；其余返回路径自动删除半成品。
 	committed := false
 	defer func() {
 		out.Close()
@@ -83,6 +89,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 			os.Remove(target)
 		}
 	}()
+	// 即使服务端不提供 Content-Length，也通过实际读取字节数执行大小限制。
 	limited := io.LimitReader(reader, MaxDownloadBytes+1)
 	buffer := make([]byte, 64*1024)
 	var received int64
@@ -100,6 +107,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 			if _, err = out.Write(buffer[:n]); err != nil {
 				return "", err
 			}
+			// 节流进度回调，避免频繁获取任务锁；结束时还会补报最后一次进度。
 			if progress != nil && time.Since(last) > 150*time.Millisecond {
 				progress(received, resp.ContentLength)
 				last = time.Now()
@@ -112,6 +120,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 			return "", readErr
 		}
 	}
+	// 对声明了长度的响应核对实收字节数，避免截断文件进入书架。
 	if resp.ContentLength >= 0 && received != resp.ContentLength {
 		return "", fmt.Errorf("文件下载不完整，请重试")
 	}
@@ -128,6 +137,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	return target, nil
 }
 
+// extractBookArchive 从 ZIP 中选择预期格式的最大普通文件，检查内容和解压大小，再以安全文件名写入临时目录。
 func extractBookArchive(ctx context.Context, path string, file File, dir string) (string, error) {
 	reader, err := zip.OpenReader(path)
 	if err != nil {
@@ -139,6 +149,7 @@ func extractBookArchive(ctx context.Context, path string, file File, dir string)
 	}
 	var chosen *zip.File
 	ext := "." + file.ArchiveFormat
+	// 跳过目录和符号链接；同格式有多个文件时取最大的一个作为正文候选。
 	for _, entry := range reader.File {
 		if entry.FileInfo().IsDir() || entry.Mode()&os.ModeSymlink != 0 || !strings.EqualFold(filepath.Ext(entry.Name), ext) {
 			continue
@@ -167,9 +178,10 @@ func extractBookArchive(ctx context.Context, path string, file File, dir string)
 	if ext == ".epub" && (len(prefix) < 4 || string(prefix[:4]) != "PK\x03\x04") {
 		return "", fmt.Errorf("ZIP 内不是有效的 EPUB 文件")
 	}
-	if (ext == ".mobi" || ext == ".azw3") && (len(prefix) < 68 || string(prefix[60:68]) != "BOOKMOBI") {
+	if (ext == ".mobi" || ext == ".azw" || ext == ".azw3") && (len(prefix) < 68 || string(prefix[60:68]) != "BOOKMOBI") {
 		return "", fmt.Errorf("ZIP 内不是有效的 MOBI/AZW3 文件")
 	}
+	// 不使用压缩包内的路径落盘，从下载名称重新生成文件名，避免 ZIP 路径穿越。
 	target := filepath.Join(dir, SafeFileName(strings.TrimSuffix(file.Name, filepath.Ext(file.Name)), ext))
 	out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
@@ -183,6 +195,7 @@ func extractBookArchive(ctx context.Context, path string, file File, dir string)
 		}
 	}()
 	buffer := make([]byte, 64*1024)
+	// 解压流再次限量，并读到 EOF 以触发 ZIP 校验，不能只信条目声明的大小。
 	limited := io.LimitReader(input, MaxDownloadBytes+1)
 	var total int64
 	for {
