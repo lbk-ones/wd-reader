@@ -143,15 +143,35 @@
     white-space: nowrap;
 }
 .resource-task-progress {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4ch;
     align-items: center;
-    gap: 12px;
-    margin-top: 4px;
+    gap: 10px;
+    margin-top: 6px;
 }
 .resource-task-progress .ant-progress {
-    flex: 1;
     min-width: 0;
+    width: 100%;
     margin: 0;
+    line-height: 1;
+}
+.resource-task-progress .ant-progress-outer {
+    display: flex;
+    width: 100%;
+}
+.resource-task-progress .ant-progress-inner {
+    min-width: 0;
+    min-height: 6px;
+}
+.resource-task-percent {
+    text-align: right;
+    white-space: nowrap;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: #456653;
+}
+.resource-task-transfer > .resource-task-size {
+    margin-top: 4px;
 }
 @media (max-width: 420px) {
     .resource-search-toolbar {
@@ -162,12 +182,5 @@
     }
     .resource-download-drawer .ant-drawer-body {
         padding-inline: 12px;
-    }
-    .resource-task-progress {
-        flex-wrap: wrap;
-        gap: 0;
-    }
-    .resource-task-size {
-        width: 100%;
     }
 }

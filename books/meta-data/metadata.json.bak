@@ -589,7 +589,7 @@
         "title": "user"
       },
       "importedAt": "2024-12-26T13:25:49.7809477Z",
-      "lastOpenedAt": "2024-12-26T13:25:49.7809477Z",
+      "lastOpenedAt": "2026-11-07T04:54:26.2396193Z",
       "fileHash": "9b403679f0c54988f645b4bfb44a419a0457a7301463ec0e2bc4fd8f95767e65",
       "fileSize": 13642762,
       "fileModTime": 1793428118709903100
@@ -878,10 +878,58 @@
       "cover": "",
       "sources": {},
       "importedAt": "2026-11-07T02:55:16.9534947Z",
-      "lastOpenedAt": "2026-11-07T02:55:16.9534947Z",
+      "lastOpenedAt": "2026-11-07T02:55:24.3520916Z",
       "fileHash": "deaf1bbe2d29453bcfd2e8508aea5a7aca084e8029c0362326f7d799ddac1657",
       "fileSize": 28726194,
       "fileModTime": 1794020116941420400
+    },
+    {
+      "id": "f25a6c22-adb4-44ab-8777-b9b23bdff1f7",
+      "fileName": "诡秘地海.txt",
+      "importType": "txt",
+      "originalName": "诡秘地海.txt",
+      "title": "诡秘地海",
+      "authors": [],
+      "description": "",
+      "cover": "",
+      "sources": {},
+      "importedAt": "2026-11-07T04:44:30.5993639Z",
+      "lastOpenedAt": "2026-11-07T04:44:30.5993639Z",
+      "fileHash": "d8ad36ea1ba1893ce7ba17fff58ec7d786011aa36ad110f4ef285676cb6bb7e9",
+      "fileSize": 5236761,
+      "fileModTime": 1794026670593158400
+    },
+    {
+      "id": "d7fd1d35-de6f-40dc-a50c-8089bb38c238",
+      "fileName": "诡秘地海(1001-1153章).txt",
+      "importType": "txt",
+      "originalName": "诡秘地海(1001-1153章).txt",
+      "title": "诡秘地海(1001-1153章)",
+      "authors": [],
+      "description": "",
+      "cover": "",
+      "sources": {},
+      "importedAt": "2026-11-07T04:45:57.8742115Z",
+      "lastOpenedAt": "2026-11-07T04:45:57.8742115Z",
+      "fileHash": "9fb85a5fbeb16ce904020fdb5427490fb8997dbd37effb84b412657f2ec71ff7",
+      "fileSize": 1053274,
+      "fileModTime": 1794026757872151200
+    },
+    {
+      "id": "3ff38e56-7943-4934-8876-fc57a1bd44bf",
+      "fileName": "遮天 (3).txt",
+      "importType": "txt",
+      "originalName": "遮天 (3).txt",
+      "title": "遮天 (3)",
+      "authors": [],
+      "description": "",
+      "cover": "",
+      "sources": {},
+      "importedAt": "2026-11-07T04:55:16.788823Z",
+      "lastOpenedAt": "2026-11-07T04:55:16.788823Z",
+      "fileHash": "78a84af731d5e91410fa93ebfd334a3c275d6a6d97a92f0bd18063e3bd8a6e00",
+      "fileSize": 14098393,
+      "fileModTime": 1794027316771033100
     }
   ],
   "categories": [

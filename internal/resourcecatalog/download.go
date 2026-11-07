@@ -40,7 +40,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "wd-reader/1.0 (ebook downloads; https://github.com/lbk-ones/wd-reader)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0")
 	if file.Referer != "" {
 		req.Header.Set("Referer", file.Referer)
 	}

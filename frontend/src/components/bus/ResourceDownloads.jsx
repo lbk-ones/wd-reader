@@ -6,7 +6,6 @@ import {
     Drawer,
     Empty,
     Input,
-    Progress,
     Select,
     Space,
     Spin,
@@ -22,9 +21,9 @@ import {
     formatResourceSize,
     isDownloadActive,
     mergeResourceResults,
-    resourceDownloadProgress,
 } from '../resourceDownloads.js';
 import './ResourceDownloads.css';
+import ResourceDownloadProgress from './ResourceDownloadProgress.jsx';
 
 const invoke = (name, ...args) => Call.ByName(`wd-reader/internal/desktop.App.${name}`, ...args);
 const taskLabels = {
@@ -348,24 +347,7 @@ export default function ResourceDownloads({ open, onClose, onDownloaded, disable
                             </Button>
                         )}
                     </div>
-                    <div className="resource-task-progress">
-                        <Progress
-                            size="small"
-                            percent={resourceDownloadProgress(task)}
-                            status={
-                                task.status === 'error'
-                                    ? 'exception'
-                                    : task.status === 'downloading'
-                                      ? 'active'
-                                      : 'normal'
-                            }
-                            showInfo={task.total > 0 || task.status === 'done'}
-                        />
-                        <span className="resource-task-size">
-                            {formatResourceSize(task.received)}
-                            {task.total > 0 && ` / ${formatResourceSize(task.total)}`}
-                        </span>
-                    </div>
+                    <ResourceDownloadProgress task={task} />
                     {task.error && <Alert type="error" showIcon message={task.error} />}
                 </article>
             ))}

@@ -320,7 +320,7 @@ func fetch(ctx context.Context, client *http.Client, target string) ([]byte, err
 
 // readCatalogResponse 统一设置请求标识、检查 HTTP 状态，并将目录或 HTML 响应限制在 4 MiB 内。
 func readCatalogResponse(client *http.Client, req *http.Request) ([]byte, error) {
-	req.Header.Set("User-Agent", "wd-reader/1.0 (ebook downloads; https://github.com/lbk-ones/wd-reader)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

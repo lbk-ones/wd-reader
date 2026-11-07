@@ -1,4 +1,6 @@
 export default {
+    下载进度: 'Download progress',
+    文件总大小未知: 'Total file size is unknown',
     资源类型: 'Resource type',
     请允许弹出窗口后重试: 'Allow pop-up windows and try again',
     '编辑来源与下载规则，保存后立即生效。': 'Edit sources and download rules. Save to apply changes.',
