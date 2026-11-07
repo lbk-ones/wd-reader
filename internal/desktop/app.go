@@ -19,6 +19,7 @@ import (
 
 // App struct
 type App struct {
+	downloads      resourceDownloads
 	version        string
 	reminders      reminderTimers
 	updateInstall  updateInstallation

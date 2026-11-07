@@ -8,6 +8,7 @@ export {
 };
 
 export {
+    DownloadTask,
     MiniMenuState,
     ResourceExportResult,
     ResourceImportPreview,

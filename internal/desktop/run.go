@@ -47,6 +47,7 @@ func Run(assets fs.FS, icon []byte, version string) {
 			},
 		},
 		OnShutdown: func() {
+			service.stopResourceDownloads()
 			service.CancelUpdate()
 			service.DiscardResourceImport("")
 			service.stopReminders()

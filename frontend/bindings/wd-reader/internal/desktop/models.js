@@ -9,6 +9,104 @@ import { Create as $Create } from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as book$0 from "../book/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as resourcecatalog$0 from "../resourcecatalog/models.js";
+
+export class DownloadTask {
+    /**
+     * Creates a new DownloadTask instance.
+     * @param {Partial<DownloadTask>} [$$source = {}] - The source object to create the DownloadTask.
+     */
+    constructor($$source = {}) {
+        if (!("file" in $$source)) {
+            /**
+             * @member
+             * @type {resourcecatalog$0.File}
+             */
+            this["file"] = (new resourcecatalog$0.File());
+        }
+        if (!("id" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["name"] = "";
+        }
+        if (!("url" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["url"] = "";
+        }
+        if (!("status" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["status"] = "";
+        }
+        if (!("received" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["received"] = 0;
+        }
+        if (!("total" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["total"] = 0;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["error"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["bookName"] = undefined;
+        }
+        if (!("createdAt" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["createdAt"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DownloadTask instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {DownloadTask}
+     */
+    static createFrom($$source = {}) {
+        const $$createField0_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("file" in $$parsedSource) {
+            $$parsedSource["file"] = $$createField0_0($$parsedSource["file"]);
+        }
+        return new DownloadTask(/** @type {Partial<DownloadTask>} */($$parsedSource));
+    }
+}
 
 /**
  * MiniMenuState contains display context only; commands stay in the reader window.
@@ -141,9 +239,9 @@ export class ResourceImportPreview {
      * @returns {ResourceImportPreview}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType0;
-        const $$createField2_0 = $$createType1;
-        const $$createField3_0 = $$createType2;
+        const $$createField1_0 = $$createType1;
+        const $$createField2_0 = $$createType2;
+        const $$createField3_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("cache" in $$parsedSource) {
             $$parsedSource["cache"] = $$createField1_0($$parsedSource["cache"]);
@@ -222,6 +320,7 @@ export class UpdateInfo {
 }
 
 // Private type creation functions
-const $$createType0 = book$0.FrontendCache.createFrom;
-const $$createType1 = $Create.Map($Create.Any, $Create.Any);
-const $$createType2 = book$0.ResourceImportStats.createFrom;
+const $$createType0 = resourcecatalog$0.File.createFrom;
+const $$createType1 = book$0.FrontendCache.createFrom;
+const $$createType2 = $Create.Map($Create.Any, $Create.Any);
+const $$createType3 = book$0.ResourceImportStats.createFrom;

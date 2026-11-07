@@ -1,0 +1,163 @@
+.resource-download-drawer .ant-drawer-body {
+    padding: 0 16px 16px;
+}
+.resource-download-drawer .ant-drawer-header {
+    padding: 12px 16px;
+    --wails-draggable: drag;
+    user-select: none;
+}
+.resource-download-drawer .ant-drawer-header button,
+.resource-download-drawer .ant-drawer-extra {
+    --wails-draggable: no-drag;
+}
+.resource-download-drawer .ant-tabs-nav {
+    margin-bottom: 10px;
+}
+.resource-download-intro,
+.resource-source-description {
+    font-size: 12px;
+    color: #7a827d;
+    line-height: 1.5;
+}
+.resource-download-intro {
+    margin: 0 0 10px;
+}
+.resource-catalog-sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0;
+}
+.resource-source-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 4px 7px;
+    background: #f6f8f5;
+    border: 1px solid #e8ece7;
+    border-radius: 6px;
+}
+.resource-source-chip .ant-checkbox-wrapper {
+    font-size: 12px;
+    line-height: 20px;
+}
+.resource-source-chip .ant-checkbox + span {
+    padding-inline-end: 0;
+}
+.resource-download-drawer .ant-tag {
+    margin-inline-end: 0;
+    font-size: 11px;
+    line-height: 18px;
+}
+.resource-source-chip .ant-spin {
+    display: inline-flex;
+}
+.resource-source-description {
+    margin: 2px 0 0;
+}
+.resource-results-summary {
+    color: #456653;
+    font-size: 12px;
+    margin: 12px 0 2px;
+}
+.download-resource-book {
+    padding: 10px 0;
+    border-top: 1px solid #e8ece7;
+}
+.download-resource-book h3 {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.resource-file-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    margin: 7px 0 0;
+}
+.resource-file-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.resource-file-info {
+    min-width: 0;
+    font-size: 12px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+}
+.resource-file-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.resource-file-info small,
+.resource-task-size {
+    color: #7a827d;
+    white-space: nowrap;
+    font-size: 11px;
+}
+.resource-file-row > button,
+.resource-file-info .ant-tag,
+.resource-file-info small,
+.resource-book-heading > .ant-btn,
+.resource-task-heading > .ant-tag,
+.resource-task-heading > button {
+    flex-shrink: 0;
+}
+.resource-book-heading,
+.resource-task-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.resource-book-heading-text {
+    min-width: 0;
+}
+.resource-task-heading h3 {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.resource-task-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+}
+.resource-task-progress .ant-progress {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.resource-config-path {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.resource-config-editor {
+    font-family: Consolas, monospace;
+    font-size: 12px;
+}
+@media (max-width: 420px) {
+    .resource-download-drawer .ant-drawer-body {
+        padding-inline: 12px;
+    }
+    .resource-task-progress {
+        flex-wrap: wrap;
+        gap: 0;
+    }
+    .resource-task-size {
+        width: 100%;
+    }
+}

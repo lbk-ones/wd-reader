@@ -38,7 +38,6 @@ import {
 import { GetChapterContentByChapterName } from '../bindings/wd-reader/internal/desktop/app.js';
 import useAllState from './components/lib/hooks/UseAllState';
 import { Application, Browser, Call, Events, Window } from '@wailsio/runtime';
-import { LineOutlined, PlusOutlined } from '@ant-design/icons';
 import Header from './components/bus/Header';
 import BookList from './components/bus/BookList';
 import {
@@ -59,6 +58,7 @@ import Content from './components/bus/Content.jsx';
 import UsageGuide from './components/bus/UsageGuide.jsx';
 import UpdateProgressDialog from './components/bus/UpdateProgressDialog.jsx';
 import ResourceTransfer from './components/bus/ResourceTransfer.jsx';
+import ResourceDownloads from './components/bus/ResourceDownloads.jsx';
 import { createUpdateInstaller } from './components/updateInstallation.js';
 import { calculateReadingLayout } from './components/readingLayout.js';
 import { createReadingProgress } from './components/readingProgress.js';
@@ -251,7 +251,6 @@ function App() {
         booksPath: '',
         runDirectory: '',
         downloadFromUrlVisible: false,
-        downloadFromUrlList: [null],
         sysSettingVisible: false,
         lastSearchMulu: -1,
         lastSearchMuluName: '',
@@ -1344,7 +1343,6 @@ function App() {
                     if (option.id === 'download') {
                         setState({
                             downloadFromUrlVisible: true,
-                            downloadFromUrlList: [null],
                         });
                     }
                 }}
@@ -1486,151 +1484,12 @@ function App() {
                 </div>
             )}
 
-            <Drawer
-                title={t('图书下载')}
-                placement={'top'}
-                // width={500}
-                onClose={function () {
-                    setState({
-                        downloadFromUrlVisible: false,
-                        downloadFromUrlList: [null],
-                    });
-                }}
-                open={getState().downloadFromUrlVisible}
-                extra={
-                    <Space>
-                        <Button
-                            onClick={(e) => {
-                                message.info(t('已取消操作'));
-                                setState({
-                                    downloadFromUrlVisible: false,
-                                    downloadFromUrlList: [null],
-                                });
-                            }}
-                        >
-                            {t('取消')}
-                        </Button>
-                        <Button
-                            type="primary"
-                            onClick={(e) => {
-                                let filter1 = getState().downloadFromUrlList.filter(Boolean);
-                                if (isEmpty(filter1)) {
-                                    message.error(t('请输入要下载的地址在提交'));
-                                } else {
-                                    AddFleAndHandlerRes(filter1);
-                                }
-                                setState({
-                                    downloadFromUrlVisible: false,
-                                    downloadFromUrlList: [null],
-                                });
-                            }}
-                        >
-                            {t('提交')}
-                        </Button>
-                    </Space>
-                }
-            >
-                <Alert className={'mb-10'} message={t('最好下载txt、epub、mobi格式，解析最快最稳定')} type="info" />
-
-                <p className={'mb-5'}>
-                    <Space>
-                        <Button
-                            size={'small'}
-                            onClick={(e) => {
-                                let downloadFromUrlList = getState().downloadFromUrlList;
-                                downloadFromUrlList.push(null);
-                                setState({
-                                    downloadFromUrlList,
-                                });
-                            }}
-                        >
-                            <PlusOutlined />
-                        </Button>
-
-                        <Button
-                            size={'small'}
-                            onClick={(e) => {
-                                let downloadFromUrlList = getState().downloadFromUrlList;
-                                if (downloadFromUrlList.length > 1) {
-                                    downloadFromUrlList.pop();
-                                    setState({
-                                        downloadFromUrlList,
-                                    });
-                                }
-                            }}
-                        >
-                            <LineOutlined />
-                        </Button>
-                    </Space>
-                </p>
-
-                <div className="flex flex-column-nowrap gap5">
-                    {getState().downloadFromUrlList.map((ite, index) => {
-                        return (
-                            <Input
-                                key={'downloadFromUrlList-' + index}
-                                style={{ width: '100%' }}
-                                onChange={(e) => {
-                                    let value = e.target.value;
-                                    let s = window.decodeURI(value);
-                                    let s1 = window.encodeURI(s);
-                                    let downloadFromUrlList = getState().downloadFromUrlList;
-                                    downloadFromUrlList[index] = s1;
-                                    setState({
-                                        downloadFromUrlList,
-                                    });
-                                }}
-                                placeholder={t('请输入图书文件地址，点击提交即可下载')}
-                            />
-                        );
-                    })}
-                </div>
-
-                <Alert
-                    className={'mt-10 mb-10'}
-                    message={t('内置下载地址(点击跳转)：强烈推荐Z-Lib世界最大电子图书馆（可能需要翻墙）')}
-                    type="info"
-                />
-
-                <p className={'flex flex-row flex-wrap gap5'}>
-                    <Button
-                        title={t('zlib,世界最大的电子图书馆，什么都可以下！可能要魔法网')}
-                        onClick={() => {
-                            Browser.OpenURL('https://www.bing.com/search?q=Z-Library');
-                        }}
-                    >
-                        Z-Lib
-                    </Button>
-                    {/*<Button title={"知轩藏书-精校版小说下载-校对全本TXT小说下载网"} onClick={() => {*/}
-                    {/*    Browser.OpenURL("https://zxcsol.com/")*/}
-                    {/*}}>知轩藏书</Button>*/}
-                    <Button
-                        title={t('80电子书')}
-                        onClick={() => {
-                            Browser.OpenURL('https://www.jiumodiary.com/');
-                        }}
-                    >
-                        {t('鸠摩搜索')}
-                    </Button>
-                    <Button
-                        title={t('顶点小说')}
-                        onClick={() => {
-                            Browser.OpenURL('https://www.najjdd.com/');
-                        }}
-                    >
-                        {t('顶点小说')}
-                    </Button>
-
-                    <Button
-                        title={'epubor-converter'}
-                        onClick={() => {
-                            Browser.OpenURL('https://s3.amazonaws.com/download.epubor.com.bk/epubor-converter.exe');
-                        }}
-                    >
-                        {t('电子书格式转换器下载')}
-                    </Button>
-                </p>
-            </Drawer>
+            <ResourceDownloads
+                open={state.downloadFromUrlVisible}
+                onClose={() => setState({ downloadFromUrlVisible: false })}
+                onDownloaded={() => reloadBookList()}
+                disabled={resourcesBusy}
+            />
 
             {(display || resourcesBusy) && (
                 <Drawer

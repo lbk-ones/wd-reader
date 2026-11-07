@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "hf-novelstory",
+      "name": "中文TXT目录 · HF",
+      "enabled": true,
+      "kind": "file-index",
+      "description": "按公开资源目录的文件名查找 TXT，显示文件大小；版本与完整度以实际文件为准。",
+      "indexUrl": "https://huggingface.co/api/datasets/NovelStory/NovelStory/tree/main?recursive=true&limit=1000",
+      "downloadUrl": "https://huggingface.co/datasets/NovelStory/NovelStory/resolve/main/{file}?download=true",
+      "bookUrl": "https://huggingface.co/datasets/NovelStory/NovelStory/blob/main/{file}",
+      "authorHints": {
+        "凡人修仙传": "忘语",
+        "大奉打更人": "卖报小郎君",
+        "道诡异仙": "狐尾的笔",
+        "仙工开物": "蛊真人"
+      }
+    },
+    {
+      "id": "jjxs",
+      "name": "久久小说网 · TXT",
+      "enabled": true,
+      "kind": "html",
+      "description": "中文电子书 TXT 下载，按书名或作者查询，读取详情页的实际下载地址。",
+      "searchUrl": "https://www.ijjxsxzw.com/e/search/index.php",
+      "searchMethod": "POST",
+      "searchForm": {
+        "show": "title,writer",
+        "tbname": "download",
+        "tempid": "2",
+        "orderby": "newstime",
+        "myorder": "0",
+        "keyboard": "{query}"
+      },
+      "bookLinkPattern": "^/txt/[0-9]+[.]html$",
+      "downloadPagePattern": "^/txt/dl-[0-9]+-[0-9]+[.]html$",
+      "downloadLinkPattern": "^https://jjxswshuku[.]com/e/DownSys/doaction[.]php[?].*pathid=0(&|$)",
+      "downloadFormat": "txt",
+      "authorPattern": "书籍作者[：:]</strong>[[:space:]]*<a[^>]*>([^<]+)</a>",
+      "maxSearchPages": 1
+    },
+    {
+      "id": "sudugu",
+      "name": "速读谷 · 分卷TXT",
+      "enabled": true,
+      "kind": "html",
+      "description": "中文小说分卷 TXT 下载，文件名标明章节范围；连载作品以来源当前提供的章节为准。",
+      "searchUrl": "https://www.suduguu.com/i/sor.aspx?key={query}",
+      "bookLinkPattern": "^/[0-9]+/$",
+      "downloadPagePattern": "^/[0-9]+/txt[.]html$",
+      "downloadLinkPattern": "^https://www[.]suduguu[.]com/txt/[?]id=[0-9]+&p=[0-9]+$",
+      "downloadFormat": "txt",
+      "fileNameFromLink": true,
+      "titlePattern": "(?s)<h1[^>]*>.*?<a[^>]*>([^<]+)</a>",
+      "authorPattern": "作者[：:]([^<]+)</a>",
+      "maxSearchPages": 2,
+      "aliases": {
+        "时停起手": ["时停起手，邪神也得给我跪下！"]
+      },
+      "authorHints": {
+        "斗破苍穹": "天蚕土豆",
+        "斗罗大陆": "唐家三少",
+        "神印王座": "唐家三少",
+        "仙逆": "耳根"
+      }
+    },
+    {
+      "id": "ixdzs",
+      "name": "爱下电子书 · 中文网文",
+      "enabled": true,
+      "kind": "html",
+      "description": "中文网文 TXT 资源；ZIP 下载后自动解压并加入书架，优先显示同名原作。",
+      "searchUrl": "https://ixdzs8.com/bsearch?q={query}",
+      "bookLinkPattern": "^/read/[0-9]+/$",
+      "downloadLinkPattern": "^https://down[0-9]+[.]ixdzs8[.]com/[0-9]+[.]zip$",
+      "titleMeta": "og:novel:book_name",
+      "authorMeta": "og:novel:author",
+      "zipFormat": "txt",
+      "aliases": {
+        "我有一座冒险屋": ["我有一座恐怖屋"]
+      },
+      "maxSearchPages": 4,
+      "authorHints": {
+        "神秘复苏": "佛前献花",
+        "神印王座": "唐家三少"
+      }
+    },
+    {
+      "id": "archive",
+      "name": "Internet Archive",
+      "enabled": true,
+      "kind": "archive",
+      "description": "查询书名并读取实际文件列表，提供可公开下载的 TXT、EPUB、MOBI 和 AZW3。",
+      "searchUrl": "https://archive.org/advancedsearch.php?q=title:{query}%20AND%20mediatype:texts%20AND%20NOT%20access-restricted-item:true&fl[]=identifier&fl[]=title&fl[]=creator&rows=8&page=1&output=json",
+      "detailUrl": "https://archive.org/metadata/{id}",
+      "downloadUrl": "https://archive.org/download/{id}/{file}",
+      "bookUrl": "https://archive.org/details/{id}"
+    },
+    {
+      "id": "gutenberg",
+      "name": "Project Gutenberg",
+      "enabled": true,
+      "kind": "gutenberg",
+      "description": "经典文学电子书，可直接下载 EPUB、MOBI 等格式，以外文作品为主。",
+      "searchUrl": "https://www.gutenberg.org/ebooks/search/?query={query}&format=opds",
+      "detailUrl": "https://www.gutenberg.org/ebooks/{id}.opds",
+      "bookUrl": "https://www.gutenberg.org/ebooks/{id}"
+    }
+  ]
+}

@@ -294,11 +294,11 @@ function BookList(props, ref) {
                             className="library-download-button"
                             size="small"
                             icon={<DownloadOutlined />}
-                            aria-label={t('图书下载')}
-                            title={t('图书下载')}
+                            aria-label={t('资源下载')}
+                            title={t('资源下载')}
                             onClick={() => props.onSelect({ id: 'download' })}
                         >
-                            <span className="library-download-label">{t('图书下载')}</span>
+                            <span className="library-download-label">{t('资源下载')}</span>
                         </Button>
                     </div>
                 </div>
