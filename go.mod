@@ -3,6 +3,8 @@ module wd-reader
 go 1.26.0
 
 require (
+	github.com/gen2brain/avif v0.6.0
+	github.com/gen2brain/heic v0.7.2
 	github.com/google/uuid v1.6.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
@@ -17,6 +19,7 @@ require (
 	github.com/ebitengine/purego v0.11.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
+	github.com/tetratelabs/wazero v1.12.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect

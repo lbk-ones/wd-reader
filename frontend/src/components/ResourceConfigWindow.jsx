@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, App, Button, Input, Space, Switch, Tag, Typography, message } from 'antd';
-import { CloseOutlined, ReloadOutlined, SaveOutlined, UndoOutlined } from '@ant-design/icons';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, App, Button, Empty, Popconfirm, Space, Tag, Typography, message } from 'antd';
+import {
+    CloseOutlined,
+    DeleteOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    SaveOutlined,
+    UndoOutlined,
+} from '@ant-design/icons';
 import { Call } from '@wailsio/runtime';
 import { t, useI18n } from '../i18n/index.jsx';
+import ResourceSourceForm, { readConfigDraft, sourceKinds, writeConfigDraft } from './ResourceSourceForm.jsx';
 import './ResourceConfigWindow.css';
 
 const invoke = (name, ...args) => Call.ByName(`wd-reader/internal/desktop.App.${name}`, ...args);
@@ -10,7 +18,8 @@ const invoke = (name, ...args) => Call.ByName(`wd-reader/internal/desktop.App.${
 export default function ResourceConfigWindow() {
     useI18n();
     const { modal } = App.useApp();
-    const [content, setContent] = useState('');
+    const [draft, setDraft] = useState(null);
+    const [selected, setSelected] = useState(0);
     const [saved, setSaved] = useState('');
     const [path, setPath] = useState('');
     const [loading, setLoading] = useState(true);
@@ -18,26 +27,10 @@ export default function ResourceConfigWindow() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const saveRef = useRef(null);
-    const dirty = content !== saved;
-    const parsed = useMemo(() => {
-        try {
-            const config = JSON.parse(content);
-            return Array.isArray(config.sources) &&
-                config.sources.every(
-                    (source) =>
-                        source &&
-                        typeof source === 'object' &&
-                        !Array.isArray(source) &&
-                        ['id', 'name', 'kind'].every(
-                            (key) => source[key] === undefined || typeof source[key] === 'string',
-                        ),
-                )
-                ? config
-                : null;
-        } catch {
-            return null;
-        }
-    }, [content]);
+    const snapshot = draft ? JSON.stringify(draft) : '';
+    const dirty = snapshot !== saved;
+    const source = draft?.sources[selected];
+    const busy = loading || saving;
 
     async function load() {
         setLoading(true);
@@ -45,9 +38,11 @@ export default function ResourceConfigWindow() {
         setNotice('');
         try {
             const next = await invoke('GetResourceSources');
-            setContent(next.content);
-            setSaved(next.content);
             setPath(next.path);
+            const loaded = readConfigDraft(next.content);
+            setDraft(loaded);
+            setSaved(JSON.stringify(loaded));
+            setSelected(0);
             setError(next.error || '');
         } catch (failure) {
             setError(String(failure));
@@ -74,8 +69,8 @@ export default function ResourceConfigWindow() {
         setSaving(true);
         setError('');
         try {
-            await invoke('SaveResourceSources', content);
-            setSaved(content);
+            await invoke('SaveResourceSources', writeConfigDraft(draft));
+            setSaved(snapshot);
             setNotice('');
             if (typeof BroadcastChannel === 'function') {
                 const channel = new BroadcastChannel('wd-reader-resource-sources');
@@ -104,7 +99,8 @@ export default function ResourceConfigWindow() {
         setLoading(true);
         try {
             const defaults = await invoke('GetDefaultResourceSources');
-            setContent(JSON.stringify(JSON.parse(defaults), null, 2));
+            setDraft(readConfigDraft(defaults));
+            setSelected(0);
             setError('');
             setNotice(t('默认配置已载入，点击保存后生效。'));
         } catch (failure) {
@@ -120,14 +116,6 @@ export default function ResourceConfigWindow() {
         }
         modal.confirm({ title: t('放弃未保存的修改？'), content: t('重新加载会读取磁盘上的配置。'), onOk: load });
     }
-    function format() {
-        try {
-            setContent(JSON.stringify(JSON.parse(content), null, 2));
-            setError('');
-        } catch (failure) {
-            setError(String(failure));
-        }
-    }
     async function close() {
         try {
             if (!(await invoke('CloseResourceConfig'))) window.close();
@@ -135,12 +123,24 @@ export default function ResourceConfigWindow() {
             setError(String(failure));
         }
     }
-    function toggleSource(index, enabled) {
-        const next = {
-            ...parsed,
-            sources: parsed.sources.map((source, i) => (i === index ? { ...source, enabled } : source)),
-        };
-        setContent(JSON.stringify(next, null, 2));
+    function addSource() {
+        const current = draft || { version: 1, sources: [] };
+        setSelected(current.sources.length);
+        setDraft({
+            ...current,
+            sources: [...current.sources, { id: '', name: '', enabled: true, kind: 'html', description: '' }],
+        });
+    }
+    function updateSource(next) {
+        setDraft((current) => ({
+            ...current,
+            sources: current.sources.map((item, index) => (index === selected ? next : item)),
+        }));
+    }
+    function removeSource() {
+        const sources = draft.sources.filter((_, index) => index !== selected);
+        setDraft({ ...draft, sources });
+        setSelected(Math.max(0, Math.min(selected, sources.length - 1)));
     }
     return (
         <main className="resource-config-window">
@@ -176,40 +176,55 @@ export default function ResourceConfigWindow() {
             <div className="resource-config-workspace">
                 <aside className="resource-config-sidebar">
                     <div className="resource-config-sidebar-heading">
-                        {t('下载来源')} <Tag>{parsed?.sources.length ?? '—'}</Tag>
-                    </div>
-                    {parsed?.sources.map((source, index) => (
-                        <div className="resource-config-source" key={index}>
-                            <div>
-                                <strong>{source.name || source.id || '—'}</strong>
-                                <small>{source.kind || '—'}</small>
-                            </div>
-                            <Switch
-                                size="small"
-                                checked={!!source.enabled}
-                                disabled={loading || saving}
-                                aria-label={`${t('启用来源')} ${source.name || source.id}`}
-                                onChange={(checked) => toggleSource(index, checked)}
-                            />
-                        </div>
-                    ))}
-                    {!parsed && <p>{t('输入有效的 JSON 后显示来源。')}</p>}
-                </aside>
-                <section className="resource-config-editor-pane">
-                    <div className="resource-config-editor-heading">
-                        <strong>resource-sources.json</strong>
-                        <Button size="small" type="text" onClick={format} disabled={loading || saving}>
-                            {t('格式化 JSON')}
+                        <span>
+                            {t('下载来源')} <Tag>{draft?.sources.length ?? 0}</Tag>
+                        </span>
+                        <Button
+                            size="small"
+                            icon={<PlusOutlined />}
+                            onClick={addSource}
+                            disabled={busy || draft?.sources.length >= 20}
+                        >
+                            {t('新增来源')}
                         </Button>
                     </div>
-                    <Input.TextArea
-                        value={content}
-                        onChange={(event) => setContent(event.target.value)}
-                        disabled={loading || saving}
-                        spellCheck={false}
-                        aria-label={t('资源配置内容')}
-                        className="resource-config-code"
-                    />
+                    {draft?.sources.map((item, index) => (
+                        <button
+                            type="button"
+                            className="resource-config-source"
+                            aria-pressed={selected === index}
+                            key={index}
+                            onClick={() => setSelected(index)}
+                        >
+                            <span>
+                                <strong>{item.name || item.id || t('未命名来源')}</strong>
+                                <small>{t(sourceKinds[item.kind] || item.kind || '—')}</small>
+                            </span>
+                            {!item.enabled && <Tag>{t('已禁用')}</Tag>}
+                        </button>
+                    ))}
+                </aside>
+                <section className="resource-config-editor-pane">
+                    {source ? (
+                        <>
+                            <div className="resource-config-editor-heading">
+                                <strong>{t('编辑来源')}</strong>
+                                <Popconfirm title={t('移除当前来源？')} onConfirm={removeSource}>
+                                    <Button size="small" type="text" danger icon={<DeleteOutlined />} disabled={busy}>
+                                        {t('移除来源')}
+                                    </Button>
+                                </Popconfirm>
+                            </div>
+                            <ResourceSourceForm
+                                key={selected}
+                                source={source}
+                                onChange={updateSource}
+                                disabled={busy}
+                            />
+                        </>
+                    ) : (
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('点击新增来源开始配置')} />
+                    )}
                 </section>
             </div>
             <footer className="resource-config-footer">

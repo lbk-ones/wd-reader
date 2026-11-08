@@ -34,7 +34,7 @@
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: 230px minmax(0, 1fr);
+    grid-template-columns: 248px minmax(0, 1fr);
     gap: 16px;
 }
 .resource-config-sidebar {
@@ -52,31 +52,36 @@
 }
 .resource-config-source {
     display: flex;
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 12px 0;
-    border-bottom: 1px solid #e0e5d9;
+    padding: 10px;
+    margin-bottom: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
 }
-.resource-config-source > div {
+.resource-config-source:hover,
+.resource-config-source[aria-pressed='true'] {
+    background: #fffefa;
+    border-color: #dfe5d8;
+}
+.resource-config-source span {
     min-width: 0;
 }
 .resource-config-source strong {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     overflow-wrap: anywhere;
 }
 .resource-config-source small {
     display: block;
-    color: #7a827d;
-    margin-top: 4px;
-}
-.resource-config-source button {
-    flex-shrink: 0;
-}
-.resource-config-sidebar > p {
-    font-size: 12px;
-    color: #7a827d;
+    color: #69756c;
+    margin-top: 3px;
 }
 .resource-config-editor-pane {
     min-width: 0;
@@ -98,22 +103,45 @@
     border-bottom: 1px solid #e3e6de;
     font-size: 12px;
 }
-.resource-config-code.ant-input {
-    flex: 1;
-    min-height: 0;
-    resize: none;
-    border: 0;
-    border-radius: 0;
-    padding: 14px 16px;
-    font:
-        13px/1.7 Consolas,
-        'SFMono-Regular',
-        monospace;
-    tab-size: 2;
+.resource-source-form {
     overflow: auto;
+    padding: 16px;
 }
-.resource-config-code.ant-input:focus {
-    box-shadow: none;
+.resource-source-form h3 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: #456653;
+}
+.resource-source-form h3:not(:first-child) {
+    margin-top: 16px;
+}
+.resource-source-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+}
+.resource-source-fields .ant-form-item {
+    margin-bottom: 14px;
+}
+.resource-source-full {
+    grid-column: 1 / -1;
+}
+.resource-mapping-fields {
+    margin-bottom: 14px;
+    padding: 10px;
+    background: #f4f6ef;
+    border-radius: 6px;
+}
+.resource-mapping-heading {
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.resource-mapping-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    gap: 8px;
+    margin-bottom: 6px;
 }
 .resource-config-footer {
     display: flex;
@@ -134,8 +162,12 @@
     }
     .resource-config-workspace {
         grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
     }
     .resource-config-sidebar {
-        display: none;
+        max-height: 150px;
+    }
+    .resource-source-fields {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

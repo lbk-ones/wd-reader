@@ -84,8 +84,13 @@ func indexURL(template, file string) string {
 	return strings.ReplaceAll(template, "{file}", strings.Join(parts, "/"))
 }
 
-// searchFileIndex 在公开文件目录内按文件名匹配书籍，过滤异常路径和不支持的文件，最多返回 8 项。
-func searchFileIndex(ctx context.Context, client *http.Client, s Source, query string) (SearchResponse, error) {
+// ListIndexedBooks lists supported files from a configured file index.
+func ListIndexedBooks(ctx context.Context, client *http.Client, s Source) ([]Book, error) {
+	result, err := indexedBooks(ctx, client, s, "")
+	return result.Books, err
+}
+
+func indexedBooks(ctx context.Context, client *http.Client, s Source, query string) (SearchResponse, error) {
 	result := SearchResponse{Books: []Book{}}
 	files, err := loadFileIndex(ctx, client, s.IndexURL)
 	if err != nil {
@@ -132,6 +137,15 @@ func searchFileIndex(ctx context.Context, client *http.Client, s Source, query s
 			matchType = "exact"
 		}
 		result.Books = append(result.Books, Book{ID: file.Path, Title: title, Author: author, URL: bookURL, SourceID: s.ID, SourceName: s.Name, MatchType: matchType, Files: []File{{URL: target, Name: SafeFileName(name, ext), Format: strings.ToUpper(ext[1:]), Size: file.Size}}})
+	}
+	return result, nil
+}
+
+// searchFileIndex 在公开文件目录内按文件名匹配书籍，最多返回 8 项。
+func searchFileIndex(ctx context.Context, client *http.Client, s Source, query string) (SearchResponse, error) {
+	result, err := indexedBooks(ctx, client, s, query)
+	if err != nil {
+		return result, err
 	}
 	// 同名结果优先，其余按书名排序，最后截取最多 8 项。
 	sort.SliceStable(result.Books, func(i, j int) bool {

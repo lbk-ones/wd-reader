@@ -1,27 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-    Alert,
-    Button,
-    Checkbox,
-    Drawer,
-    Empty,
-    Input,
-    Select,
-    Space,
-    Spin,
-    Tabs,
-    Tag,
-    Tooltip,
-    message,
-} from 'antd';
+import { Alert, Button, Checkbox, Drawer, Empty, Input, Select, Space, Spin, Tabs, Tag, Tooltip, message } from 'antd';
 import { DownloadOutlined, ExportOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { Browser, Call, Events } from '@wailsio/runtime';
 import { t, useI18n } from '../../i18n/index.jsx';
-import {
-    formatResourceSize,
-    isDownloadActive,
-    mergeResourceResults,
-} from '../resourceDownloads.js';
+import { formatResourceSize, isDownloadActive, mergeResourceResults } from '../resourceDownloads.js';
 import './ResourceDownloads.css';
 import ResourceDownloadProgress from './ResourceDownloadProgress.jsx';
 
