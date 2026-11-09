@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+// Ordinal parses a chapter number in the same formats used by the detector.
+func Ordinal(text string) int {
+	return ordinal(text)
+}
+
 // ordinal 将阿拉伯数字、英文数词、罗马数字及中文数字统一为整数，用于相邻编号加分。
 // 中文同时支持常用字、大写数字和逐位写法；无法识别的非空输入返回负数，不据此拒绝标题。
 func ordinal(text string) int {

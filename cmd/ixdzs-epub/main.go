@@ -19,16 +19,17 @@ import (
 	"wd-reader/internal/epubexport"
 )
 
-const defaultOutput = `C:\Users\bokun\Downloads\book-list-ixdzs`
+const defaultOutput = `F:\bk-books\book-list-ixdzs`
 
 type options struct {
+	historyPath               string
 	out, id                   string
 	startPage, limit, workers int
 	list, allowIncomplete     bool
 }
 
 func main() {
-	var opts options
+	opts := options{historyPath: filepath.Join(epubexport.HistoryDir, "ixdzs-export.jsonl")}
 	flag.StringVar(&opts.out, "out", defaultOutput, "EPUB 输出目录")
 	flag.StringVar(&opts.id, "book", "", "只处理指定书籍 ID（详情页网址中的数字）")
 	flag.IntVar(&opts.startPage, "start-page", 1, "每个分类从第几页开始")
@@ -36,7 +37,7 @@ func main() {
 	flag.IntVar(&opts.workers, "workers", 20, "同时导出的书籍数量")
 	flag.BoolVar(&opts.list, "list", false, "只列出书籍，不生成 EPUB")
 	flag.BoolVar(&opts.allowIncomplete, "allow-incomplete", true, "跳过 TXT 中缺正文的章节并标记正文不全；设为 false 时尝试从网页补抓")
-	delay := flag.Duration("delay", 500*time.Millisecond, "所有书籍共享的请求间隔")
+	delay := flag.Duration("delay", 200*time.Millisecond, "所有书籍共享的请求间隔")
 	flag.Parse()
 	if flag.NArg() != 0 || opts.startPage < 1 || opts.limit < 0 || opts.workers < 1 || *delay < 0 ||
 		(opts.id != "" && !bookPath.MatchString("/read/"+opts.id+"/")) {
@@ -58,6 +59,18 @@ func execute(opts options, delay time.Duration) error {
 }
 
 func run(ctx context.Context, src *source, opts options) error {
+	if opts.list {
+		opts.historyPath = ""
+	}
+	history, err := epubexport.OpenHistory(opts.historyPath, opts.out)
+	if err != nil {
+		return fmt.Errorf("打开导出记录: %w", err)
+	}
+	defer history.Close()
+	if opts.historyPath != "" && opts.id == "" {
+		log.Printf("使用导出记录 %s", opts.historyPath)
+	}
+
 	if opts.id != "" {
 		b, err := src.details(ctx, opts.id)
 		if err != nil {
@@ -67,7 +80,7 @@ func run(ctx context.Context, src *source, opts options) error {
 			fmt.Printf("%s\t%s\t%s\t%s\n", b.id, b.Category, b.Title, b.Author)
 			return nil
 		}
-		return exportBook(ctx, src, opts, b)
+		return exportBook(ctx, src, opts, b, history)
 	}
 
 	slots := make(chan struct{}, opts.workers)
@@ -87,7 +100,7 @@ func run(ctx context.Context, src *source, opts options) error {
 			defer func() { <-slots }()
 			b, err := src.details(ctx, entry.id)
 			if err == nil {
-				err = exportBook(ctx, src, opts, b)
+				err = exportBook(ctx, src, opts, b, history)
 			}
 			if err != nil {
 				failures.Add(1)
@@ -95,6 +108,9 @@ func run(ctx context.Context, src *source, opts options) error {
 			}
 		})
 		return nil
+	}, func(id string) bool {
+		path := history.CompletedPath(id)
+		return path != "" && (opts.allowIncomplete || !strings.HasSuffix(path, "（正文不全）.epub"))
 	})
 	workers.Wait()
 	if ctx.Err() != nil {
@@ -106,7 +122,7 @@ func run(ctx context.Context, src *source, opts options) error {
 	return err
 }
 
-func walkCompleted(ctx context.Context, src *source, opts options, visit func(listing) error) (int, error) {
+func walkCompleted(ctx context.Context, src *source, opts options, visit func(listing) error, skip func(string) bool) (int, error) {
 	categories, err := src.categories(ctx)
 	if err != nil {
 		return 0, err
@@ -123,7 +139,7 @@ func walkCompleted(ctx context.Context, src *source, opts options, visit func(li
 				if err := ctx.Err(); err != nil {
 					return len(seen), err
 				}
-				if seen[entry.id] {
+				if seen[entry.id] || (skip != nil && skip(entry.id)) {
 					continue
 				}
 				if err := visit(entry); err != nil {
@@ -143,26 +159,39 @@ func walkCompleted(ctx context.Context, src *source, opts options, visit func(li
 	return len(seen), ctx.Err()
 }
 
-func exportBook(ctx context.Context, src *source, opts options, b book) error {
+func exportBook(ctx context.Context, src *source, opts options, b book, history *epubexport.History) error {
 	dir := filepath.Join(opts.out, epubexport.SafeName(b.Category))
 	target := filepath.Join(dir, epubexport.SafeName(b.Title)+" ["+b.id+"].epub")
 	if info, err := os.Stat(target); err == nil {
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("输出路径已被占用: %s", target)
 		}
-		log.Printf("跳过已有文件 %s", target)
-		return nil
+		//log.Printf("跳过已有文件 %s", target)
+		return history.Record(b.id, target)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	log.Printf("导出《%s》 · %s，正在下载 ZIP", b.Title, b.Category)
-	bodies, err := src.zipBodies(ctx, b)
+	//log.Printf("导出《%s》 · %s，正在下载 ZIP", b.Title, b.Category)
+	text, err := src.zipText(ctx, b)
 	if err != nil {
 		return err
 	}
-	titles, paths, bodies, err := uniqueChapters(b, bodies)
-	if err != nil {
-		return err
+	bodies, splitErr := splitTXT(text, b)
+	if bodies == nil && splitErr != nil {
+		return splitErr
+	}
+	if splitErr != nil {
+		if titles, nativeBodies := nativeTXT(text, b); len(titles) > 0 {
+			log.Printf("《%s》网页和 ZIP 目录不同，使用 ZIP 原始章节（%d 章）", b.Title, len(titles))
+			b.titles, b.paths, bodies = titles, make([]string, len(titles)), nativeBodies
+			splitErr = nil
+		} else {
+			log.Printf("《%s》ZIP 正文部分对齐: %v", b.Title, splitErr)
+		}
+	}
+	titles, paths, bodies := uniqueChapters(b, bodies)
+	if len(titles) == 0 {
+		return fmt.Errorf("TXT 未找到可导出的章节")
 	}
 	missing := 0
 	for i, body := range bodies {
@@ -171,7 +200,7 @@ func exportBook(ctx context.Context, src *source, opts options, b book) error {
 		}
 		missing++
 		if !opts.allowIncomplete {
-			paragraphs, err := src.chapterBody(ctx, paths[i])
+			paragraphs, err := src.chapterBody(ctx, paths[i], titles[i])
 			if err != nil {
 				return fmt.Errorf("TXT 第 %d 章《%s》缺正文，补抓失败: %w", i+1, titles[i], err)
 			}
@@ -180,13 +209,13 @@ func exportBook(ctx context.Context, src *source, opts options, b book) error {
 	}
 	if opts.allowIncomplete && missing > 0 {
 		if missing == len(titles) {
-			return fmt.Errorf("TXT 全部章节缺正文")
+			return errors.Join(fmt.Errorf("ZIP 中没有可用的章节正文，可用 -allow-incomplete=false 尝试网页补抓"), splitErr)
 		}
 		log.Printf("《%s》TXT 缺少 %d/%d 章正文，另存可用章节", b.Title, missing, len(titles))
 		target = strings.TrimSuffix(target, ".epub") + "（正文不全）.epub"
 		if info, err := os.Stat(target); err == nil && info.Mode().IsRegular() {
 			log.Printf("跳过已有文件 %s", target)
-			return nil
+			return history.Record(b.id, target)
 		}
 		b.Description = append([]string{fmt.Sprintf("来源 TXT 缺少 %d/%d 章正文，本文件仅收录有正文的章节。", missing, len(titles))}, b.Description...)
 		validTitles, validBodies := titles[:0], bodies[:0]
@@ -210,6 +239,13 @@ func exportBook(ctx context.Context, src *source, opts options, b book) error {
 	if err != nil {
 		return fmt.Errorf("转换封面: %w", err)
 	}
+	if !supportedCover(cover) {
+		log.Printf("《%s》原封面未返回图片，使用默认封面", b.Title)
+		cover, err = epubexport.DefaultCover()
+		if err != nil {
+			return fmt.Errorf("生成默认封面: %w", err)
+		}
+	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -220,28 +256,42 @@ func exportBook(ctx context.Context, src *source, opts options, b book) error {
 		return err
 	}
 	log.Printf("已保存 %s（%d 章）", target, len(titles))
-	return nil
+	return history.Record(b.id, target)
 }
 
-func uniqueChapters(b book, bodies [][]string) ([]string, []string, [][]string, error) {
+func uniqueChapters(b book, bodies [][]string) ([]string, []string, [][]string) {
 	var titles, paths []string
 	var uniqueBodies [][]string
-	seen := make(map[string]int)
+	type chapterKey struct{ path, title string }
+	seen := make(map[chapterKey][]int)
 	for i, path := range b.paths {
-		if j, ok := seen[path]; ok {
-			if len(uniqueBodies[j]) == 0 {
+		if path == "" && len(bodies[i]) == 0 {
+			continue
+		}
+		key := chapterKey{path, b.titles[i]}
+		duplicate := false
+		for _, j := range seen[key] {
+			switch {
+			case len(uniqueBodies[j]) == 0:
 				uniqueBodies[j] = bodies[i]
-			} else if len(bodies[i]) > 0 && !slices.Equal(uniqueBodies[j], bodies[i]) {
-				return nil, nil, nil, fmt.Errorf("重复章节 %s 对应不同的 TXT 正文", path)
+				duplicate = true
+			case len(bodies[i]) == 0 || slices.Equal(uniqueBodies[j], bodies[i]):
+				duplicate = true
 			}
+			if duplicate {
+				break
+			}
+		}
+		if duplicate {
 			continue
 		}
 		if path != "" {
-			seen[path] = len(titles)
+			// Some URLs and titles are reused for distinct chapters in the TXT.
+			seen[key] = append(seen[key], len(titles))
 		}
 		titles = append(titles, b.titles[i])
 		paths = append(paths, path)
 		uniqueBodies = append(uniqueBodies, bodies[i])
 	}
-	return titles, paths, uniqueBodies, nil
+	return titles, paths, uniqueBodies
 }

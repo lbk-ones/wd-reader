@@ -21,7 +21,7 @@ import (
 	"wd-reader/internal/resourcecatalog"
 )
 
-const defaultOutput = `C:\Users\bokun\Downloads\book-list-hf-novelstory`
+const defaultOutput = `F:\bk-books\book-list-hf-novelstory`
 
 type options struct {
 	out, book      string

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -16,19 +17,19 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/charset"
 
-	"wd-reader/internal/chapterdetect"
 	"wd-reader/internal/epubexport"
 )
 
 const site = "https://ixdzs8.com"
+const unnamedTitle = "（无题）"
 
 var (
-	bookPath     = regexp.MustCompile("^/read/([1-9][0-9]*)/$")
-	categoryPath = regexp.MustCompile("^/sort/([0-9]+)/$")
-	volumeLabel  = regexp.MustCompile("^(?:第[0-9零〇一二三四五六七八九十百千两]+[卷部篇]|正文|番外)(?:$|[ 　：:、])")
-	chapterLabel = regexp.MustCompile(chapterdetect.DefaultPattern)
-	zipHost      = regexp.MustCompile("^down[0-9]+[.]ixdzs8[.]com$")
-	imgHost      = regexp.MustCompile("^img[0-9]*[.]ixdzs8?[.]com$")
+	bookPath          = regexp.MustCompile("^/read/([1-9][0-9]*)/$")
+	categoryPath      = regexp.MustCompile("^/sort/([0-9]+)/$")
+	volumeLabel       = regexp.MustCompile("^(?:第?[0-9零〇一二三四五六七八九十百千两]+[卷部篇册]|卷[0-9零〇一二三四五六七八九十百千两]+|正文|番外)(?:$|[ 　：:、])")
+	zipHost           = regexp.MustCompile("^down[0-9]+[.]ixdzs8[.]com$")
+	imgHost           = regexp.MustCompile("^img[0-9]*[.]ixdzs8?[.]com$")
+	errEmptyCatalogue = errors.New("站点显示 0 章，暂无可用章节目录")
 )
 
 type listing struct{ id, title string }
@@ -83,6 +84,10 @@ func (s *source) allowed(u *url.URL) bool {
 }
 
 func (s *source) get(ctx context.Context, path, referer string) ([]byte, string, error) {
+	return s.request(ctx, http.MethodGet, path, referer, nil)
+}
+
+func (s *source) request(ctx context.Context, method, path, referer string, form url.Values) ([]byte, string, error) {
 	u, err := s.base.Parse(path)
 	if err != nil {
 		return nil, "", err
@@ -90,14 +95,7 @@ func (s *source) get(ctx context.Context, path, referer string) ([]byte, string,
 	if !s.allowed(u) {
 		return nil, "", fmt.Errorf("来源以外的地址: %s", u)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, "", err
-	}
-	req.Header.Set("User-Agent", "wd-reader/ixdzs-epub")
-	if referer != "" {
-		req.Header.Set("Referer", referer)
-	}
+	body := form.Encode()
 	const limit = 8 << 20
 	for attempt := 0; attempt < 3; attempt++ {
 		if attempt > 0 {
@@ -106,6 +104,19 @@ func (s *source) get(ctx context.Context, path, referer string) ([]byte, string,
 				return nil, "", ctx.Err()
 			case <-time.After(time.Duration(attempt) * time.Second):
 			}
+		}
+		req, requestErr := http.NewRequestWithContext(ctx, method, u.String(), strings.NewReader(body))
+		if requestErr != nil {
+			return nil, "", requestErr
+		}
+		req.Header.Set("User-Agent", "wd-reader/ixdzs-epub")
+		if referer != "" {
+			req.Header.Set("Referer", referer)
+		}
+		if form != nil {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("X-Requested-With", "XMLHttpRequest")
+			req.Header.Set("Origin", s.base.Scheme+"://"+s.base.Host)
 		}
 		res, requestErr := s.client.Do(req)
 		if requestErr != nil {
@@ -131,6 +142,10 @@ func (s *source) get(ctx context.Context, path, referer string) ([]byte, string,
 		}
 		if len(data) > limit {
 			return nil, "", fmt.Errorf("%s 超过响应大小限制", u.Path)
+		}
+		if form != nil && len(bytes.TrimSpace(data)) == 0 {
+			err = io.ErrUnexpectedEOF
+			continue
 		}
 		return data, res.Header.Get("Content-Type"), nil
 	}
@@ -260,68 +275,90 @@ func (s *source) details(ctx context.Context, id string) (book, error) {
 	if list == nil {
 		return book{}, fmt.Errorf("%s 未找到完整章节目录", path)
 	}
-	seen := make(map[string]string)
-	slots, numberedSlots := 0, true
-	hasUnlinkedChapter := false
+	count := textOf(findClass(doc, "span", "sub-text-r"))
+	if count == "共0章" {
+		return b, fmt.Errorf("%s %w", path, errEmptyCatalogue)
+	}
+	if findClass(doc, "li", "catalog-all") != nil {
+		if err := s.loadCatalogue(ctx, b.Source, id, list); err != nil {
+			return book{}, fmt.Errorf("%s 获取完整章节目录: %w", path, err)
+		}
+	}
+	seen := make(map[string]bool)
+	volumeSlots := 0
 	for item := list.FirstChild; item != nil; item = item.NextSibling {
 		if item.Type != html.ElementNode || item.Data != "li" {
 			continue
 		}
-		slots++
 		n := find(item, func(n *html.Node) bool { return n.Data == "a" })
 		if n == nil {
 			title := textOf(item)
-			switch {
-			case volumeLabel.MatchString(title):
-			case chapterLabel.MatchString(title):
-				b.titles = append(b.titles, title)
-				b.paths = append(b.paths, "")
-				hasUnlinkedChapter = true
-			default:
-				numberedSlots = false
+			if title == "" {
+				return book{}, fmt.Errorf("%s 的目录第 %d 项没有标题", path, len(b.titles)+1)
 			}
+			if volumeLabel.MatchString(title) {
+				volumeSlots++
+			}
+			// 无链接的分卷和章节仍可能出现在 ZIP 中。网页编号与目录位置独立。
+			b.titles = append(b.titles, title)
+			b.paths = append(b.paths, "")
 			continue
 		}
 		href, title := attr(n, "href"), textOf(n)
 		stem, ok := strings.CutPrefix(href, path+"p")
 		num, numeric := strings.CutSuffix(stem, ".html")
 		chapter, err := strconv.Atoi(num)
-		if !ok || !numeric || err != nil || chapter < 1 || title == "" {
+		if !ok || !numeric || err != nil || chapter < 1 {
 			return book{}, fmt.Errorf("%s 有异常的目录条目: %s", path, href)
 		}
-		if prior, exists := seen[href]; exists {
-			if prior != title {
-				return book{}, fmt.Errorf("%s 同一个章节地址对应不同标题: %s", path, href)
-			}
-		} else {
-			numberedSlots = numberedSlots && chapter == slots
+		if title == "" {
+			title = unnamedTitle
 		}
-		seen[href] = title
+		seen[href] = true
 		b.titles = append(b.titles, title)
 		b.paths = append(b.paths, href)
 	}
 	if len(b.titles) == 0 {
 		return book{}, fmt.Errorf("%s 的目录为空", path)
 	}
-	if hasUnlinkedChapter && !numberedSlots {
-		return book{}, fmt.Errorf("%s 的无链接章节与网页目录顺序不符", path)
-	}
-	if count := textOf(findClass(doc, "span", "sub-text-r")); count != "" {
-		// 有些书把无链接的卷标也计入总数，后续章节地址会按这个位置编号。
-		if count != fmt.Sprintf("共%d章", len(b.titles)) && !(numberedSlots && count == fmt.Sprintf("共%d章", slots)) {
+	if count != "" {
+		// 站点的总数有时包含分卷标题，有时只统计章节。
+		if count != fmt.Sprintf("共%d章", len(b.titles)) && count != fmt.Sprintf("共%d章", len(b.titles)-volumeSlots) {
 			return book{}, fmt.Errorf("%s 的目录数量不符: %s，实际 %d 项", path, count, len(b.titles))
 		}
 	}
 	if href := meta["og:novel:latest_chapter_url"]; href != "" {
 		u, err := s.base.Parse(href)
-		if err != nil || seen[u.Path] == "" {
+		if err != nil || !seen[u.Path] {
 			return book{}, fmt.Errorf("%s 的目录缺少最新章节", path)
 		}
 	}
 	return b, nil
 }
 
-func (s *source) chapterBody(ctx context.Context, path string) ([]string, error) {
+func (s *source) loadCatalogue(ctx context.Context, referer, id string, list *html.Node) error {
+	data, contentType, err := s.request(ctx, http.MethodPost, "/novel/html", referer, url.Values{"bid": {id}})
+	if err != nil {
+		return err
+	}
+	reader, err := charset.NewReader(bytes.NewReader(data), contentType)
+	if err != nil {
+		return err
+	}
+	items, err := html.ParseFragment(reader, list)
+	if err != nil {
+		return err
+	}
+	for list.FirstChild != nil {
+		list.RemoveChild(list.FirstChild)
+	}
+	for _, item := range items {
+		list.AppendChild(item)
+	}
+	return nil
+}
+
+func (s *source) chapterBody(ctx context.Context, path, title string) ([]string, error) {
 	if path == "" {
 		return nil, fmt.Errorf("该章节没有网页正文链接")
 	}
@@ -329,7 +366,13 @@ func (s *source) chapterBody(ctx context.Context, path string) ([]string, error)
 	if err != nil {
 		return nil, err
 	}
-	section := find(findClass(doc, "article", "page-content"), func(n *html.Node) bool { return n.Data == "section" })
+	article := findClass(doc, "article", "page-content")
+	h2 := find(article, func(n *html.Node) bool { return n.Data == "h2" })
+	heading := textOf(h2)
+	if !sameChapterTitle(heading, title) && !(h2 != nil && heading == "" && title == unnamedTitle) {
+		return nil, fmt.Errorf("网页章节 %s 标题为《%s》，与目录《%s》不符", path, heading, title)
+	}
+	section := find(article, func(n *html.Node) bool { return n.Data == "section" })
 	if section == nil {
 		return nil, fmt.Errorf("网页章节 %s 未找到正文", path)
 	}
@@ -341,7 +384,7 @@ func (s *source) chapterBody(ctx context.Context, path string) ([]string, error)
 			}
 		}
 	}
-	if len(body) == 0 || (len(body) == 1 && strings.HasPrefix(body[0], "内容还在处理中")) {
+	if len(body) == 0 || (len(body) == 1 && (body[0] == "。" || strings.HasPrefix(body[0], "内容还在处理中"))) {
 		return nil, fmt.Errorf("网页章节 %s 暂无正文", path)
 	}
 	return body, nil

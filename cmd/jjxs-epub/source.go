@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image/png"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -24,11 +26,13 @@ import (
 const site = "https://www.ijjxsxzw.com"
 
 var (
-	bookPath     = regexp.MustCompile("^/txt/([0-9]+)[.]html$")
-	downloadPath = regexp.MustCompile("^/txt/dl-[0-9]+-([0-9]+)[.]html$")
-	readingPath  = regexp.MustCompile("^/read/([0-9]+)/([0-9]+)/([0-9]+)[.]html$")
-	progress     = regexp.MustCompile("写作进度[：:]\\s*(\\S+)")
-	pageSuffix   = regexp.MustCompile("^(.+?)[（(]([0-9]+)/([0-9]+)[）)]$")
+	bookPath        = regexp.MustCompile("^/txt/([0-9]+)[.]html$")
+	downloadPath    = regexp.MustCompile("^/txt/dl-[0-9]+-([0-9]+)[.]html$")
+	readingPath     = regexp.MustCompile("^/read/([0-9]+)/([0-9]+)/([0-9]+)[.]html$")
+	progress        = regexp.MustCompile("写作进度[：:]\\s*(\\S+)")
+	pageSuffix      = regexp.MustCompile("^(.+?)[（(]([0-9]+)/([0-9]+)[）)]$")
+	errEmptyCatalog = errors.New("章节目录为空")
+	errRateLimited  = errors.New("HTTP 429 请求受限")
 )
 
 type book struct {
@@ -47,6 +51,7 @@ type source struct {
 	delay       time.Duration
 	mu          sync.Mutex
 	lastRequest time.Time
+	retryAt     time.Time
 }
 
 func newSource(delay time.Duration) *source {
@@ -70,20 +75,46 @@ func (s *source) allowed(u *url.URL) bool {
 }
 
 func (s *source) wait(ctx context.Context) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if delay := time.Until(s.lastRequest.Add(s.delay)); delay > 0 {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		s.mu.Lock()
+		next := s.lastRequest.Add(s.delay)
+		if s.retryAt.After(next) {
+			next = s.retryAt
+		}
+		delay := time.Until(next)
+		if delay <= 0 {
+			s.lastRequest = time.Now()
+			s.mu.Unlock()
+			return nil
+		}
+		s.mu.Unlock()
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(delay):
 		}
 	}
-	if err := ctx.Err(); err != nil {
-		return err
+}
+
+func (s *source) rateLimited(path, retryAfter string) error {
+	now := time.Now()
+	retryAt := now.Add(time.Minute)
+	retryAfter = strings.TrimSpace(retryAfter)
+	if seconds, err := strconv.ParseUint(retryAfter, 10, 32); err == nil {
+		retryAt = now.Add(time.Duration(seconds) * time.Second)
+	} else if date, err := http.ParseTime(retryAfter); err == nil {
+		retryAt = date
 	}
-	s.lastRequest = time.Now()
-	return nil
+	s.mu.Lock()
+	if retryAt.After(s.retryAt) {
+		s.retryAt = retryAt
+	}
+	wait := max(time.Until(s.retryAt), 0).Round(time.Second)
+	s.mu.Unlock()
+	return fmt.Errorf("%s: %w，共享冷却 %s", path, errRateLimited, wait)
 }
 
 func (s *source) get(ctx context.Context, href string) ([]byte, string, error) {
@@ -119,8 +150,11 @@ func (s *source) get(ctx context.Context, href string) ([]byte, string, error) {
 		}
 		if res.StatusCode != http.StatusOK {
 			res.Body.Close()
+			if res.StatusCode == http.StatusTooManyRequests {
+				return nil, "", s.rateLimited(u.Path, res.Header.Get("Retry-After"))
+			}
 			err = fmt.Errorf("%s: HTTP %d", u.Path, res.StatusCode)
-			if res.StatusCode == http.StatusTooManyRequests || res.StatusCode >= 500 {
+			if res.StatusCode >= 500 {
 				continue
 			}
 			return nil, "", err
@@ -152,13 +186,36 @@ func (s *source) page(ctx context.Context, path string) (*html.Node, error) {
 }
 
 func (s *source) coverImage(ctx context.Context, path string) ([]byte, error) {
+	if path == "" {
+		return epubexport.DefaultCover()
+	}
+	data, err := s.fetchCover(ctx, path)
+	if err == nil {
+		return data, nil
+	}
+	if errors.Is(err, errRateLimited) {
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	log.Printf("封面 %s 不可用，使用默认封面: %v", path, err)
+	return epubexport.DefaultCover()
+}
+
+func (s *source) fetchCover(ctx context.Context, path string) ([]byte, error) {
 	data, _, err := s.get(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 	// 部分 .jpg 封面实际为 AVIF，转为 EPUB 核心图片格式。
 	if len(data) < 12 || (string(data[4:12]) != "ftypavif" && string(data[4:12]) != "ftypavis") {
-		return data, nil
+		switch kind := http.DetectContentType(data); kind {
+		case "image/jpeg", "image/png", "image/gif", "image/webp":
+			return data, nil
+		default:
+			return nil, fmt.Errorf("无法识别封面图片: %s", kind)
+		}
 	}
 	config, err := avif.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
@@ -205,7 +262,8 @@ func (s *source) completed(ctx context.Context, section, page int) ([]listing, b
 		m := bookPath.FindStringSubmatch(attr(a, "href"))
 		title := textOf(a)
 		if m == nil || title == "" {
-			return nil, false, fmt.Errorf("%s 完本条目缺少书名或链接", path)
+			log.Printf("%s 跳过无法识别的完本条目《%s》: %s", path, title, attr(a, "href"))
+			continue
 		}
 		entries = append(entries, listing{id: m[1], title: title})
 	}
@@ -282,8 +340,20 @@ func (s *source) details(ctx context.Context, id string) (book, error) {
 			break
 		}
 	}
-	if b.Title == "" || b.Author == "" || b.Category == "" || b.cover == "" || len(b.Description) == 0 {
-		return book{}, fmt.Errorf("%s 的书名、作者、分类、封面或简介缺失", path)
+	if b.Title == "" || b.Category == "" {
+		return book{}, fmt.Errorf("%s 的书名或分类缺失", path)
+	}
+	if b.Author == "" {
+		// 部分详情页的作者栏为空，但 HTML 标题仍包含作者。
+		if metadata, ok := strings.CutPrefix(textOf(find(doc, "title", "")), b.Title+"txt下载_"); ok {
+			author, _, _ := strings.Cut(metadata, "_"+b.Category+"_")
+			if author != metadata {
+				b.Author = strings.TrimSpace(author)
+			}
+		}
+		if b.Author == "" {
+			b.Author = "未知作者"
+		}
 	}
 	return b, nil
 }
@@ -297,8 +367,7 @@ func (s *source) catalog(ctx context.Context, id string) ([]chapter, error) {
 	if list == nil {
 		return nil, fmt.Errorf("没有找到在线章节目录")
 	}
-	var toc []chapter
-	pageNo, totalPages := 0, 0
+	var pages []chapter
 	class := ""
 	for n := range list.Descendants() {
 		if n.Type != html.ElementNode || n.Data != "a" {
@@ -306,42 +375,60 @@ func (s *source) catalog(ctx context.Context, id string) ([]chapter, error) {
 		}
 		href, title := attr(n, "href"), textOf(n)
 		m := readingPath.FindStringSubmatch(href)
-		pageNo++
+		pageNo := len(pages) + 1
 		if m == nil || m[2] != id || m[3] != strconv.Itoa(pageNo) || title == "" || (class != "" && m[1] != class) {
 			return nil, fmt.Errorf("目录第 %d 个条目缺失或异常: %s", pageNo, href)
 		}
 		class = m[1]
-		part, total := 1, 0
-		if suffix := pageSuffix.FindStringSubmatch(title); suffix != nil {
-			title = strings.TrimSpace(suffix[1])
-			part, _ = strconv.Atoi(suffix[2])
-			total, _ = strconv.Atoi(suffix[3])
-			if part < 1 || total < part {
-				return nil, fmt.Errorf("章节分页异常: %s", href)
+		pages = append(pages, chapter{title: title, pages: []string{href}})
+	}
+	if len(pages) == 0 {
+		return nil, errEmptyCatalog
+	}
+	return mergeChapterPages(pages), nil
+}
+
+func mergeChapterPages(pages []chapter) []chapter {
+	// 章名也可能包含加更序号或字数。只有连续同名且页码齐全时才合并。
+	var toc []chapter
+	for i := 0; i < len(pages); {
+		ch := pages[i]
+		title, part, total := chapterPageTitle(ch.title)
+		if part == 1 && i+1 < len(pages) {
+			nextTitle, nextPart, nextTotal := chapterPageTitle(pages[i+1].title)
+			if nextPart == 2 && (total == 0 || total == nextTotal) &&
+				nextTotal <= len(pages)-i && titleKey(title) == titleKey(nextTitle) {
+				end := i + 2
+				for ; end < i+nextTotal; end++ {
+					label, number, count := chapterPageTitle(pages[end].title)
+					if number != end-i+1 || count != nextTotal || titleKey(label) != titleKey(title) {
+						break
+					}
+				}
+				if end == i+nextTotal {
+					ch.title = title
+					for _, page := range pages[i+1 : end] {
+						ch.pages = append(ch.pages, page.pages...)
+					}
+					i = end - 1
+				}
 			}
 		}
-		if part == 1 {
-			if totalPages > 0 && len(toc[len(toc)-1].pages) != totalPages {
-				return nil, fmt.Errorf("上一章分页不完整: %s", href)
-			}
-			toc = append(toc, chapter{title: title, pages: []string{href}})
-			totalPages = total
-			continue
-		}
-		if len(toc) == 0 {
-			return nil, fmt.Errorf("章节分页缺少首页: %s", href)
-		}
-		current := &toc[len(toc)-1]
-		if titleKey(current.title) != titleKey(title) || len(current.pages)+1 != part || (totalPages > 0 && totalPages != total) {
-			return nil, fmt.Errorf("章节分页顺序异常: %s", href)
-		}
-		totalPages = total
-		current.pages = append(current.pages, href)
+		toc = append(toc, ch)
+		i++
 	}
-	if len(toc) == 0 || (totalPages > 0 && len(toc[len(toc)-1].pages) != totalPages) {
-		return nil, fmt.Errorf("章节目录为空或最后一章分页不完整")
+	return toc
+}
+
+func chapterPageTitle(title string) (string, int, int) {
+	if suffix := pageSuffix.FindStringSubmatch(title); suffix != nil {
+		part, partErr := strconv.Atoi(suffix[2])
+		total, totalErr := strconv.Atoi(suffix[3])
+		if partErr == nil && totalErr == nil && part > 0 && total >= part {
+			return strings.TrimSpace(suffix[1]), part, total
+		}
 	}
-	return toc, nil
+	return title, 1, 0
 }
 
 func (s *source) chapterBody(ctx context.Context, ch chapter) ([]string, error) {

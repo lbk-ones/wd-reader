@@ -18,30 +18,31 @@ import (
 	"wd-reader/internal/epubexport"
 )
 
-const defaultOutput = `C:\Users\bokun\Downloads\book-list`
+const defaultOutput = `F:\bk-books\book-list`
 
 // 速读谷有些章节把引号以转义文本写进正文。
 var chapterText = strings.NewReplacer(`\"`, `"`, `\u0027`, "'")
 
 type options struct {
-	out       string
-	bookID    string
-	startPage int
-	limit     int
-	workers   int
-	list      bool
-	delay     time.Duration
+	historyPath string
+	out         string
+	bookID      string
+	startPage   int
+	limit       int
+	workers     int
+	list        bool
+	delay       time.Duration
 }
 
 func main() {
-	var opts options
+	opts := options{historyPath: filepath.Join(epubexport.HistoryDir, "sudugu-export.jsonl")}
 	flag.StringVar(&opts.out, "out", defaultOutput, "EPUB 输出目录")
 	flag.StringVar(&opts.bookID, "book", "", "只处理指定书籍 ID（详情页网址中的数字）")
 	flag.IntVar(&opts.startPage, "start-page", 1, "从完本榜第几页开始")
 	flag.IntVar(&opts.limit, "limit", 0, "本次最多处理多少本（0 表示全部）")
 	flag.IntVar(&opts.workers, "workers", 10, "同时导出的书籍数量（1 表示逐本导出）")
 	flag.BoolVar(&opts.list, "list", false, "只列出书籍，不生成 EPUB")
-	flag.DurationVar(&opts.delay, "delay", 500*time.Millisecond, "所有书籍共享的请求间隔")
+	flag.DurationVar(&opts.delay, "delay", 100*time.Millisecond, "所有书籍共享的请求间隔")
 	flag.Parse()
 	if flag.NArg() != 0 || opts.startPage < 1 || opts.limit < 0 || opts.workers < 1 || opts.delay < 0 ||
 		(opts.bookID != "" && !bookPath.MatchString("/"+opts.bookID+"/")) {
@@ -58,6 +59,18 @@ func main() {
 
 func run(ctx context.Context, src *source, opts options) error {
 	src.delay = opts.delay
+	if opts.list {
+		opts.historyPath = ""
+	}
+	history, err := epubexport.OpenHistory(opts.historyPath, opts.out)
+	if err != nil {
+		return fmt.Errorf("打开导出记录: %w", err)
+	}
+	defer history.Close()
+	if opts.historyPath != "" && opts.bookID == "" {
+		log.Printf("使用导出记录 %s", opts.historyPath)
+	}
+
 	if opts.bookID != "" {
 		b, err := src.details(ctx, opts.bookID)
 		if err != nil {
@@ -67,13 +80,13 @@ func run(ctx context.Context, src *source, opts options) error {
 			fmt.Printf("%s\t%s\t%s\t%s\n", b.id, b.category, b.title, b.author)
 			return nil
 		}
-		return exportBook(ctx, src, opts.out, b)
+		return exportBook(ctx, src, opts.out, b, history)
 	}
 	if opts.list {
 		_, err := walkCompleted(ctx, src, opts, func(entry book) error {
 			fmt.Printf("%s\t%s\t%s\t%s\n", entry.id, entry.category, entry.title, entry.author)
 			return nil
-		})
+		}, nil)
 		return err
 	}
 
@@ -90,7 +103,7 @@ func run(ctx context.Context, src *source, opts options) error {
 			defer func() { <-slots }()
 			b, err := src.details(ctx, entry.id)
 			if err == nil {
-				err = exportBook(ctx, src, opts.out, b)
+				err = exportBook(ctx, src, opts.out, b, history)
 			}
 			if err != nil {
 				failures.Add(1)
@@ -98,6 +111,8 @@ func run(ctx context.Context, src *source, opts options) error {
 			}
 		})
 		return nil
+	}, func(id string) bool {
+		return history.CompletedPath(id) != ""
 	})
 	workers.Wait()
 	if err := ctx.Err(); err != nil {
@@ -109,7 +124,7 @@ func run(ctx context.Context, src *source, opts options) error {
 	return err
 }
 
-func walkCompleted(ctx context.Context, src *source, opts options, visit func(book) error) (int, error) {
+func walkCompleted(ctx context.Context, src *source, opts options, visit func(book) error, skip func(string) bool) (int, error) {
 	seen := make(map[string]bool)
 	page := "/wanjie/"
 	if opts.startPage > 1 {
@@ -127,7 +142,7 @@ func walkCompleted(ctx context.Context, src *source, opts options, visit func(bo
 			if err := ctx.Err(); err != nil {
 				return len(seen), err
 			}
-			if seen[entry.id] {
+			if seen[entry.id] || (skip != nil && skip(entry.id)) {
 				continue
 			}
 			if err := visit(entry); err != nil {
@@ -143,19 +158,19 @@ func walkCompleted(ctx context.Context, src *source, opts options, visit func(bo
 	return len(seen), ctx.Err()
 }
 
-func exportBook(ctx context.Context, src *source, out string, b book) error {
+func exportBook(ctx context.Context, src *source, out string, b book, history *epubexport.History) error {
 	dir := filepath.Join(out, epubexport.SafeName(b.category))
 	target := filepath.Join(dir, epubexport.SafeName(b.title)+" ["+b.id+"].epub")
 	if info, err := os.Stat(target); err == nil {
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("输出路径已被占用: %s", target)
 		}
-		log.Printf("跳过已有文件 %s", target)
-		return nil
+		//log.Printf("跳过已有文件 %s", target)
+		return history.Record(b.id, target)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	log.Printf("导出《%s》 · %s", b.title, b.category)
+	//log.Printf("导出《%s》 · %s", b.title, b.category)
 	toc, err := src.catalog(ctx, b)
 	if err != nil {
 		return err
@@ -218,5 +233,5 @@ func exportBook(ctx context.Context, src *source, out string, b book) error {
 		return err
 	}
 	log.Printf("已保存 %s（%d 章）", target, len(toc))
-	return nil
+	return history.Record(b.id, target)
 }

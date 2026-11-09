@@ -930,6 +930,22 @@
       "fileHash": "78a84af731d5e91410fa93ebfd334a3c275d6a6d97a92f0bd18063e3bd8a6e00",
       "fileSize": 14098393,
       "fileModTime": 1794027316771033100
+    },
+    {
+      "id": "7468521c-fca8-45e5-8388-4bf6d479d7d5",
+      "fileName": "1979黄金时代.txt",
+      "importType": "txt",
+      "originalName": "1979黄金时代.txt",
+      "title": "1979黄金时代",
+      "authors": [],
+      "description": "",
+      "cover": "",
+      "sources": {},
+      "importedAt": "2026-11-09T13:51:57.381982Z",
+      "lastOpenedAt": "2026-11-09T13:52:02.468354Z",
+      "fileHash": "320e80a1630d3b232f314eb19dced05b37ad0ccb42d03843b21ca6ce7667bec4",
+      "fileSize": 7400798,
+      "fileModTime": 1794232317377842200
     }
   ],
   "categories": [

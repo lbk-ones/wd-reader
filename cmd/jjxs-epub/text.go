@@ -1,17 +1,24 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"net/url"
+	"io"
+	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/nwaples/rardecode/v2"
 	"golang.org/x/net/html"
 
+	"wd-reader/internal/chapterdetect"
 	"wd-reader/internal/epubexport"
 	"wd-reader/internal/resourcecatalog"
 )
@@ -20,41 +27,75 @@ func (s *source) downloadTXT(ctx context.Context, b book) (string, error) {
 	if b.download == "" {
 		return "", fmt.Errorf("书籍没有 TXT 下载页")
 	}
-	doc, err := s.page(ctx, b.download)
+	pageURL, err := s.base.Parse(b.download)
 	if err != nil {
 		return "", err
 	}
-	var link string
+	doc, err := s.page(ctx, pageURL.String())
+	if err != nil {
+		return "", err
+	}
+	files := [2]resourcecatalog.File{
+		{Name: "book.txt", Referer: pageURL.String()},
+		{Name: "book.zip", ArchiveFormat: "txt", Referer: pageURL.String()},
+	}
 	for n := range doc.Descendants() {
-		href := attr(n, "href")
-		if href == "" {
+		if n.Type != html.ElementNode || n.Data != "a" {
 			continue
 		}
-		u, err := url.Parse(href)
-		if err != nil || u.Scheme != "https" || u.Host != "jjxswshuku.com" || u.User != nil ||
+		u, err := pageURL.Parse(strings.TrimSpace(attr(n, "href")))
+		if err != nil || !s.allowed(u) || (u.Host != s.base.Host && u.Host != "jjxswshuku.com") ||
 			u.Path != "/e/DownSys/doaction.php" {
 			continue
 		}
-		if query := u.Query(); query.Get("id") == b.id && query.Get("pathid") == "0" {
-			link = href
-			break
+		query := u.Query()
+		if query.Get("id") != b.id {
+			continue
+		}
+		switch query.Get("pathid") {
+		case "0":
+			if files[0].URL == "" {
+				files[0].URL = u.String()
+			}
+		case "1":
+			if files[1].URL == "" {
+				files[1].URL = u.String()
+			}
 		}
 	}
-	if link == "" {
-		return "", fmt.Errorf("TXT 下载页没有可用链接")
+	var downloadErr error
+	for _, file := range files {
+		if file.URL == "" {
+			continue
+		}
+		text, err := s.downloadTextFile(ctx, file)
+		if err == nil || errors.Is(err, errRateLimited) || ctx.Err() != nil {
+			return text, err
+		}
+		downloadErr = errors.Join(downloadErr, fmt.Errorf("%s: %w", file.Name, err))
 	}
+	if downloadErr == nil {
+		downloadErr = fmt.Errorf("下载页没有可用的整本 TXT 或 ZIP 链接")
+	}
+	return "", downloadErr
+}
+
+func (s *source) downloadTextFile(ctx context.Context, file resourcecatalog.File) (string, error) {
 	dir, err := os.MkdirTemp("", "jjxs-epub-*")
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(dir)
+	defer os.Remove(filepath.Join(dir, file.Name))
 	if err := s.wait(ctx); err != nil {
 		return "", err
 	}
-	path, err := resourcecatalog.Download(ctx, s.client, resourcecatalog.File{
-		URL: link, Name: "book.txt", Referer: s.base.String() + b.download,
-	}, dir, nil)
+	path, err := resourcecatalog.Download(ctx, s.client, file, dir, nil)
 	if err != nil {
+		var status *resourcecatalog.DownloadStatusError
+		if errors.As(err, &status) && status.StatusCode == http.StatusTooManyRequests {
+			return "", s.rateLimited("/e/DownSys/doaction.php", status.RetryAfter)
+		}
 		return "", err
 	}
 	defer os.Remove(path)
@@ -62,7 +103,55 @@ func (s *source) downloadTXT(ctx context.Context, b book) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return epubexport.DecodeTXT(data)
+	if bytes.HasPrefix(data, []byte("Rar!\x1a\x07")) {
+		data, err = readRARTXT(data)
+		if err != nil {
+			return "", fmt.Errorf("读取 RAR 内的 TXT: %w", err)
+		}
+	}
+	text, err := epubexport.DecodeTXT(data)
+	if err == nil && (strings.TrimSpace(text) == "" || strings.ContainsRune(text, 0)) {
+		return "", fmt.Errorf("下载内容为空或不是 TXT")
+	}
+	return text, err
+}
+
+func readRARTXT(data []byte) ([]byte, error) {
+	const limit = resourcecatalog.MaxDownloadBytes
+	r, err := rardecode.NewReader(bytes.NewReader(data), rardecode.MaxDictionarySize(limit))
+	if err != nil {
+		return nil, err
+	}
+	var text []byte
+	for {
+		entry, err := r.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if !entry.Mode().IsRegular() || !strings.EqualFold(path.Ext(entry.Name), ".txt") {
+			continue
+		}
+		if text != nil {
+			return nil, fmt.Errorf("RAR 包含多个 TXT 文件")
+		}
+		if entry.UnPackedSize > limit {
+			return nil, fmt.Errorf("TXT 超过 100 MiB 解压限制")
+		}
+		text, err = io.ReadAll(io.LimitReader(r, limit+1))
+		if err != nil {
+			return nil, err
+		}
+		if int64(len(text)) > limit {
+			return nil, fmt.Errorf("TXT 超过 100 MiB 解压限制")
+		}
+	}
+	if len(text) == 0 {
+		return nil, fmt.Errorf("RAR 缺少可用的 TXT 文件")
+	}
+	return text, nil
 }
 
 var (
@@ -72,6 +161,9 @@ var (
 )
 
 func prepareTXT(text, bookTitle string, toc []chapter) ([]chapter, [][]string, error) {
+	if len(toc) == 0 {
+		return wholeTXT(text, bookTitle)
+	}
 	bodies, err := splitTXT(text, bookTitle, toc)
 	if err == nil {
 		return toc, bodies, nil
@@ -120,8 +212,53 @@ func prepareTXT(text, bookTitle string, toc []chapter) ([]chapter, [][]string, e
 		if chapters, nativeBodies := collectionChapters(text); len(chapters) > 0 {
 			return chapters, nativeBodies, nil
 		}
+		// 书名分节是网站按长度生成的，原文未必有章名或分节边界。
+		if titleKey(first[1]) == titleKey(bookTitle) {
+			return wholeTXT(text, bookTitle)
+		}
 	}
 	return toc, bodies, err
+}
+
+func wholeTXT(text, bookTitle string) ([]chapter, [][]string, error) {
+	if chapters, bodies := decoratedChapters(text); len(chapters) > 0 {
+		return chapters, bodies, nil
+	}
+	if chapters, bodies := collectionChapters(text); len(chapters) > 0 {
+		return chapters, bodies, nil
+	}
+	lines := physicalLines(text)
+	boundaries := chapterdetect.Detect(lines, nil).Boundaries
+	if len(boundaries) == 0 {
+		body := nonemptyLines(lines)
+		if len(body) == 0 {
+			return nil, nil, fmt.Errorf("TXT 正文为空")
+		}
+		return []chapter{{title: bookTitle}}, [][]string{body}, nil
+	}
+	var chapters []chapter
+	var bodies [][]string
+	if preface := nonemptyLines(lines[:boundaries[0].Line]); len(preface) > 0 {
+		chapters = append(chapters, chapter{title: "前言"})
+		bodies = append(bodies, preface)
+	}
+	for i, boundary := range boundaries {
+		end := len(lines)
+		if i+1 < len(boundaries) {
+			end = boundaries[i+1].Line
+		}
+		start := boundary.Line
+		if !boundary.KeepLine {
+			start++
+		}
+		body := nonemptyLines(lines[start:end])
+		if boundary.Body != "" && !boundary.KeepLine {
+			body = append([]string{boundary.Body}, body...)
+		}
+		chapters = append(chapters, chapter{title: boundary.Title})
+		bodies = append(bodies, body)
+	}
+	return chapters, bodies, nil
 }
 
 // Some collections separate stories with an isolated "(完)", followed by
@@ -202,7 +339,7 @@ func decoratedChapters(text string) ([]chapter, [][]string) {
 	return append(chapters, chapter{title: title}), append(bodies, body)
 }
 
-// 以在线目录的章名和顺序切分 TXT，无法逐一对齐时使用网页正文。
+// 以在线目录的章名和顺序切分 TXT。
 func splitTXT(text, bookTitle string, toc []chapter) ([][]string, error) {
 	if len(toc) == 0 {
 		return nil, fmt.Errorf("章节目录为空")
@@ -249,8 +386,10 @@ func splitTXT(text, bookTitle string, toc []chapter) ([][]string, error) {
 		}
 		return bodies, fmt.Errorf("TXT 只匹配到目录第 %d/%d 章，下一项《%s》", current+1, len(toc), toc[current+1].title)
 	}
-	if len(bodies[current]) == 0 {
-		return bodies, fmt.Errorf("TXT 末章缺少正文")
+	for i, body := range bodies {
+		if len(body) == 0 && !(i == 0 && hasIntro) {
+			return bodies, fmt.Errorf("TXT 第 %d 章《%s》缺少正文", i+1, toc[i].title)
+		}
 	}
 	return bodies, nil
 }
@@ -279,10 +418,8 @@ func stripHeadings(lines []string, title string) []string {
 	key := titleKey(title)
 	for len(lines) > 0 {
 		line := lines[0]
-		if m := pageSuffix.FindStringSubmatch(line); m != nil {
-			line = m[1]
-		}
-		if titleKey(line) != key {
+		label, _, _ := chapterPageTitle(line)
+		if titleKey(line) != key && titleKey(label) != key {
 			break
 		}
 		lines = lines[1:]
@@ -300,15 +437,23 @@ func txtTitleKey(text string) string {
 }
 
 func cleanLines(text string) []string {
+	return nonemptyLines(physicalLines(text))
+}
+
+func physicalLines(text string) []string {
 	text = epubexport.UnescapeHTML(text)
 	text = strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
-	var lines []string
-	for line := range strings.SplitSeq(text, "\n") {
+	return strings.Split(text, "\n")
+}
+
+func nonemptyLines(lines []string) []string {
+	var cleaned []string
+	for _, line := range lines {
 		if line = strings.TrimSpace(line); line != "" {
-			lines = append(lines, line)
+			cleaned = append(cleaned, line)
 		}
 	}
-	return lines
+	return cleaned
 }
 
 func textLines(root *html.Node) []string {

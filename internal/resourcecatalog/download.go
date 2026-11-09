@@ -16,6 +16,16 @@ import (
 // MaxDownloadBytes 限制单次网络下载及解压后电子书的大小，单位字节。
 const MaxDownloadBytes int64 = 100 * 1024 * 1024
 
+// DownloadStatusError reports an unsuccessful download response and its retry hint.
+type DownloadStatusError struct {
+	StatusCode int
+	RetryAfter string
+}
+
+func (e *DownloadStatusError) Error() string {
+	return fmt.Sprintf("下载失败 (HTTP %d)", e.StatusCode)
+}
+
 // ValidateDownload 校验下载地址、文件扩展名和可选 Referer；ZIP 必须声明内部电子书格式。
 func ValidateDownload(file File) error {
 	ext := strings.ToLower(filepath.Ext(file.Name))
@@ -50,7 +60,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("下载失败 (HTTP %d)", resp.StatusCode)
+		return "", &DownloadStatusError{StatusCode: resp.StatusCode, RetryAfter: resp.Header.Get("Retry-After")}
 	}
 	if resp.ContentLength > MaxDownloadBytes {
 		return "", fmt.Errorf("文件超过 100 MiB 下载限制")

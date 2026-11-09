@@ -20,6 +20,7 @@ import (
 
 func TestBatchExportsBooksConcurrently(t *testing.T) {
 	var covers atomic.Int32
+	var resuming atomic.Bool
 	bothDownloading := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -28,8 +29,11 @@ func TestBatchExportsBooksConcurrently(t *testing.T) {
 				fmt.Fprintf(w, `<div class="itemtxt"><h3><a href="/%s/">示例%s</a></h3><p><span>已完结</span><span>科幻小说</span></p></div>`, id, id)
 			}
 			fmt.Fprint(w, `<div class="page"></div>`)
-		case "/7/", "/8/":
+		case "/7/", "/8/", "/9/":
 			id := strings.Trim(r.URL.Path, "/")
+			if resuming.Load() && id != "9" {
+				t.Errorf("续跑重新请求了已导出的书籍 %s", id)
+			}
 			fmt.Fprintf(w, `<div class="item"><img src="/cover.png"><div class="itemtxt">
 				<h1><a>示例%s</a></h1><p><span>已完结</span><span>科幻小说</span></p><p><a>作者：测试</a></p>
 				</div></div><div class="des"><p>简介</p></div><div id="list"><a href="/%s/20.html">开篇</a></div>`, id, id)
@@ -42,7 +46,7 @@ func TestBatchExportsBooksConcurrently(t *testing.T) {
 				fmt.Fprint(w, "\x89PNG\r\n\x1a\n")
 			case <-r.Context().Done():
 			}
-		case "/7/20.html", "/8/20.html":
+		case "/7/20.html", "/8/20.html", "/9/20.html":
 			fmt.Fprint(w, `<div class="con"><p>第一段</p></div><div class="prenext"></div>`)
 		default:
 			http.NotFound(w, r)
@@ -54,13 +58,23 @@ func TestBatchExportsBooksConcurrently(t *testing.T) {
 	out := t.TempDir()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := run(ctx, src, options{out: out, startPage: 1, limit: 2, workers: 2, delay: time.Millisecond}); err != nil {
+	opts := options{out: out, startPage: 1, limit: 2, workers: 2, delay: time.Millisecond,
+		historyPath: filepath.Join(t.TempDir(), "sudugu-export.jsonl")}
+	if err := run(ctx, src, opts); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"示例7 [7].epub", "示例8 [8].epub"} {
 		if _, err := os.Stat(filepath.Join(out, "科幻小说", name)); err != nil {
 			t.Fatal(err)
 		}
+	}
+	resuming.Store(true)
+	opts.limit = 1
+	if err := run(ctx, src, opts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "科幻小说", "示例9 [9].epub")); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -4,9 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"image/png"
+	"net/http"
 
 	"github.com/gen2brain/heic"
 )
+
+func supportedCover(data []byte) bool {
+	switch http.DetectContentType(data) {
+	case "image/jpeg", "image/png", "image/gif", "image/webp":
+		return true
+	default:
+		return false
+	}
+}
 
 // Some covers use HEIC even when the site labels them as JPEG.
 func convertCover(data []byte) ([]byte, error) {
