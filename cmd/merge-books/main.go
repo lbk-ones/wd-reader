@@ -2,10 +2,11 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -23,7 +24,7 @@ const defaultRoot = `F:\bk-books`
 
 func main() {
 	root := flag.String("root", defaultRoot, "书库根目录")
-	apply := flag.Bool("apply", false, "执行复制，默认只预览")
+	apply := flag.Bool("apply", false, "执行复制和分类写回，默认只预览")
 	show := flag.Bool("show-duplicates", true, "打印每组重复书的入选和淘汰路径")
 	flag.Parse()
 	if flag.NArg() != 0 {
@@ -59,6 +60,7 @@ func run(root string, apply, show bool) error {
 	choices := rankEditions(keys, groups)
 	totals := make(map[string]int)
 	copied, present, planned, duplicates := 0, 0, 0, 0
+	updates, updated := 0, 0
 	for i, key := range keys {
 		group := groups[key]
 		winner, q := choices[i].winner, choices[i].quality
@@ -66,6 +68,7 @@ func run(root string, apply, show bool) error {
 			issues++
 			continue
 		}
+		winner.channel = inferChannel(winner.title, winner.category, winner.channel)
 		duplicates += len(group) - 1
 		totals[winner.category]++
 		dir := filepath.Join(out, winner.category)
@@ -83,7 +86,7 @@ func run(root string, apply, show bool) error {
 			occupied[strings.ToLower(target)] = true
 		}
 		if show && len(group) > 1 {
-			fmt.Printf("保留 %s -> %s（正文 %d 字，目录 %d 项）\n", winner.path, target, q.text, q.chapters)
+			fmt.Printf("保留 %s -> %s（%s，正文 %d 字，目录 %d 项）\n", winner.path, target, winner.channel, q.text, q.chapters)
 			for _, book := range group {
 				if book.path != winner.path {
 					fmt.Printf("  重复 %s\n", book.path)
@@ -91,17 +94,30 @@ func run(root string, apply, show bool) error {
 			}
 		}
 		if len(paths) > 0 {
-			if err := checkPreviousCopy(paths, winner.path, dir); err != nil {
+			previous, err := checkPreviousCopy(paths, winner, dir)
+			if err != nil {
 				log.Print(err)
 				issues++
-			} else {
+				continue
+			}
+			if previous == nil {
 				present++
+				continue
+			}
+			updates++
+			if apply {
+				if err := copyEdition(winner, paths[0], previous); err != nil {
+					log.Printf("更新分类失败 %s: %v", paths[0], err)
+					issues++
+				} else {
+					updated++
+				}
 			}
 			continue
 		}
 		planned++
 		if apply {
-			if err := copyEdition(winner.path, target); err != nil {
+			if err := copyEdition(winner, target, nil); err != nil {
 				log.Printf("复制失败 %s: %v", target, err)
 				issues++
 			} else {
@@ -117,8 +133,8 @@ func run(root string, apply, show bool) error {
 	for _, category := range labels {
 		fmt.Printf("%s\t%d\n", category, totals[category])
 	}
-	fmt.Printf("扫描 %d 本，重复 %d 个版本，已存在 %d 本，待复制 %d 本，已复制 %d 本，异常 %d 项\n",
-		scanned, duplicates, present, planned-copied, copied, issues)
+	fmt.Printf("扫描 %d 本，重复 %d 个版本，已存在 %d 本，待复制 %d 本，已复制 %d 本，分类待更新 %d 本，分类已更新 %d 本，异常 %d 项\n",
+		scanned, duplicates, present, planned-copied, copied, updates-updated, updated, issues)
 	if issues > 0 {
 		return fmt.Errorf("%d 项需检查，详见日志", issues)
 	}
@@ -256,7 +272,7 @@ func previousCopies(out string) (map[string][]string, map[string]bool, error) {
 		}
 		occupied[strings.ToLower(path)] = true
 		if entry.Type().IsRegular() && strings.EqualFold(filepath.Ext(path), ".epub") {
-			book, err := readEdition(path, "")
+			book, err := readBookEdition(path, "", true)
 			if err != nil {
 				log.Printf("无法核对已有 EPUB %s: %v", path, err)
 			} else {
@@ -268,25 +284,41 @@ func previousCopies(out string) (map[string][]string, map[string]bool, error) {
 	return files, occupied, err
 }
 
-func checkPreviousCopy(paths []string, source, dir string) error {
+// checkPreviousCopy 只允许更新与原入选文件完全相同的旧副本，已写回的副本则核对重写结果。
+// 返回文件信息表示需要更新，并用于发布前确认目标仍是核对过的文件。
+func checkPreviousCopy(paths []string, source edition, dir string) (os.FileInfo, error) {
 	if len(paths) != 1 || !strings.EqualFold(filepath.Dir(paths[0]), dir) {
-		return fmt.Errorf("已有同一书籍标识的输出，请核对目录或重复文件: %s", strings.Join(paths, "、"))
+		return nil, fmt.Errorf("已有同一书籍标识的输出，请核对目录或重复文件: %s", strings.Join(paths, "、"))
 	}
-	a, err := fileDigest(source)
+	previous, err := os.Lstat(paths[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
-	b, err := fileDigest(paths[0])
+	if !previous.Mode().IsRegular() {
+		return nil, fmt.Errorf("已有输出不是普通文件: %s", paths[0])
+	}
+	actual, err := fileDigest(paths[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if a != b {
-		return fmt.Errorf("已有输出与本次入选版本不同: %s（新版本 %s）", paths[0], source)
+	expected := sha256.New()
+	if err := writeEdition(expected, source); err != nil {
+		return nil, err
 	}
-	return nil
+	if bytes.Equal(actual[:], expected.Sum(nil)) {
+		return nil, nil
+	}
+	original, err := fileDigest(source.path)
+	if err != nil {
+		return nil, err
+	}
+	if actual != original {
+		return nil, fmt.Errorf("已有输出与本次入选版本不同: %s（新版本 %s）", paths[0], source.path)
+	}
+	return previous, nil
 }
 
-func copyEdition(source, target string) error {
+func copyEdition(source edition, target string, previous os.FileInfo) error {
 	dir := filepath.Dir(target)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -300,20 +332,26 @@ func copyEdition(source, target string) error {
 			return fmt.Errorf("输出路径不是普通目录: %s", path)
 		}
 	}
-	in, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
 	tmp, err := os.CreateTemp(dir, ".merge-books-*.tmp")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmp.Name())
-	_, copyErr := io.Copy(tmp, in)
+	copyErr := writeEdition(tmp, source)
 	if err := errors.Join(copyErr, tmp.Close()); err != nil {
 		return err
 	}
-	// 只有复制完整后才发布 EPUB，若目标已存在则由系统拒绝覆盖。
-	return os.Link(tmp.Name(), target)
+	if previous == nil {
+		// 首次复制时拒绝覆盖并发创建的目标。
+		return os.Link(tmp.Name(), target)
+	}
+	current, err := os.Lstat(target)
+	if err != nil {
+		return err
+	}
+	if !os.SameFile(previous, current) || previous.Size() != current.Size() || !previous.ModTime().Equal(current.ModTime()) {
+		return fmt.Errorf("核对后输出已发生变化: %s", target)
+	}
+	// 完整生成新文件之后再替换核对过的旧副本。
+	return os.Rename(tmp.Name(), target)
 }

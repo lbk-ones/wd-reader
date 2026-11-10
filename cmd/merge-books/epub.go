@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -21,8 +22,13 @@ import (
 )
 
 type edition struct {
-	path, title, author, category string
-	key                           string
+	path,
+	title,
+	author,
+	category string
+	key,
+	packagePath,
+	channel string
 }
 
 var sourceIDSuffix = regexp.MustCompile(`(?:\[(?:[0-9]+|[0-9a-fA-F]{12}|[0-9a-fA-F]{16})\]|［(?:[0-9]+|[0-9a-fA-F]{12}|[0-9a-fA-F]{16})］)$`)
@@ -42,6 +48,11 @@ func cleanBookName(name string) string {
 }
 
 func readEdition(filename, category string) (edition, error) {
+	return readBookEdition(filename, category, false)
+}
+
+// 已发布的输出可使用写回时记录的原文件指纹，继续按原先的规则识别缺少作者的版本。
+func readBookEdition(filename, category string, published bool) (edition, error) {
 	book := edition{path: filename, category: category}
 	archive, err := zip.OpenReader(filename)
 	if err != nil {
@@ -59,12 +70,25 @@ func readEdition(filename, category string) (edition, error) {
 	if len(container.Packages) == 0 {
 		return book, fmt.Errorf("EPUB 缺少 OPF")
 	}
+	book.packagePath = container.Packages[0].Path
 	var pkg struct {
 		Title   string   `xml:"metadata>title"`
 		Authors []string `xml:"metadata>creator"`
+		Types   []string `xml:"metadata>type"`
+		Meta    []struct {
+			Name    string `xml:"name,attr"`
+			Content string `xml:"content,attr"`
+		} `xml:"metadata>meta"`
 	}
-	if err := readXML(archive, container.Packages[0].Path, &pkg); err != nil {
+	if err := readXML(archive, book.packagePath, &pkg); err != nil {
 		return book, err
+	}
+	for _, kind := range pkg.Types {
+		kind = normalizeChannel(kind)
+		if kind == maleChannel || kind == femaleChannel {
+			book.channel = kind
+			break
+		}
 	}
 	book.title = cleanBookName(epubexport.UnescapeHTML(pkg.Title))
 	var authors, authorKeys []string
@@ -95,6 +119,16 @@ func readEdition(filename, category string) (edition, error) {
 		book.key = "metadata\x00" + titleKey + "\x00" + strings.Join(authorKeys, "\x00")
 		return book, nil
 	}
+	if published {
+		for _, meta := range pkg.Meta {
+			if meta.Name == sourceDigestMeta {
+				if digest, err := hex.DecodeString(meta.Content); err == nil && len(digest) == sha256.Size {
+					book.key = fmt.Sprintf("file:%x", digest)
+					return book, nil
+				}
+			}
+		}
+	}
 	digest, err := fileDigest(filename)
 	if err != nil {
 		return book, err
@@ -104,23 +138,31 @@ func readEdition(filename, category string) (edition, error) {
 }
 
 func readXML(archive *zip.ReadCloser, name string, target any) error {
-	const limit = 4 << 20
-	f, err := archive.Open(name)
-	if err != nil {
-		return fmt.Errorf("%s: %w", name, err)
-	}
-	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, limit+1))
+	data, err := readMetadataEntry(archive, name)
 	if err != nil {
 		return err
-	}
-	if len(data) > limit {
-		return fmt.Errorf("%s 超出元数据大小限制", name)
 	}
 	if err := xml.Unmarshal(data, target); err != nil {
 		return fmt.Errorf("%s: %w", name, err)
 	}
 	return nil
+}
+
+func readMetadataEntry(archive *zip.ReadCloser, name string) ([]byte, error) {
+	const limit = 4 << 20
+	f, err := archive.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > limit {
+		return nil, fmt.Errorf("%s 超出元数据大小限制", name)
+	}
+	return data, nil
 }
 
 func normalize(text string) string {
