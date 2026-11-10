@@ -8,23 +8,38 @@
 
 **A quiet moment to read.**
 
-A lightweight, distraction-free desktop ebook reader for Windows, macOS and Linux. Keep a local library, read in a mini window, use a transparent background, or let pages turn and scroll automatically.
+A lightweight, distraction-free desktop ebook reader for Windows, macOS and Linux. **Find, download and read ebooks from one bookshelf.** Fetch web novels chapter by chapter, then read the EPUB that the app adds to your bookshelf.
 
 [![Release](https://img.shields.io/github/v/release/lbk-ones/wd-reader?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/lbk-ones/wd-reader/total?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-456653?style=flat-square)
 ![Wails](https://img.shields.io/badge/Wails-v3.1.0-DF0000?style=flat-square)
 
-[Download](https://github.com/lbk-ones/wd-reader/releases) · [Screenshots](#screenshots) · [Getting started](#getting-started) · [Development and builds](#development-and-builds) · [Report an issue](https://github.com/lbk-ones/wd-reader/issues)
+[Download the app](https://github.com/lbk-ones/wd-reader/releases) · [Download books](#download-books) · [Screenshots](#screenshots) · [Getting started](#getting-started) · [Development and builds](#development-and-builds) · [Report an issue](https://github.com/lbk-ones/wd-reader/issues)
 
 </div>
 
-![wd-reader grid library with title search, layout controls and local books](images/screenshots/bookshelf-grid.jpg)
+## Download books
+
+Open **Download books** from the bookshelf and search by title or paste a supported novel’s detail page URL. Both download methods use the same search, task list and import flow.
+
+| Download method | When to use it |
+| --- | --- |
+| **Complete book downloads** | Find ready-to-download ebooks from sources including Internet Archive, Project Gutenberg and Chinese ebook catalogs. Filter by TXT, EPUB or Kindle format. This group appears first in the results |
+| **Web novel downloads** | Search or paste a book link from one of 31 built-in web novel sources. The app fetches the chapters in order and builds an EPUB with a table of contents and available metadata, including the cover |
+
+- **Choose sources.** Browse sources by group and select or deselect them together. The app checks enabled sources automatically when you open the panel. You can also rerun the check.
+- **Browse results.** See the first 10 matches and load 10 more at a time. Filter by format or clear the current search.
+- **Track downloads.** Check progress, cancel or retry from the task list. Web novel downloads can fetch chapters in parallel and assemble them in table-of-contents order. Completed downloads appear on the bookshelf automatically.
+- **Edit source rules.** Open **Resource sources** to choose a group from the dropdown and edit search, book details, table of contents and chapter content rules in separate form sections.
+
+Source reachability varies by network and site. The crawler rules draw on [So Novel](https://github.com/freeok/so-novel). See the [built-in source list](internal/resourcecatalog/defaults.json) and [resource download guide](docs/resource-downloads.md) for configuration details (in Chinese).
 
 ## Features
 
 | Feature | What you can do |
 | --- | --- |
+| Book downloads | Find ready-made ebooks or fetch web novel chapters and add the finished book to the bookshelf automatically |
 | Local bookshelf | Add books or drop files into the window, switch between List and Grid, and search by title, author or pinyin. Recently opened books appear first |
 | Book details and originals | Extract metadata and covers from EPUB, MOBI and AZW files, edit titles, authors, descriptions and covers, and re-import original files from My library |
 | Text layout | Choose Compact, Standard, Comfort or Large presets, or adjust text size and line height individually |
@@ -83,6 +98,8 @@ The default window is **400 × 690**. The grid fits three columns and adapts to 
 ### Library and reading
 
 Search by title, author or pinyin in either layout. Book cards show the author, import format and import date. The app remembers your last layout.
+
+![wd-reader grid library with title search, layout controls and local books](images/screenshots/bookshelf-grid.jpg)
 
 <details>
 <summary><strong>List view, book details and original files</strong></summary>
@@ -143,7 +160,7 @@ Press `F1` to open help. Browse Getting started, Reading preferences and Shortcu
 
 ## Getting started
 
-1. Click **Add books** or drop local files into the library window. You can also enter a direct file URL under **Download books**.
+1. Click **Add books**, drop local files into the library window, or open **Download books** to find ebooks.
 2. Double-click a book, or focus it with the keyboard and press `Enter`.
 3. Click the text to turn pages or scroll with the mouse wheel. Use the bottom bar to change chapters and press `F2` to open contents.
 4. Open **Reading preferences** with the gear button to adjust colors, text, window behavior and auto reading.

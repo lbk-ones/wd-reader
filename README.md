@@ -8,23 +8,36 @@
 
 **偷得浮生半日闲，把片刻留给阅读。**
 
-一款轻巧、低干扰的跨平台桌面电子书阅读器。支持本地书架、迷你阅读、透明窗口与自动阅读，用自己喜欢的方式读完下一章。
+一款轻巧、低干扰的跨平台桌面电子书阅读器。**在同一个书架搜索、下载和阅读电子书**，也能把网页小说逐章抓取成带目录的 EPUB，下载完成后自动加入书架。
 
 [![Release](https://img.shields.io/github/v/release/lbk-ones/wd-reader?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/lbk-ones/wd-reader/total?style=flat-square)](https://github.com/lbk-ones/wd-reader/releases)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-456653?style=flat-square)
 ![Wails](https://img.shields.io/badge/Wails-v3.1.0-DF0000?style=flat-square)
 
-[下载应用](https://github.com/lbk-ones/wd-reader/releases) · [界面预览](#界面预览) · [开始阅读](#开始阅读) · [开发与构建](#开发与构建) · [反馈问题](https://github.com/lbk-ones/wd-reader/issues)
+[下载应用](https://github.com/lbk-ones/wd-reader/releases) · [资源下载](#资源下载) · [界面预览](#界面预览) · [开始阅读](#开始阅读) · [开发与构建](#开发与构建) · [反馈问题](https://github.com/lbk-ones/wd-reader/issues)
 
 </div>
 
-![wd-reader 矩阵书架：书名搜索、布局切换和本地书籍卡片](images/screenshots/bookshelf-grid.jpg)
+## 资源下载
+
+在书架顶部打开 **资源下载**，输入书名或粘贴受支持的小说详情页链接。两种下载方式共用搜索、任务列表和入库流程。
+
+| 下载方式 | 适用场景 |
+| --- | --- |
+| **完本下载** | 查找可直接下载的电子书。来源包括久久小说网、速读谷、爱下电子书、中文 TXT 目录、Internet Archive 和 Project Gutenberg。可按 TXT、EPUB 或 Kindle 格式筛选，完本下载组优先显示 |
+| **网页小说逐章下载** | 内置 31 个网页小说书源。按书名搜索或使用详情链接，抓取目录和正文，生成带目录的 EPUB，并写入可获取的书名、作者、简介、分类和封面 |
+
+- **选书源**　展开书源列表，按分组查看，也可一键全选或取消全选。打开下载页会自动检测已启用书源的访问状态，可手动重新检测。
+- **看结果**　先显示 10 条，点击「更多」每次追加 10 条。可按格式筛选，也可一键清除查询结果。
+- **下载入库**　在「下载任务」查看进度、取消或重试。章节抓取可设置并发，多个协程抓取不同章节，最后按目录顺序合成 EPUB。下载完成后自动加入书架。
+- **配置规则**　打开「资源配置」，从下拉菜单选择分组，在表单中分别编辑搜索结果、书籍详情、章节目录与正文规则。
 
 ## 功能亮点
 
 | 功能 | 你可以做什么 |
 | --- | --- |
+| 资源下载 | 搜索成品电子书或逐章抓取网页小说，下载完成后自动加入书架 |
 | 本地书架 | 添加或拖入书籍，切换列表和矩阵布局，按书名、作者或拼音查找，优先显示最近打开的书 |
 | 书籍信息与原文件 | 从 EPUB、MOBI 和 AZW 系列提取书籍信息与封面，手动编辑书名、作者、简介和封面，在「我的书库」管理和重新导入原文件 |
 | 舒适排版 | 在紧凑、标准、舒适、大字四档预设间切换，也可单独调整字号与行高 |
@@ -81,6 +94,8 @@ Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还
 ### 书架与阅读
 
 书架支持按书名、作者或拼音搜索，并会记住上次使用的布局。书籍卡片显示作者、导入格式和导入日期。
+
+![wd-reader 矩阵书架，展示书名搜索、布局切换和本地书籍卡片](images/screenshots/bookshelf-grid.jpg)
 
 <details>
 <summary><strong>列表书架、书籍信息与原文件</strong></summary>
@@ -141,9 +156,7 @@ Windows 需要 WebView2 Runtime；Linux 使用 GTK4 / WebKitGTK 6，AppImage 还
 
 ## 开始阅读
 
-书架顶部打开 **资源下载**，可搜索书名下载电子书，也可粘贴小说详情页链接，逐章生成 EPUB。下载页自动检测书源访问状态，任务完成后自动加入书架。支持查看进度、取消及重试。所有书源均可在界面中配置，详见 [资源下载说明](docs/resource-downloads.md)。
-
-1. 点击书架上的 **添加书籍**，或把本地文件拖入窗口；也可通过 **资源下载** 输入书名查找并下载电子书。
+1. 点击书架上的 **添加书籍**，把本地文件拖入窗口，或打开 **资源下载** 查找电子书。
 2. 双击书籍开始阅读，或用键盘选中书籍后按 `Enter`。
 3. 点击正文翻页或滚动鼠标阅读。使用底栏切换章节，按 `F2` 打开目录。
 4. 点击齿轮打开 **阅读偏好**，选择配色、字号，以及适合自己的窗口与自动阅读方式。
