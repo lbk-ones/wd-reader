@@ -126,6 +126,11 @@
 .resource-source-full {
     grid-column: 1 / -1;
 }
+.resource-crawler-help {
+    margin: 0 0 10px;
+    color: #69756c;
+    font-size: 12px;
+}
 .resource-mapping-fields {
     margin-bottom: 14px;
     padding: 10px;

@@ -1,8 +1,10 @@
 import { Button, Form, Input, InputNumber, Select, Switch } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { useState } from 'react';
 import { SourceKind } from '../../bindings/wd-reader/internal/resourcecatalog/models.js';
 import { t } from '../i18n/index.jsx';
-import { defaultSourceGroup, normalizeSourceGroup } from './resourceDownloads.js';
+import CrawlerRuleFields from './CrawlerRuleFields.jsx';
+import { defaultSourceGroup, normalizeSourceGroup, sourceGroupName, sourceGroups } from './resourceDownloads.js';
 
 // 类型键写入配置，显示名称由界面翻译。
 export const sourceKindLabels = {
@@ -15,6 +17,7 @@ export const sourceKindLabels = {
 const formats = ['txt', 'epub', 'mobi', 'azw', 'azw3'];
 const formatOptions = formats.map((value) => ({ value, label: value.toUpperCase() }));
 const mappingFields = ['searchForm', 'authorHints', 'aliases'];
+const defaultGroupForKind = (kind) => (kind === SourceKind.CrawlerKind ? 'main' : defaultSourceGroup);
 // 切换类型时用这些字段列表找出应移除的专用属性。分组、主页等通用字段独立保留。
 const kindFields = {
     [SourceKind.HTMLKind]: [
@@ -48,7 +51,7 @@ const kindFields = {
     [SourceKind.GutenbergKind]: ['searchUrl', 'detailUrl', 'bookUrl'],
 };
 
-// 把配置原文转换成表单草稿。映射转为可增删的行，抓取规则转为可直接编辑的 JSON 文本。
+// 把配置原文转换成表单草稿。映射转为可增删的行，抓取规则保留原有的嵌套对象。
 export function readConfigDraft(content) {
     const config = JSON.parse(content);
     if (
@@ -60,21 +63,18 @@ export function readConfigDraft(content) {
     return {
         ...config,
         sources: config.sources.map((source) => {
-            const draft = { ...source };
-            if ('group' in source) draft.group = normalizeSourceGroup(source.group);
+            const group = typeof source.group === 'string' ? normalizeSourceGroup(source.group) : '';
+            const draft = { ...source, group: group || defaultGroupForKind(source.kind) };
             for (const key of mappingFields) {
                 if (key in source)
                     draft[key] = Object.entries(source[key] || {}).map(([name, value]) => ({ name, value }));
-            }
-            if (source.kind === SourceKind.CrawlerKind) {
-                draft.crawler = JSON.stringify(source.crawler || {}, null, 2);
             }
             return draft;
         }),
     };
 }
 
-// 将草稿还原为后端配置格式。保存前检查映射键和抓取规则的 JSON 结构。
+// 将草稿还原为后端配置格式。检查映射键，抓取规则由后端按配置结构校验。
 export function writeConfigDraft(config) {
     const sources = config.sources.map((source) => {
         const result = { ...source };
@@ -92,15 +92,6 @@ export function writeConfigDraft(config) {
                 return [field, value];
             });
             result[key] = Object.fromEntries(pairs);
-        }
-        if (source.kind === SourceKind.CrawlerKind) {
-            try {
-                const crawler = JSON.parse(source.crawler || '{}');
-                if (!crawler || typeof crawler !== 'object' || Array.isArray(crawler)) throw new Error();
-                result.crawler = crawler;
-            } catch {
-                throw new Error(t('来源“{0}”的网页抓取规则需要有效的 JSON 对象', { 0: source.name || source.id }));
-            }
         }
         return result;
     });
@@ -159,26 +150,35 @@ function MappingFields({ label, rows = [], nameLabel, valueLabel, multiple, onCh
     );
 }
 
-// 编辑一个书源草稿。通用字段共用表单控件，crawler 对象单独用 JSON 编辑。
-export default function ResourceSourceForm({ source, onChange, disabled }) {
+// 编辑一个书源草稿，通用字段与抓取规则沿用同一份配置对象。
+export default function ResourceSourceForm({ source, groups, onChange, disabled }) {
+    const [groupSearch, setGroupSearch] = useState('');
     const html = source.kind === SourceKind.HTMLKind;
     const crawler = source.kind === SourceKind.CrawlerKind;
     const index = source.kind === SourceKind.FileIndexKind;
     const post = String(source.searchMethod || '').toUpperCase() === 'POST';
     const change = (key, value) => onChange({ ...source, [key]: value });
+    const groupOptions = [...new Set([...sourceGroups, ...groups])].map((value) => ({
+        value,
+        label: t(sourceGroupName(value)),
+    }));
+    const customGroup = normalizeSourceGroup(groupSearch);
+    // 保留自定义分组能力，在输入新组名时提供一个可选择的新增项。
+    if (customGroup && !groupOptions.some(({ value }) => value === customGroup)) {
+        groupOptions.push({ value: customGroup, label: t('新增分组“{0}”', { 0: customGroup }) });
+    }
     // 保留两个类型共同使用的字段，只清掉旧类型独有的规则。
     function changeKind(kind) {
         const next = { ...source, kind };
         for (const key of kindFields[source.kind] || []) {
             if (!kindFields[kind].includes(key)) delete next[key];
         }
-        // 仅在分组仍是旧类型默认值时切换默认分组，用户填写的自定义组名继续沿用。
-        if (kind === SourceKind.CrawlerKind && next.group === defaultSourceGroup) next.group = 'main';
-        if (crawler && kind !== SourceKind.CrawlerKind && next.group === 'main') next.group = defaultSourceGroup;
+        // 仅在分组仍是旧类型默认值时切换默认分组，自定义组名继续沿用。
+        if (next.group === defaultGroupForKind(source.kind)) next.group = defaultGroupForKind(kind);
         onChange(next);
     }
     // 创建绑定到同名草稿字段的单行或多行输入框。
-    function text(key, label, { required, placeholder, full, multiline, rows } = {}) {
+    function text(key, label, { required, placeholder, full, multiline } = {}) {
         const Component = multiline ? Input.TextArea : Input;
         return (
             <Form.Item
@@ -192,7 +192,6 @@ export default function ResourceSourceForm({ source, onChange, disabled }) {
                     value={source[key] ?? ''}
                     placeholder={placeholder}
                     spellCheck={false}
-                    rows={rows}
                     onChange={(event) => change(key, event.target.value)}
                 />
             </Form.Item>
@@ -233,7 +232,28 @@ export default function ResourceSourceForm({ source, onChange, disabled }) {
                         onChange={(value) => change('enabled', value)}
                     />
                 </Form.Item>
-                {text('group', '书源分组')}
+                <Form.Item label={t('书源分组')} htmlFor="source-group">
+                    <Select
+                        id="source-group"
+                        value={source.group}
+                        options={groupOptions}
+                        showSearch
+                        searchValue={groupSearch}
+                        onSearch={setGroupSearch}
+                        onBlur={() => setGroupSearch('')}
+                        filterOption={(input, option) => {
+                            const query = input.trim().toLowerCase();
+                            return (
+                                option.value === normalizeSourceGroup(query) ||
+                                [option.value, option.label].some((text) => text.toLowerCase().includes(query))
+                            );
+                        }}
+                        onChange={(value) => {
+                            setGroupSearch('');
+                            change('group', value);
+                        }}
+                    />
+                </Form.Item>
                 {text('homeUrl', '书源主页', { required: crawler, placeholder: 'https://example.org/' })}
                 {text('description', '来源说明', { full: true, multiline: true })}
             </div>
@@ -319,18 +339,16 @@ export default function ResourceSourceForm({ source, onChange, disabled }) {
             )}
             {crawler && (
                 <>
-                    <h3>{t('逐章下载')}</h3>
+                    <h3>{t('网页抓取规则')}</h3>
                     <div className="resource-source-fields">
                         {text('titleMeta', '书名 Meta 字段')}
                         {text('authorMeta', '作者 Meta 字段')}
-                        {text('crawler', '网页抓取规则（JSON）', {
-                            required: true,
-                            full: true,
-                            multiline: true,
-                            rows: 11,
-                            placeholder: '{ "toc": { "item": "#chapters a" }, "chapter": { "content": "#content" } }',
-                        })}
                     </div>
+                    <CrawlerRuleFields
+                        value={source.crawler}
+                        hasSearch={!!source.searchUrl}
+                        onChange={(value) => change('crawler', value)}
+                    />
                 </>
             )}
             {(html || index) && (

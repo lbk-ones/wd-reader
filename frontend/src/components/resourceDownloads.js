@@ -10,6 +10,7 @@ const sourceGroupNames = {
     'no-search': '仅支持详情链接',
     cloudflare: '可能要求浏览器验证',
 };
+export const sourceGroups = Object.keys(sourceGroupNames);
 // 兼容曾直接使用中文名称作为标识的配置。
 export function normalizeSourceGroup(group) {
     const key = typeof group === 'string' ? group.trim() : group;

@@ -244,6 +244,7 @@ export default function ResourceConfigWindow() {
                             <ResourceSourceForm
                                 key={selected}
                                 source={source}
+                                groups={draft.sources.map((item) => item.group)}
                                 onChange={updateSource}
                                 disabled={busy}
                             />
