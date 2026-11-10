@@ -25,7 +25,7 @@ Open **Download books** from the bookshelf and search by title or paste a suppor
 
 | Download method | When to use it |
 | --- | --- |
-| **Complete book downloads** | Find ready-to-download ebooks from sources including Internet Archive, Project Gutenberg and Chinese ebook catalogs. Filter by TXT, EPUB or Kindle format. This group appears first in the results |
+| **Complete book downloads** | Find directly downloadable e-books. Multiple book sources are built-in, including Internet Archive and Project Gutenberg. You can filter by TXT, EPUB, or Kindle format, with priority given to complete download groups |
 | **Web novel downloads** | Search or paste a book link from one of 31 built-in web novel sources. The app fetches the chapters in order and builds an EPUB with a table of contents and available metadata, including the cover |
 
 - **Choose sources.** Browse sources by group and select or deselect them together. The app checks enabled sources automatically when you open the panel. You can also rerun the check.
