@@ -75,6 +75,17 @@ export function CheckForUpdates(force) {
 }
 
 /**
+ * CheckResourceSource 按最新配置探测指定的已启用书源，面板关闭或重新检测时可取消请求。
+ * @param {string} id
+ * @returns {$CancellablePromise<resourcecatalog$0.SourceHealth>}
+ */
+export function CheckResourceSource(id) {
+    return $Call.ByName("wd-reader/internal/desktop.App.CheckResourceSource", id).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType1($result);
+    }));
+}
+
+/**
  * @param {string} id
  * @returns {$CancellablePromise<boolean>}
  */
@@ -103,7 +114,7 @@ export function CloseResourceConfig() {
  */
 export function CommitResourceImport(token) {
     return $Call.ByName("wd-reader/internal/desktop.App.CommitResourceImport", token).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType2($result);
+        return $$createType3($result);
     }));
 }
 
@@ -163,7 +174,7 @@ export function DiscardResourceImport(token) {
  */
 export function ExportResources(cache) {
     return $Call.ByName("wd-reader/internal/desktop.App.ExportResources", cache).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType4($result);
+        return $$createType5($result);
     }));
 }
 
@@ -175,7 +186,7 @@ export function ExportResources(cache) {
  */
 export function FindDownloadableBooks(id, query) {
     return $Call.ByName("wd-reader/internal/desktop.App.FindDownloadableBooks", id, query).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType5($result);
+        return $$createType6($result);
     }));
 }
 
@@ -208,7 +219,7 @@ export function GetBookList() {
  */
 export function GetBookMetadata() {
     return $Call.ByName("wd-reader/internal/desktop.App.GetBookMetadata").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType7($result);
+        return $$createType8($result);
     }));
 }
 
@@ -257,7 +268,7 @@ export function GetDefaultResourceSources() {
  */
 export function GetMiniMenuState() {
     return $Call.ByName("wd-reader/internal/desktop.App.GetMiniMenuState").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType8($result);
+        return $$createType9($result);
     }));
 }
 
@@ -267,7 +278,7 @@ export function GetMiniMenuState() {
  */
 export function GetResourceSources() {
     return $Call.ByName("wd-reader/internal/desktop.App.GetResourceSources").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType9($result);
+        return $$createType10($result);
     }));
 }
 
@@ -331,7 +342,7 @@ export function InstallUpdate(expectedVersion) {
  */
 export function ListCategories() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListCategories").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType11($result);
+        return $$createType12($result);
     }));
 }
 
@@ -340,7 +351,7 @@ export function ListCategories() {
  */
 export function ListMissingBooks() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListMissingBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType13($result);
+        return $$createType14($result);
     }));
 }
 
@@ -349,7 +360,7 @@ export function ListMissingBooks() {
  */
 export function ListOriginalBooks() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListOriginalBooks").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType15($result);
+        return $$createType16($result);
     }));
 }
 
@@ -359,7 +370,7 @@ export function ListOriginalBooks() {
  */
 export function ListResourceDownloads() {
     return $Call.ByName("wd-reader/internal/desktop.App.ListResourceDownloads").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType17($result);
+        return $$createType18($result);
     }));
 }
 
@@ -416,7 +427,7 @@ export function ParseEpubToTxt(filename) {
  */
 export function PrepareResourceImport() {
     return $Call.ByName("wd-reader/internal/desktop.App.PrepareResourceImport").then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType19($result);
+        return $$createType20($result);
     }));
 }
 
@@ -455,6 +466,17 @@ export function RemoveBookFromCategory(bookID, categoryID) {
 }
 
 /**
+ * ResolveResourceNovel 从当前配置中选择能处理详情链接的抓取书源，返回书名、作者和下载项。
+ * @param {string} link
+ * @returns {$CancellablePromise<resourcecatalog$0.Book>}
+ */
+export function ResolveResourceNovel(link) {
+    return $Call.ByName("wd-reader/internal/desktop.App.ResolveResourceNovel", link).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType21($result);
+    }));
+}
+
+/**
  * ResourceConfigUsesNativeWindow 判断是否具备原生桌面窗口；浏览器预览需使用独立页面。
  * @returns {$CancellablePromise<boolean>}
  */
@@ -478,7 +500,7 @@ export function RestoreOriginalBook(name, overwrite) {
  */
 export function SaveCategory(id, name) {
     return $Call.ByName("wd-reader/internal/desktop.App.SaveCategory", id, name).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType10($result);
+        return $$createType11($result);
     }));
 }
 
@@ -528,13 +550,13 @@ export function SetReminder(kind, minutes, language) {
 }
 
 /**
- * StartResourceDownload 校验并去重活动任务，限制队列数量，创建 5 分钟超时任务后异步下载和入库。
+ * StartResourceDownload 校验并去重活动任务，限制队列数量，异步下载和入库。
  * @param {resourcecatalog$0.File} file
  * @returns {$CancellablePromise<$models.DownloadTask>}
  */
 export function StartResourceDownload(file) {
     return $Call.ByName("wd-reader/internal/desktop.App.StartResourceDownload", file).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType16($result);
+        return $$createType17($result);
     }));
 }
 
@@ -563,22 +585,24 @@ export function UpdateBookMetadata(id, title, authors, description) {
 
 // Private type creation functions
 const $$createType0 = $models.UpdateInfo.createFrom;
-const $$createType1 = book$0.ResourceImportStats.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = $models.ResourceExportResult.createFrom;
-const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = resourcecatalog$0.SearchResponse.createFrom;
-const $$createType6 = book$0.BookMetadata.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = $models.MiniMenuState.createFrom;
-const $$createType9 = resourcecatalog$0.ConfigFile.createFrom;
-const $$createType10 = book$0.Category.createFrom;
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = book$0.MissingBook.createFrom;
-const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = book$0.LibraryOriginal.createFrom;
-const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = $models.DownloadTask.createFrom;
-const $$createType17 = $Create.Array($$createType16);
-const $$createType18 = $models.ResourceImportPreview.createFrom;
-const $$createType19 = $Create.Nullable($$createType18);
+const $$createType1 = resourcecatalog$0.SourceHealth.createFrom;
+const $$createType2 = book$0.ResourceImportStats.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = $models.ResourceExportResult.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = resourcecatalog$0.SearchResponse.createFrom;
+const $$createType7 = book$0.BookMetadata.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = $models.MiniMenuState.createFrom;
+const $$createType10 = resourcecatalog$0.ConfigFile.createFrom;
+const $$createType11 = book$0.Category.createFrom;
+const $$createType12 = $Create.Array($$createType11);
+const $$createType13 = book$0.MissingBook.createFrom;
+const $$createType14 = $Create.Array($$createType13);
+const $$createType15 = book$0.LibraryOriginal.createFrom;
+const $$createType16 = $Create.Array($$createType15);
+const $$createType17 = $models.DownloadTask.createFrom;
+const $$createType18 = $Create.Array($$createType17);
+const $$createType19 = $models.ResourceImportPreview.createFrom;
+const $$createType20 = $Create.Nullable($$createType19);
+const $$createType21 = resourcecatalog$0.Book.createFrom;

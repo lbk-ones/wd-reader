@@ -3,6 +3,7 @@ module wd-reader
 go 1.26.0
 
 require (
+	github.com/andybalholm/cascadia v1.3.3
 	github.com/gen2brain/avif v0.6.0
 	github.com/gen2brain/heic v0.7.2
 	github.com/google/uuid v1.6.0

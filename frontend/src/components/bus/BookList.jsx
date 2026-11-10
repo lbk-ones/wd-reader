@@ -18,6 +18,7 @@ import {
     TagsOutlined,
     MinusCircleOutlined,
     RightOutlined,
+    DownOutlined,
 } from '@ant-design/icons';
 import { Button, Drawer, Input, Modal, Select, message } from 'antd';
 import { getCacheItem, setCacheItem, getSplitMap, putSplitMap } from '../Utils';
@@ -39,6 +40,7 @@ import CategoryManager from './CategoryManager.jsx';
 import CategoryBooks from './CategoryBooks.jsx';
 
 const TIP = ['翻开一页，暂别喧嚣。', '每一段闲暇，都有书相伴。', '慢慢读，世界会安静下来。'];
+const originalPageSize = 10;
 
 /**
  * book name list
@@ -72,15 +74,22 @@ function BookList(props, ref) {
     const [libraryOpen, setLibraryOpen] = useState(false);
     const [originals, setOriginals] = useState([]);
     const [libraryQuery, setLibraryQuery] = useState('');
+    const [originalLimit, setOriginalLimit] = useState(originalPageSize);
     const [missingOpen, setMissingOpen] = useState(false);
     const [missingBooks, setMissingBooks] = useState([]);
+    const hasLibraryQuery = libraryQuery.trim() !== '';
     const indexedOriginals = useMemo(
-        () => originals.map((item) => ({ item, index: indexOriginalName(item.name) })),
-        [originals],
+        () => (hasLibraryQuery ? originals.map((item) => ({ item, index: indexOriginalName(item.name) })) : []),
+        [originals, hasLibraryQuery],
     );
-    const visibleOriginals = useMemo(
-        () => indexedOriginals.filter(({ index }) => matchesOriginalName(index, libraryQuery)).map(({ item }) => item),
-        [indexedOriginals, libraryQuery],
+    const matchingOriginals = useMemo(
+        () =>
+            hasLibraryQuery
+                ? indexedOriginals
+                      .filter(({ index }) => matchesOriginalName(index, libraryQuery))
+                      .map(({ item }) => item)
+                : originals,
+        [originals, indexedOriginals, libraryQuery, hasLibraryQuery],
     );
 
     async function loadOriginals() {
@@ -613,6 +622,7 @@ function BookList(props, ref) {
                 onClose={() => {
                     setLibraryOpen(false);
                     setLibraryQuery('');
+                    setOriginalLimit(originalPageSize);
                 }}
                 width="min(420px, 100vw)"
             >
@@ -633,10 +643,13 @@ function BookList(props, ref) {
                     value={libraryQuery}
                     aria-label={t('搜索文件名、首拼或全拼')}
                     placeholder={t('搜索文件名、首拼或全拼')}
-                    onChange={(event) => setLibraryQuery(event.target.value)}
+                    onChange={(event) => {
+                        setLibraryQuery(event.target.value);
+                        setOriginalLimit(originalPageSize);
+                    }}
                 />
                 <ul className="original-library-list">
-                    {visibleOriginals.map((item) => (
+                    {matchingOriginals.slice(0, originalLimit).map((item) => (
                         <li key={item.name} className="original-library-item">
                             <span className="original-library-name" title={item.name}>
                                 {item.name}
@@ -693,10 +706,21 @@ function BookList(props, ref) {
                         </li>
                     ))}
                     {!originals.length && <li className="library-empty">{t('书库暂无原文件')}</li>}
-                    {originals.length > 0 && !visibleOriginals.length && (
+                    {originals.length > 0 && !matchingOriginals.length && (
                         <li className="library-empty">{t('没有找到匹配的书籍')}</li>
                     )}
                 </ul>
+                {matchingOriginals.length > originalLimit && (
+                    <div className="original-library-more">
+                        <Button
+                            size="small"
+                            icon={<DownOutlined />}
+                            onClick={() => setOriginalLimit((limit) => limit + originalPageSize)}
+                        >
+                            {t('更多')}
+                        </Button>
+                    </div>
+                )}
             </Drawer>
             <Drawer
                 className="original-library-drawer"

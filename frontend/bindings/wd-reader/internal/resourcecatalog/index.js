@@ -5,7 +5,14 @@
 export {
     Book,
     ConfigFile,
+    CrawlerBookRules,
+    CrawlerChapterRules,
+    CrawlerRules,
+    CrawlerSearchRules,
+    CrawlerTOCRules,
     File,
     SearchResponse,
-    Source
+    Source,
+    SourceHealth,
+    SourceKind
 } from "./models.js";

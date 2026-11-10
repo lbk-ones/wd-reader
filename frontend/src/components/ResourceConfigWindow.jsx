@@ -9,12 +9,15 @@ import {
     UndoOutlined,
 } from '@ant-design/icons';
 import { Call } from '@wailsio/runtime';
+import { SourceKind } from '../../bindings/wd-reader/internal/resourcecatalog/models.js';
 import { t, useI18n } from '../i18n/index.jsx';
-import ResourceSourceForm, { readConfigDraft, sourceKinds, writeConfigDraft } from './ResourceSourceForm.jsx';
+import ResourceSourceForm, { readConfigDraft, sourceKindLabels, writeConfigDraft } from './ResourceSourceForm.jsx';
+import { defaultSourceGroup, sourceGroupName } from './resourceDownloads.js';
 import './ResourceConfigWindow.css';
 
 const invoke = (name, ...args) => Call.ByName(`wd-reader/internal/desktop.App.${name}`, ...args);
 
+// 统一管理成品下载和逐章抓取配置，负责草稿、保存状态及配置窗口的生命周期。
 export default function ResourceConfigWindow() {
     useI18n();
     const { modal } = App.useApp();
@@ -27,11 +30,13 @@ export default function ResourceConfigWindow() {
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const saveRef = useRef(null);
+    // 与最近成功加载或保存的快照对比，判断表单中是否还有未保存的改动。
     const snapshot = draft ? JSON.stringify(draft) : '';
     const dirty = snapshot !== saved;
     const source = draft?.sources[selected];
     const busy = loading || saving;
 
+    // 从磁盘装载配置草稿。后端返回原文时，也可展示可解析但规则无效的配置供修复。
     async function load() {
         setLoading(true);
         setError('');
@@ -64,6 +69,7 @@ export default function ResourceConfigWindow() {
         window.addEventListener('beforeunload', unload);
         return () => window.removeEventListener('beforeunload', unload);
     }, [dirty]);
+    // 保存当前草稿。后端校验并写入成功后更新快照，并通过广播通知独立页面刷新。
     async function save() {
         if (loading || saving || !dirty) return;
         setSaving(true);
@@ -84,6 +90,7 @@ export default function ResourceConfigWindow() {
             setSaving(false);
         }
     }
+    // 键盘监听只注册一次，通过 ref 调用当前渲染对应的保存函数。
     saveRef.current = save;
     useEffect(() => {
         const keydown = (event) => {
@@ -95,6 +102,7 @@ export default function ResourceConfigWindow() {
         window.addEventListener('keydown', keydown);
         return () => window.removeEventListener('keydown', keydown);
     }, []);
+    // 默认配置先进入草稿。用户确认保存后才写入磁盘。
     async function restore() {
         setLoading(true);
         try {
@@ -109,6 +117,7 @@ export default function ResourceConfigWindow() {
             setLoading(false);
         }
     }
+    // 重新加载会替换当前草稿，有修改时先确认是否丢弃。
     function reload() {
         if (!dirty) {
             load();
@@ -116,6 +125,7 @@ export default function ResourceConfigWindow() {
         }
         modal.confirm({ title: t('放弃未保存的修改？'), content: t('重新加载会读取磁盘上的配置。'), onOk: load });
     }
+    // 原生窗口由后端隐藏以保留草稿，浏览器中的独立页面由浏览器关闭。
     async function close() {
         try {
             if (!(await invoke('CloseResourceConfig'))) window.close();
@@ -123,20 +133,33 @@ export default function ResourceConfigWindow() {
             setError(String(failure));
         }
     }
+    // 在草稿末尾追加一个空白成品来源并切换到该条目。
     function addSource() {
-        const current = draft || { version: 1, sources: [] };
+        const current = draft || { version: 2, sources: [] };
         setSelected(current.sources.length);
         setDraft({
             ...current,
-            sources: [...current.sources, { id: '', name: '', enabled: true, kind: 'html', description: '' }],
+            sources: [
+                ...current.sources,
+                {
+                    id: '',
+                    name: '',
+                    enabled: true,
+                    kind: SourceKind.HTMLKind,
+                    group: defaultSourceGroup,
+                    description: '',
+                },
+            ],
         });
     }
+    // 用编辑后的条目替换当前来源，其他来源继续沿用原草稿。
     function updateSource(next) {
         setDraft((current) => ({
             ...current,
             sources: current.sources.map((item, index) => (index === selected ? next : item)),
         }));
     }
+    // 移除当前来源后，将选中位置限制在剩余条目的索引范围内。
     function removeSource() {
         const sources = draft.sources.filter((_, index) => index !== selected);
         setDraft({ ...draft, sources });
@@ -183,7 +206,7 @@ export default function ResourceConfigWindow() {
                             size="small"
                             icon={<PlusOutlined />}
                             onClick={addSource}
-                            disabled={busy || draft?.sources.length >= 20}
+                            disabled={busy || draft?.sources.length >= 100}
                         >
                             {t('新增来源')}
                         </Button>
@@ -198,7 +221,10 @@ export default function ResourceConfigWindow() {
                         >
                             <span>
                                 <strong>{item.name || item.id || t('未命名来源')}</strong>
-                                <small>{t(sourceKinds[item.kind] || item.kind || '—')}</small>
+                                <small>
+                                    {t(sourceGroupName(item.group))} ·{' '}
+                                    {t(sourceKindLabels[item.kind] || item.kind || '—')}
+                                </small>
                             </span>
                             {!item.enabled && <Tag>{t('已禁用')}</Tag>}
                         </button>

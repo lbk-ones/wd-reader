@@ -31,6 +31,44 @@ func TestConfigPreservesUserFile(t *testing.T) {
 	}
 }
 
+// TestConfigMigratesChapterSourcesOnce 验证迁移保留旧条目及扩展字段，且后续加载不会补回用户已删除的来源。
+func TestConfigMigratesChapterSourcesOnce(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "resource-sources.json")
+	legacy := `{"version":1,"note":"keep","sources":[{"id":"custom","name":"原有来源","enabled":false,"kind":"file-index","indexUrl":"https://example.org/index","downloadUrl":"https://example.org/{file}","bookUrl":"https://example.org/{file}","note":"keep"}]}`
+	if err := os.WriteFile(path, []byte(legacy), 0600); err != nil {
+		t.Fatal(err)
+	}
+	first, err := Load(path)
+	if err != nil || len(first.Sources) != 32 || first.Sources[0].Enabled || first.Sources[0].Group != defaultSourceGroup {
+		t.Fatalf("migration failed: %d sources, %v", len(first.Sources), err)
+	}
+	if strings.Count(first.Content, `"note": "keep"`) != 2 {
+		t.Fatal("migration discarded existing fields")
+	}
+	second, err := Load(path)
+	if err != nil || second.Content != first.Content {
+		t.Fatal("config changed after migration")
+	}
+	if err := Save(path, `{"version":2,"sources":[]}`); err != nil {
+		t.Fatal(err)
+	}
+	empty, err := Load(path)
+	if err != nil || len(empty.Sources) != 0 {
+		t.Fatal("removed crawlers were restored")
+	}
+}
+
+func TestConfigAcceptsLegacyDownloadGroup(t *testing.T) {
+	legacy := strings.Replace(DefaultConfig(), `"group": "download"`, `"group": " 完本下载 "`, 1)
+	config, err := Parse([]byte(legacy))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Sources[0].Group != "download" {
+		t.Fatalf("legacy group resolved to %q", config.Sources[0].Group)
+	}
+}
+
 func TestDefaultConfigRestoresSourcesWithoutChangingDraftOnDisk(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "resource-sources.json")
 	original := DefaultConfig()
@@ -77,7 +115,7 @@ func TestArchiveOnlyListsActualPublicFiles(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	source := Source{ID: "test", Name: "测试", Kind: "archive", SearchURL: server.URL + "/search?q=title:{query}", DetailURL: server.URL + "/metadata/{id}", DownloadURL: server.URL + "/download/{id}/{file}", BookURL: server.URL + "/details/{id}"}
+	source := Source{ID: "test", Name: "测试", Kind: ArchiveKind, SearchURL: server.URL + "/search?q=title:{query}", DetailURL: server.URL + "/metadata/{id}", DownloadURL: server.URL + "/download/{id}/{file}", BookURL: server.URL + "/details/{id}"}
 	got, err := Search(context.Background(), server.Client(), source, "红楼梦")
 	if err != nil || len(got.Books) != 1 || len(got.Books[0].Files) != 2 || got.Skipped != 2 {
 		t.Fatalf("%+v %v", got, err)
@@ -96,7 +134,7 @@ func TestGutenbergAcquisitionLinks(t *testing.T) {
 		fmt.Fprint(w, `<feed xmlns="http://www.w3.org/2005/Atom"><entry><author><name>Lewis Carroll</name></author><link rel="http://opds-spec.org/acquisition" type="application/epub+zip" href="https://example.org/alice.epub"/><link rel="http://opds-spec.org/acquisition" type="application/epub+zip" href="https://example.org/other.epub"/><link rel="http://opds-spec.org/acquisition/buy" type="application/epub+zip" href="https://example.org/buy.epub"/><link rel="http://opds-spec.org/acquisition" type="text/plain" href="https://example.org/alice.txt"/></entry></feed>`)
 	}))
 	defer server.Close()
-	source := Source{ID: "test", Name: "Test", Kind: "gutenberg", SearchURL: server.URL + "/search?q={query}", DetailURL: server.URL + "/ebooks/{id}.opds", BookURL: server.URL + "/ebooks/{id}"}
+	source := Source{ID: "test", Name: "Test", Kind: GutenbergKind, SearchURL: server.URL + "/search?q={query}", DetailURL: server.URL + "/ebooks/{id}.opds", BookURL: server.URL + "/ebooks/{id}"}
 	got, err := Search(context.Background(), server.Client(), source, "Alice")
 	if err != nil || len(got.Books) != 1 || len(got.Books[0].Files) != 2 || got.Books[0].Author != "Lewis Carroll" {
 		t.Fatalf("%+v %v", got, err)
@@ -114,7 +152,7 @@ func TestLiveCatalog(t *testing.T) {
 	for _, source := range config.Sources {
 		t.Run(source.ID, func(t *testing.T) {
 			query := "红楼梦"
-			if source.Kind == "gutenberg" {
+			if source.Kind == GutenbergKind {
 				query = "Alice"
 			}
 			got, err := Search(context.Background(), http.DefaultClient, source, query)
@@ -126,7 +164,7 @@ func TestLiveCatalog(t *testing.T) {
 			}
 			t.Logf("%d resources, first: %s (%d files)", len(got.Books), got.Books[0].Title, len(got.Books[0].Files))
 			// Download into test storage only; do not change the user's library.
-			if source.Kind == "gutenberg" {
+			if source.Kind == GutenbergKind {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 				file, err := Download(ctx, http.DefaultClient, got.Books[0].Files[0], t.TempDir(), nil)

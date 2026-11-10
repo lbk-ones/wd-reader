@@ -19,19 +19,19 @@ import (
 
 // DownloadTask 是返回给前端的任务快照，前端轮询它更新进度和操作状态。
 type DownloadTask struct {
-	// 原始下载描述，供失败重试时恢复 Referer、ZIP 格式等参数。
+	// 原始下载描述，供失败重试时恢复书源标识、Referer 和 ZIP 格式等参数。
 	File resourcecatalog.File `json:"file"`
 	// 本次任务的 UUID，用于取消和查询。
 	ID string `json:"id"`
 	// 清理后的下载文件名。
 	Name string `json:"name"`
-	// 下载地址，用于识别同一资源的活动任务。
+	// 成品文件或书籍详情地址，与抓取书源标识一起用于识别重复任务。
 	URL string `json:"url"`
 	// 任务状态：queued、downloading、importing、done、cancelled 或 error。
 	Status string `json:"status"`
-	// 已接收的网络数据字节数；ZIP 解压进度不计入此值。
+	// 已接收的字节数，章节书源则为已完成的章节数。
 	Received int64 `json:"received"`
-	// 响应声明的总字节数；为 0 或负数时表示未知。
+	// 总字节数或总章节数。为 0 或负数时表示未知。
 	Total int64 `json:"total"`
 	// 失败原因，成功或未失败时为空。
 	Error string `json:"error,omitempty"`
@@ -92,16 +92,52 @@ func (a *App) GetDefaultResourceSources() string { return resourcecatalog.Defaul
 
 // FindDownloadableBooks 每次读取最新配置，仅对存在且已启用的指定来源执行搜索。
 func (a *App) FindDownloadableBooks(id, query string) (resourcecatalog.SearchResponse, error) {
-	config, err := resourcecatalog.Load(resourceSourcesPath())
+	source, err := a.resourceSource(id)
 	if err != nil {
 		return resourcecatalog.SearchResponse{}, err
 	}
-	for _, source := range config.Sources {
-		if source.ID == id && source.Enabled {
-			return resourcecatalog.Search(context.Background(), http.DefaultClient, source, query)
+	result, err := resourcecatalog.Search(context.Background(), http.DefaultClient, source, query)
+	for i := range result.Books {
+		for j := range result.Books[i].Files {
+			result.Books[i].Files[j].SourceGroup = source.Group
 		}
 	}
-	return resourcecatalog.SearchResponse{}, fmt.Errorf("资源来源不存在或已禁用")
+	return result, err
+}
+
+// CheckResourceSource 按最新配置探测指定的已启用书源，面板关闭或重新检测时可取消请求。
+func (a *App) CheckResourceSource(ctx context.Context, id string) (resourcecatalog.SourceHealth, error) {
+	source, err := a.resourceSource(id)
+	if err != nil {
+		return resourcecatalog.SourceHealth{}, err
+	}
+	return resourcecatalog.CheckSource(ctx, http.DefaultClient, source), nil
+}
+
+// ResolveResourceNovel 从当前配置中选择能处理详情链接的抓取书源，返回书名、作者和下载项。
+func (a *App) ResolveResourceNovel(ctx context.Context, link string) (resourcecatalog.Book, error) {
+	config, err := resourcecatalog.Load(resourceSourcesPath())
+	if err != nil {
+		return resourcecatalog.Book{}, err
+	}
+	return resourcecatalog.ResolveNovelBook(ctx, http.DefaultClient, config.Sources, link)
+}
+
+// resourceSource 按标识查找已启用来源。配置无效时优先返回原始配置错误，便于定位原因。
+func (a *App) resourceSource(id string) (resourcecatalog.Source, error) {
+	config, err := a.GetResourceSources()
+	if err != nil {
+		return resourcecatalog.Source{}, err
+	}
+	for _, source := range config.Sources {
+		if source.ID == id && source.Enabled {
+			return source, nil
+		}
+	}
+	if config.Error != "" {
+		return resourcecatalog.Source{}, errors.New(config.Error)
+	}
+	return resourcecatalog.Source{}, fmt.Errorf("资源来源不存在或已禁用")
 }
 
 // ListResourceDownloads 在锁内复制任务快照，按创建时间倒序返回给前端轮询。
@@ -116,9 +152,21 @@ func (a *App) ListResourceDownloads() []DownloadTask {
 	return tasks
 }
 
-// StartResourceDownload 校验并去重活动任务，限制队列数量，创建 5 分钟超时任务后异步下载和入库。
+// StartResourceDownload 校验并去重活动任务，限制队列数量，异步下载和入库。
 func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, error) {
-	if err := resourcecatalog.ValidateDownload(file); err != nil {
+	var source resourcecatalog.Source
+	if file.NovelSourceID != "" {
+		// 以后端当前配置为准校验来源和地址。任务入队后沿用本次读到的规则快照。
+		var err error
+		source, err = a.resourceSource(file.NovelSourceID)
+		if err != nil {
+			return DownloadTask{}, err
+		}
+		if err := resourcecatalog.ValidateCrawlerDownload(source, file); err != nil {
+			return DownloadTask{}, err
+		}
+		file.SourceGroup = source.Group
+	} else if err := resourcecatalog.ValidateDownload(file); err != nil {
 		return DownloadTask{}, err
 	}
 	ext := strings.ToLower(filepath.Ext(file.Name))
@@ -128,12 +176,12 @@ func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, er
 		a.downloads.tasks = map[string]*resourceDownload{}
 		a.downloads.slots = make(chan struct{}, 2)
 	}
-	// 相同 URL 的活动任务直接复用；已完成或失败的任务允许重新创建。
+	// 地址和抓取书源都相同的活动任务直接复用。终态任务允许重新创建。
 	active := 0
 	for _, item := range a.downloads.tasks {
 		if item.task.Status == "queued" || item.task.Status == "downloading" || item.task.Status == "importing" {
 			active++
-			if item.task.URL == file.URL {
+			if item.task.URL == file.URL && item.task.File.NovelSourceID == file.NovelSourceID {
 				return item.task, nil
 			}
 		}
@@ -156,12 +204,16 @@ func (a *App) StartResourceDownload(file resourcecatalog.File) (DownloadTask, er
 			delete(a.downloads.tasks, oldestID)
 		}
 	}
-	// 超时从创建任务时开始，排队时间计入；HTTP 下载遵守此上下文，入库前再次检查。
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// 超时从创建任务时开始，包含排队时间。逐章任务涉及较多页面，单独使用更长的时限。
+	timeout := 5 * time.Minute
+	if file.NovelSourceID != "" {
+		timeout = 2 * time.Hour
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	task := DownloadTask{ID: uuid.NewString(), Name: resourcecatalog.SafeFileName(file.Name, ext), URL: file.URL, Status: "queued", Total: file.Size, CreatedAt: time.Now().UnixMilli()}
 	task.File = file
 	a.downloads.tasks[task.ID] = &resourceDownload{task: task, cancel: cancel}
-	go a.runResourceDownload(ctx, task.ID, file)
+	go a.runResourceDownload(ctx, task.ID, file, source)
 	return task, nil
 }
 
@@ -194,7 +246,7 @@ func (a *App) stopResourceDownloads() {
 }
 
 // runResourceDownload 后台执行排队、下载和入库，统一更新终态并清理专用临时目录。
-func (a *App) runResourceDownload(ctx context.Context, id string, file resourcecatalog.File) {
+func (a *App) runResourceDownload(ctx context.Context, id string, file resourcecatalog.File, source resourcecatalog.Source) {
 	a.downloads.mu.Lock()
 	item := a.downloads.tasks[id]
 	a.downloads.mu.Unlock()
@@ -204,9 +256,9 @@ func (a *App) runResourceDownload(ctx context.Context, id string, file resourcec
 		a.downloads.mu.Lock()
 		defer a.downloads.mu.Unlock()
 		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			if ctx.Err() != nil {
 				item.task.Status = "cancelled"
-				if errors.Is(err, context.DeadlineExceeded) {
+				if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 					item.task.Status = "error"
 					item.task.Error = "下载超时，请重试"
 				}
@@ -247,13 +299,20 @@ func (a *App) runResourceDownload(ctx context.Context, id string, file resourcec
 			os.RemoveAll(dir)
 		}
 	}()
-	// 下载回调只更新网络字节进度；书架导入是否成功由后续流程单独决定。
-	local, err := resourcecatalog.Download(ctx, http.DefaultClient, file, dir, func(received, total int64) {
+	// 下载回调更新传输或章节进度，入库流程单独设置终态。
+	progress := func(received, total int64) {
 		a.downloads.mu.Lock()
 		defer a.downloads.mu.Unlock()
 		item.task.Received = received
 		item.task.Total = total
-	})
+	}
+	var local string
+	// 两类任务分别获取成品，后续均使用同一套入库和取消检查流程。
+	if file.NovelSourceID != "" {
+		local, err = resourcecatalog.DownloadCrawler(ctx, http.DefaultClient, source, file, dir, progress)
+	} else {
+		local, err = resourcecatalog.Download(ctx, http.DefaultClient, file, dir, progress)
+	}
 	if err != nil {
 		finish("", err)
 		return

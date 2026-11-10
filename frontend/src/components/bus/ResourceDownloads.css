@@ -11,7 +11,7 @@
     --wails-draggable: no-drag;
 }
 .resource-download-drawer .ant-tabs-nav {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 .resource-download-intro,
 .resource-source-description {
@@ -32,20 +32,99 @@
     min-width: 0;
 }
 .resource-type-select {
-    flex: 0 0 148px;
+    flex: 0 0 106px;
 }
+/* 展开后限制书源列表高度，长分组在列表内滚动，给搜索结果留出空间。 */
 .resource-catalog-sources {
     display: flex;
     flex-wrap: wrap;
+    gap: 4px;
+    max-height: 170px;
+    overflow: auto;
+    align-content: flex-start;
+}
+.resource-sources {
+    margin-top: 6px;
+    border: 1px solid #e8ece7;
+    border-radius: 6px;
+}
+.resource-source-panel {
+    display: grid;
     gap: 6px;
-    margin: 10px 0;
+    padding: 0 6px 6px;
+}
+.resource-source-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-block: 2px;
+}
+.resource-source-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 2px 7px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: #f1f4ef;
+    color: #536057;
+    font: inherit;
+    font-size: 11px;
+    line-height: 16px;
+    cursor: pointer;
+}
+.resource-source-group span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.resource-source-group small {
+    color: #68756b;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+}
+.resource-source-group:hover {
+    background: #e9efe7;
+}
+.resource-source-group[aria-pressed='true'] {
+    border-color: #a8bdac;
+    background: #e3ede4;
+    color: #31513c;
+    font-weight: 600;
+}
+.resource-source-group:focus-visible {
+    outline: 2px solid #587761;
+    outline-offset: 1px;
+}
+/* 保留已选数量、全选按钮和检测入口，极窄窗口允许状态区换行。 */
+.resource-health-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    min-height: 30px;
+    padding-inline: 4px;
+    color: #7a827d;
+}
+.resource-health-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-inline-start: auto;
+}
+.resource-select-all {
+    padding-inline: 4px;
+}
+.resource-health-toolbar .ant-btn {
+    flex-shrink: 0;
 }
 .resource-source-chip {
     display: flex;
     align-items: center;
     gap: 4px;
     min-width: 0;
-    padding: 4px 7px;
+    padding: 1px 5px;
     background: #f6f8f5;
     border: 1px solid #e8ece7;
     border-radius: 6px;
@@ -53,6 +132,20 @@
 .resource-source-chip .ant-checkbox-wrapper {
     font-size: 12px;
     line-height: 20px;
+}
+.resource-source-health {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #7a827d;
+}
+.resource-source-health.is-available {
+    color: #28724c;
+}
+.resource-source-health.is-blocked {
+    color: #986100;
+}
+.resource-source-health.is-unavailable {
+    color: #b64239;
 }
 .resource-source-chip .ant-checkbox + span {
     padding-inline-end: 0;
@@ -69,12 +162,37 @@
     margin: 2px 0 0;
 }
 .resource-results-summary {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     color: #456653;
     font-size: 12px;
-    margin: 12px 0 2px;
+    margin: 8px 0 2px;
+}
+.resource-results-summary .ant-btn {
+    margin-inline-start: auto;
+}
+.resource-results-more {
+    display: flex;
+    justify-content: center;
+    margin-block: 8px 12px;
+}
+.resource-download-options {
+    display: grid;
+    gap: 10px;
+}
+.resource-download-options p {
+    margin: 0;
+    color: #627066;
+}
+.resource-download-options label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 .download-resource-book {
-    padding: 10px 0;
+    padding: 8px 0;
     border-top: 1px solid #e8ece7;
 }
 .download-resource-book h3 {

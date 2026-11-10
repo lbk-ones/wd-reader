@@ -25,7 +25,7 @@ func TestHTMLCatalogMatchesAliasesAndPrioritizesOriginal(t *testing.T) {
 		fmt.Fprintf(w, `<meta property="og:novel:book_name" content="我有一座恐怖屋"><meta property="og:novel:author" content="我会修空调"><a href="/files/book.zip">TXT下载</a><a href="https://advert.example/setup.exe">下载</a><a href="/files/book.zip">重复链接</a>`)
 	}))
 	defer server.Close()
-	source := Source{ID: "html", Name: "测试", Kind: "html", SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[0-9]+/$`, DownloadLinkPattern: `^` + server.URL + `/files/.+[.]zip$`, TitleMeta: "og:novel:book_name", AuthorMeta: "og:novel:author", ZipFormat: "txt", Aliases: map[string][]string{"我有一座冒险屋": {"我有一座恐怖屋"}}}
+	source := Source{ID: "html", Name: "测试", Kind: HTMLKind, SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[0-9]+/$`, DownloadLinkPattern: `^` + server.URL + `/files/.+[.]zip$`, TitleMeta: "og:novel:book_name", AuthorMeta: "og:novel:author", ZipFormat: "txt", Aliases: map[string][]string{"我有一座冒险屋": {"我有一座恐怖屋"}}}
 	got, err := Search(context.Background(), server.Client(), source, "我有一座冒险屋")
 	if err != nil || len(got.Books) != 2 {
 		t.Fatalf("%+v %v", got, err)
@@ -83,7 +83,7 @@ func TestHTMLCatalogFindsOriginalOnLastPage(t *testing.T) {
 		fmt.Fprint(w, `<a href="/file.txt">TXT下载</a>`)
 	}))
 	defer server.Close()
-	s := Source{ID: "test", Kind: "html", SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[0-9]+/$`, DownloadLinkPattern: `/file[.]txt$`, MaxSearchPages: 2}
+	s := Source{ID: "test", Kind: HTMLKind, SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[0-9]+/$`, DownloadLinkPattern: `/file[.]txt$`, MaxSearchPages: 2}
 	got, err := Search(context.Background(), server.Client(), s, "神秘复苏")
 	if err != nil || len(got.Books) != 2 || got.Books[0].Title != "神秘复苏" {
 		t.Fatalf("%+v %v", got, err)
@@ -107,7 +107,7 @@ func TestHTMLCatalogChecksAuthorForIdenticalTitles(t *testing.T) {
 		fmt.Fprintf(w, `<meta property="author" content="%s"><a href="/file.txt">下载</a>`, author)
 	}))
 	defer server.Close()
-	s := Source{ID: "test", Kind: "html", SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[a-z]+/$`, DownloadLinkPattern: `/file[.]txt$`, AuthorMeta: "author", AuthorHints: map[string]string{"神秘复苏": "佛前献花"}}
+	s := Source{ID: "test", Kind: HTMLKind, SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[a-z]+/$`, DownloadLinkPattern: `/file[.]txt$`, AuthorMeta: "author", AuthorHints: map[string]string{"神秘复苏": "佛前献花"}}
 	got, err := Search(context.Background(), server.Client(), s, "神秘复苏")
 	if err != nil || len(got.Books) != 2 || got.Books[0].Author != "佛前献花" {
 		t.Fatalf("%+v %v", got, err)

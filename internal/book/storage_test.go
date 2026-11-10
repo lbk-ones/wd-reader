@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLibraryImportDeleteAndRestore(t *testing.T) {
@@ -65,6 +66,36 @@ func TestLibraryImportDeleteAndRestore(t *testing.T) {
 	}
 	if _, err = os.Stat(filepath.Join(ParsePath(), name)); err != nil {
 		t.Fatalf("shelf copy removed: %v", err)
+	}
+}
+
+func TestListOriginalsOrdersByWhenOriginalWasAdded(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("HOME", dir)
+	if err := EnsureStorage(); err != nil {
+		t.Fatal(err)
+	}
+	older := time.Date(2025, time.March, 1, 12, 0, 0, 0, time.UTC)
+	for name, addedAt := range map[string]time.Time{
+		"a-old.txt": older,
+		"z-new.txt": older.Add(time.Hour),
+	} {
+		path := filepath.Join(PurePath(), name)
+		if err := os.WriteFile(path, []byte(name), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chtimes(path, addedAt, addedAt); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// 把较早的原文件重新导入书架后，书库仍按原文件的加入时间排序。
+	if _, err := ImportOriginal("a-old.txt", false); err != nil {
+		t.Fatal(err)
+	}
+	originals, err := ListOriginals()
+	if err != nil || len(originals) != 2 || originals[0].Name != "z-new.txt" || originals[1].Name != "a-old.txt" {
+		t.Fatalf("originals %#v %v", originals, err)
 	}
 }
 

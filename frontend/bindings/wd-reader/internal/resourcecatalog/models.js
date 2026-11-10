@@ -159,6 +159,400 @@ export class ConfigFile {
 }
 
 /**
+ * CrawlerBookRules 定义详情页的书名、作者、简介、分类和封面选择器。
+ * 书名和作者优先采用 Source 中显式配置的 Meta 字段。
+ */
+export class CrawlerBookRules {
+    /**
+     * Creates a new CrawlerBookRules instance.
+     * @param {Partial<CrawlerBookRules>} [$$source = {}] - The source object to create the CrawlerBookRules.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * BookName 匹配书名。若命中 meta 元素，读取 content 属性。
+             * @member
+             * @type {string | undefined}
+             */
+            this["bookName"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Author 匹配作者。若命中 meta 元素，读取 content 属性。
+             * @member
+             * @type {string | undefined}
+             */
+            this["author"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Description 匹配书籍简介，留空时尝试通用元数据和常见简介容器。
+             * @member
+             * @type {string | undefined}
+             */
+            this["description"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Category 匹配书籍分类，留空时尝试站点元数据。
+             * @member
+             * @type {string | undefined}
+             */
+            this["category"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Cover 匹配封面图片或封面 meta 元素，地址须在书源站点内。
+             * @member
+             * @type {string | undefined}
+             */
+            this["cover"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CrawlerBookRules instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CrawlerBookRules}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CrawlerBookRules(/** @type {Partial<CrawlerBookRules>} */($$parsedSource));
+    }
+}
+
+/**
+ * CrawlerChapterRules 描述单章页面的正文位置、清理方式和章内翻页方式。
+ */
+export class CrawlerChapterRules {
+    /**
+     * Creates a new CrawlerChapterRules instance.
+     * @param {Partial<CrawlerChapterRules>} [$$source = {}] - The source object to create the CrawlerChapterRules.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * Title 匹配正文页的章名。比较各页章名可辅助判断是否已进入下一章。
+             * @member
+             * @type {string | undefined}
+             */
+            this["title"] = undefined;
+        }
+        if (!("content" in $$source)) {
+            /**
+             * Content 匹配正文容器，下载时只提取这些容器中的内容。
+             * @member
+             * @type {string}
+             */
+            this["content"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * FilterTag 匹配正文容器内要移除的节点，例如广告或导航栏。
+             * @member
+             * @type {string | undefined}
+             */
+            this["filterTag"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * FilterTxt 是纯文本清理使用的 Go 正则表达式，命中的文字会被删除。
+             * @member
+             * @type {string | undefined}
+             */
+            this["filterTxt"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * NextPage 匹配章内翻页链接。最终还需根据链接和章节目录判断是否应继续合并。
+             * @member
+             * @type {string | undefined}
+             */
+            this["nextPage"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * ScriptNext 指定从脚本文本中提取翻页地址的方式，可选 nextpage 或 keyboard。
+             * @member
+             * @type {string | undefined}
+             */
+            this["scriptNext"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Base64 表示正文藏在指定脚本调用的 Base64 字符串中，需解码后再提取文本。
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["base64"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CrawlerChapterRules instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CrawlerChapterRules}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CrawlerChapterRules(/** @type {Partial<CrawlerChapterRules>} */($$parsedSource));
+    }
+}
+
+/**
+ * CrawlerRules 保存 web-crawler 专用的页面解析规则。请求地址、表单和分组等通用配置在 Source 中定义。
+ */
+export class CrawlerRules {
+    /**
+     * Creates a new CrawlerRules instance.
+     * @param {Partial<CrawlerRules>} [$$source = {}] - The source object to create the CrawlerRules.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * MinInterval 设置同一下载任务的请求节奏，单位为毫秒。运行时共享的限速定时器至少间隔 300 毫秒。
+             * @member
+             * @type {number | undefined}
+             */
+            this["minInterval"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Concurrency 是每批并行抓取的章节数。零值按 1 处理，运行时最多并行 4 章。
+             * @member
+             * @type {number | undefined}
+             */
+            this["concurrency"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Search 描述书名搜索结果的页面结构。填写 Source.SearchURL 时必须提供。
+             * @member
+             * @type {CrawlerSearchRules | null | undefined}
+             */
+            this["search"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Book 可覆盖详情页书名和作者的默认提取位置。
+             * @member
+             * @type {CrawlerBookRules | null | undefined}
+             */
+            this["book"] = undefined;
+        }
+        if (!("toc" in $$source)) {
+            /**
+             * TOC 描述如何找到完整目录、识别章节链接并遍历目录分页。
+             * @member
+             * @type {CrawlerTOCRules}
+             */
+            this["toc"] = (new CrawlerTOCRules());
+        }
+        if (!("chapter" in $$source)) {
+            /**
+             * Chapter 描述如何提取正文、清理内容并合并同一章的多个页面。
+             * @member
+             * @type {CrawlerChapterRules}
+             */
+            this["chapter"] = (new CrawlerChapterRules());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CrawlerRules instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CrawlerRules}
+     */
+    static createFrom($$source = {}) {
+        const $$createField2_0 = $$createType5;
+        const $$createField3_0 = $$createType7;
+        const $$createField4_0 = $$createType8;
+        const $$createField5_0 = $$createType9;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("search" in $$parsedSource) {
+            $$parsedSource["search"] = $$createField2_0($$parsedSource["search"]);
+        }
+        if ("book" in $$parsedSource) {
+            $$parsedSource["book"] = $$createField3_0($$parsedSource["book"]);
+        }
+        if ("toc" in $$parsedSource) {
+            $$parsedSource["toc"] = $$createField4_0($$parsedSource["toc"]);
+        }
+        if ("chapter" in $$parsedSource) {
+            $$parsedSource["chapter"] = $$createField5_0($$parsedSource["chapter"]);
+        }
+        return new CrawlerRules(/** @type {Partial<CrawlerRules>} */($$parsedSource));
+    }
+}
+
+/**
+ * CrawlerSearchRules 描述搜索结果页的选择器和站点特有的请求参数。
+ */
+export class CrawlerSearchRules {
+    /**
+     * Creates a new CrawlerSearchRules instance.
+     * @param {Partial<CrawlerSearchRules>} [$$source = {}] - The source object to create the CrawlerSearchRules.
+     */
+    constructor($$source = {}) {
+        if (!("result" in $$source)) {
+            /**
+             * Result 匹配每条结果的容器，相对于整张搜索结果页执行。
+             * @member
+             * @type {string}
+             */
+            this["result"] = "";
+        }
+        if (!("bookName" in $$source)) {
+            /**
+             * BookName 在单条结果内匹配书名链接，链接文字和 href 分别提供书名和详情地址。
+             * @member
+             * @type {string}
+             */
+            this["bookName"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Author 在单条结果内匹配作者文字，可留空。
+             * @member
+             * @type {string | undefined}
+             */
+            this["author"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Cookies 是搜索请求附带的 Cookie 请求头原文。
+             * @member
+             * @type {string | undefined}
+             */
+            this["cookies"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Next 匹配后续结果页的链接。留空时只读取首次响应。
+             * @member
+             * @type {string | undefined}
+             */
+            this["next"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * JSONP 启用全本小说网的查询参数编码，用于其返回 JSONP 的搜索接口。
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["jsonp"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * TitlePrefix 控制是否去掉书名前的方括号标签，便于判断是否与检索词同名。
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["titlePrefix"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CrawlerSearchRules instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CrawlerSearchRules}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CrawlerSearchRules(/** @type {Partial<CrawlerSearchRules>} */($$parsedSource));
+    }
+}
+
+/**
+ * CrawlerTOCRules 描述目录入口、分页链接和章节条目。
+ */
+export class CrawlerTOCRules {
+    /**
+     * Creates a new CrawlerTOCRules instance.
+     * @param {Partial<CrawlerTOCRules>} [$$source = {}] - The source object to create the CrawlerTOCRules.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * URL 是独立目录页的地址模板。留空时直接从详情页读取目录。
+             * {id} 取自 Source.BookLinkPattern 的第一个捕获组。
+             * @member
+             * @type {string | undefined}
+             */
+            this["url"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * BaseURI 覆盖相对章节链接的解析基准。留空时使用当前目录页的实际响应地址。
+             * @member
+             * @type {string | undefined}
+             */
+            this["baseUri"] = undefined;
+        }
+        if (!("item" in $$source)) {
+            /**
+             * Item 匹配章节链接。节点文字作为章节标题，href 作为正文地址。
+             * @member
+             * @type {string}
+             */
+            this["item"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * NextPage 匹配目录分页链接或下拉选项。普通链接使用 href，下拉选项可使用 value。
+             * @member
+             * @type {string | undefined}
+             */
+            this["nextPage"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * HiddenList 匹配包含隐藏干扰条目的列表，抓取前按页面的样式规则清理。
+             * @member
+             * @type {string | undefined}
+             */
+            this["hiddenList"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * OnclickPath 用于还原脚本式章节链接。{chapter} 来自 read_tz 的数字参数，{id} 来自书籍路径。
+             * @member
+             * @type {string | undefined}
+             */
+            this["onclickPath"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * IsDesc 表示单页章节列表倒序排列，抓取时会将该页的条目反转。
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["isDesc"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CrawlerTOCRules instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CrawlerTOCRules}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CrawlerTOCRules(/** @type {Partial<CrawlerTOCRules>} */($$parsedSource));
+    }
+}
+
+/**
  * File 描述一个可下载文件，也保留重试和 ZIP 解压所需的信息。
  */
 export class File {
@@ -167,6 +561,46 @@ export class File {
      * @param {Partial<File>} [$$source = {}] - The source object to create the File.
      */
     constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * Concurrency 是本次章节抓取的协程数。零值沿用书源设置，1 表示串行。
+             * @member
+             * @type {number | undefined}
+             */
+            this["concurrency"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * SourceGroup 保存下载项所属分组，便于任务列表和重试沿用相同的显示与操作。
+             * @member
+             * @type {string | undefined}
+             */
+            this["sourceGroup"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * NovelSourceID 指向逐章抓取规则。此时 URL 是书籍详情地址，任务创建时会按该标识重新读取配置。
+             * @member
+             * @type {string | undefined}
+             */
+            this["novelSourceId"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * BookTitle 保存检索时取得的书名，供详情页缺少书名时补充 EPUB 元数据。
+             * @member
+             * @type {string | undefined}
+             */
+            this["bookTitle"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * BookAuthor 保存检索时取得的作者，供详情页缺少作者时补充 EPUB 元数据。
+             * @member
+             * @type {string | undefined}
+             */
+            this["bookAuthor"] = undefined;
+        }
         if (/** @type {any} */(false)) {
             /**
              * ZIP 内要提取的电子书格式；普通文件留空。
@@ -185,7 +619,7 @@ export class File {
         }
         if (!("url" in $$source)) {
             /**
-             * 实际下载地址，必须为不含用户凭据的 HTTP(S) URL。
+             * URL 是文件直链或书籍详情地址，必须是不含用户凭据的 HTTP(S) URL。
              * @member
              * @type {string}
              */
@@ -241,7 +675,7 @@ export class SearchResponse {
     constructor($$source = {}) {
         if (!("books" in $$source)) {
             /**
-             * 包含实际下载文件的书籍列表。
+             * Books 保存带下载项的书籍，下载项可以是成品文件，也可以是待生成的 EPUB。
              * @member
              * @type {Book[]}
              */
@@ -257,7 +691,7 @@ export class SearchResponse {
         }
         if (!("failed" in $$source)) {
             /**
-             * 详情读取或等待并发槽位失败的候选数量。
+             * Failed 统计未能读取的候选详情或后续搜索页，具体单位由书源类型决定。
              * @member
              * @type {number}
              */
@@ -273,7 +707,7 @@ export class SearchResponse {
      * @returns {SearchResponse}
      */
     static createFrom($$source = {}) {
-        const $$createField0_0 = $$createType5;
+        const $$createField0_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("books" in $$parsedSource) {
             $$parsedSource["books"] = $$createField0_0($$parsedSource["books"]);
@@ -293,7 +727,7 @@ export class Source {
     constructor($$source = {}) {
         if (/** @type {any} */(false)) {
             /**
-             * HTML 搜索请求方法；空值按 GET 处理，也可配置 POST。
+             * SearchMethod 是搜索请求方法，空值按 GET 处理。html 和 web-crawler 也支持 POST。
              * @member
              * @type {string | undefined}
              */
@@ -301,7 +735,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
-             * POST 表单参数模板，值中的 {query} 替换为当前检索词。
+             * SearchForm 保存 POST 表单参数模板，值中的 {query} 替换为当前检索词。
              * @member
              * @type {{ [_ in string]?: string } | undefined}
              */
@@ -365,7 +799,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
-             * 每个检索词最多读取的搜索页数；0 按 1 页处理。
+             * MaxSearchPages 限制每个检索词读取的搜索页数。零值在 html 中按 1 页处理，在 web-crawler 中按 3 页处理。
              * @member
              * @type {number | undefined}
              */
@@ -373,7 +807,7 @@ export class Source {
         }
         if (/** @type {any} */(false)) {
             /**
-             * HTML 搜索结果中书籍详情链接的路径正则。
+             * BookLinkPattern 匹配书籍详情链接的路径。web-crawler 可用第一个捕获组为目录模板提供 {id}。
              * @member
              * @type {string | undefined}
              */
@@ -437,7 +871,7 @@ export class Source {
         }
         if (!("enabled" in $$source)) {
             /**
-             * 是否允许从该来源发起检索。
+             * Enabled 决定是否允许检索和检测该来源。关闭 web-crawler 来源也会停用其详情链接识别和新下载任务。
              * @member
              * @type {boolean}
              */
@@ -445,11 +879,11 @@ export class Source {
         }
         if (!("kind" in $$source)) {
             /**
-             * 适配器类型：archive、gutenberg、html 或 file-index。
+             * Kind 决定使用哪个适配器解析配置、检索资源和下载。
              * @member
-             * @type {string}
+             * @type {SourceKind}
              */
-            this["kind"] = "";
+            this["kind"] = SourceKind.$zero;
         }
         if (!("description" in $$source)) {
             /**
@@ -459,21 +893,21 @@ export class Source {
              */
             this["description"] = "";
         }
-        if (!("searchUrl" in $$source)) {
+        if (/** @type {any} */(false)) {
             /**
-             * 搜索地址模板，通常使用 {query} 占位符。
+             * SearchURL 是搜索地址模板，通常使用 {query} 占位符。web-crawler 留空时只接受详情链接。
              * @member
-             * @type {string}
+             * @type {string | undefined}
              */
-            this["searchUrl"] = "";
+            this["searchUrl"] = undefined;
         }
-        if (!("detailUrl" in $$source)) {
+        if (/** @type {any} */(false)) {
             /**
              * 结构化来源的详情接口模板，使用 {id} 占位符。
              * @member
-             * @type {string}
+             * @type {string | undefined}
              */
-            this["detailUrl"] = "";
+            this["detailUrl"] = undefined;
         }
         if (/** @type {any} */(false)) {
             /**
@@ -483,13 +917,37 @@ export class Source {
              */
             this["downloadUrl"] = undefined;
         }
-        if (!("bookUrl" in $$source)) {
+        if (/** @type {any} */(false)) {
             /**
              * 书籍原站详情地址模板，供用户查看来源。
              * @member
+             * @type {string | undefined}
+             */
+            this["bookUrl"] = undefined;
+        }
+        if (!("group" in $$source)) {
+            /**
+             * Group 用于下载页分组。成品来源默认分到 download，抓取来源默认分到 main。
+             * @member
              * @type {string}
              */
-            this["bookUrl"] = "";
+            this["group"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * HomeURL 是书源主页，可作为访问检测入口。对 web-crawler 来说也是校验详情链接归属的基准。
+             * @member
+             * @type {string | undefined}
+             */
+            this["homeUrl"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Crawler 保存逐章下载所需的 CSS 选择器、分页和限速规则，仅供 web-crawler 使用。
+             * @member
+             * @type {CrawlerRules | null | undefined}
+             */
+            this["crawler"] = undefined;
         }
 
         Object.assign(this, $$source);
@@ -501,9 +959,10 @@ export class Source {
      * @returns {Source}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType6;
-        const $$createField8_0 = $$createType6;
-        const $$createField15_0 = $$createType8;
+        const $$createField1_0 = $$createType12;
+        const $$createField8_0 = $$createType12;
+        const $$createField15_0 = $$createType14;
+        const $$createField27_0 = $$createType16;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("searchForm" in $$parsedSource) {
             $$parsedSource["searchForm"] = $$createField1_0($$parsedSource["searchForm"]);
@@ -514,17 +973,105 @@ export class Source {
         if ("aliases" in $$parsedSource) {
             $$parsedSource["aliases"] = $$createField15_0($$parsedSource["aliases"]);
         }
+        if ("crawler" in $$parsedSource) {
+            $$parsedSource["crawler"] = $$createField27_0($$parsedSource["crawler"]);
+        }
         return new Source(/** @type {Partial<Source>} */($$parsedSource));
     }
 }
+
+/**
+ * SourceHealth 是一次访问检测的结果，用于书源列表展示状态和失败原因。
+ */
+export class SourceHealth {
+    /**
+     * Creates a new SourceHealth instance.
+     * @param {Partial<SourceHealth>} [$$source = {}] - The source object to create the SourceHealth.
+     */
+    constructor($$source = {}) {
+        if (!("status" in $$source)) {
+            /**
+             * Status 为 available、blocked 或 unavailable，分别表示可访问、访问受限和访问失败。
+             * @member
+             * @type {string}
+             */
+            this["status"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * Detail 保存 HTTP 状态码或请求错误等诊断信息，前端在状态图标的提示中展示。
+             * @member
+             * @type {string | undefined}
+             */
+            this["detail"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SourceHealth instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {SourceHealth}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SourceHealth(/** @type {Partial<SourceHealth>} */($$parsedSource));
+    }
+}
+
+/**
+ * SourceKind 标记书源适配器类型。字符串值用于 JSON 配置和前端绑定。
+ * @readonly
+ * @enum {string}
+ */
+export const SourceKind = {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero: "",
+
+    /**
+     * ArchiveKind 通过 Internet Archive 的接口查询和获取成品文件。
+     */
+    ArchiveKind: "archive",
+
+    /**
+     * GutenbergKind 通过 Project Gutenberg 的 OPDS 目录获取成品文件。
+     */
+    GutenbergKind: "gutenberg",
+
+    /**
+     * HTMLKind 从网页中提取成品文件的下载链接。
+     */
+    HTMLKind: "html",
+
+    /**
+     * FileIndexKind 从文件索引中查找成品文件。
+     */
+    FileIndexKind: "file-index",
+
+    /**
+     * CrawlerKind 从网页目录逐章抓取正文并生成 EPUB。
+     */
+    CrawlerKind: "web-crawler",
+};
 
 // Private type creation functions
 const $$createType0 = File.createFrom;
 const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = Source.createFrom;
 const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = Book.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = $Create.Map($Create.Any, $Create.Any);
-const $$createType7 = $Create.Array($Create.Any);
-const $$createType8 = $Create.Map($Create.Any, $$createType7);
+const $$createType4 = CrawlerSearchRules.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = CrawlerBookRules.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = CrawlerTOCRules.createFrom;
+const $$createType9 = CrawlerChapterRules.createFrom;
+const $$createType10 = Book.createFrom;
+const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = $Create.Map($Create.Any, $Create.Any);
+const $$createType13 = $Create.Array($Create.Any);
+const $$createType14 = $Create.Map($Create.Any, $$createType13);
+const $$createType15 = CrawlerRules.createFrom;
+const $$createType16 = $Create.Nullable($$createType15);

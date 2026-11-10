@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 	"wd-reader/internal/book/mobi"
 	"wd-reader/internal/constant"
 	"wd-reader/internal/server"
@@ -207,6 +209,7 @@ type LibraryOriginal struct {
 	InShelf    bool   `json:"inShelf"`
 }
 
+// ListOriginals 按原文件加入书库的时间倒序返回列表。
 func ListOriginals() ([]LibraryOriginal, error) {
 	if err := EnsureStorage(); err != nil {
 		return nil, err
@@ -226,11 +229,16 @@ func ListOriginals() ([]LibraryOriginal, error) {
 			associated[b.OriginalName] = b.FileName
 		}
 	}
+	addedAt := make(map[string]time.Time, len(entries))
 	for _, e := range entries {
 		if e.IsDir() {
 			continue
 		}
 		name := e.Name()
+		// 导入时会把原文件复制到书库。重新导入书架只更新阅读副本和元数据，原文件的时间仍可用于排序。
+		if info, err := e.Info(); err == nil {
+			addedAt[name] = info.ModTime()
+		}
 		parsed := strings.TrimSuffix(name, filepath.Ext(name)) + ".txt"
 		if linked := associated[name]; linked != "" {
 			parsed = linked
@@ -238,6 +246,9 @@ func ListOriginals() ([]LibraryOriginal, error) {
 		_, err := os.Stat(filepath.Join(ParsePath(), parsed))
 		list = append(list, LibraryOriginal{Name: name, ParsedName: parsed, InShelf: err == nil})
 	}
+	sort.SliceStable(list, func(i, j int) bool {
+		return addedAt[list[i].Name].After(addedAt[list[j].Name])
+	})
 	return list, nil
 }
 func DeleteOriginal(name string) error {

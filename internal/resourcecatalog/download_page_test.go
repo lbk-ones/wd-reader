@@ -27,7 +27,7 @@ func TestHTMLDownloadPageKeepsChapterRanges(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	s := Source{ID: "test", Kind: "html", SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/[0-9]+/$`, DownloadPagePattern: `^/[0-9]+/txt[.]html$`, DownloadLinkPattern: `/txt/[?]id=[0-9]+&p=[0-9]+$`, DownloadFormat: "txt", FileNameFromLink: true, TitlePattern: `(?s)<h1[^>]*>.*?<a[^>]*>([^<]+)</a>`, AuthorPattern: `作者[：:]([^<]+)</a>`}
+	s := Source{ID: "test", Kind: HTMLKind, SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/[0-9]+/$`, DownloadPagePattern: `^/[0-9]+/txt[.]html$`, DownloadLinkPattern: `/txt/[?]id=[0-9]+&p=[0-9]+$`, DownloadFormat: "txt", FileNameFromLink: true, TitlePattern: `(?s)<h1[^>]*>.*?<a[^>]*>([^<]+)</a>`, AuthorPattern: `作者[：:]([^<]+)</a>`}
 	got, err := Search(context.Background(), server.Client(), s, "时停起手")
 	if err != nil || len(got.Books) != 1 || len(got.Books[0].Files) != 2 {
 		t.Fatalf("%+v %v", got, err)
@@ -102,7 +102,7 @@ func TestSequelIsRelatedEvenWhenAuthorMatches(t *testing.T) {
 		fmt.Fprint(w, `<meta name="author" content="唐家三少"><a href="/novel.txt">TXT下载</a>`)
 	}))
 	defer server.Close()
-	s := Source{ID: "test", Kind: "html", SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[0-9]+/$`, DownloadLinkPattern: `/novel[.]txt$`, AuthorMeta: "author", AuthorHints: map[string]string{"神印王座": "唐家三少"}}
+	s := Source{ID: "test", Kind: HTMLKind, SearchURL: server.URL + "/search?q={query}", BookLinkPattern: `^/read/[0-9]+/$`, DownloadLinkPattern: `/novel[.]txt$`, AuthorMeta: "author", AuthorHints: map[string]string{"神印王座": "唐家三少"}}
 	got, err := Search(context.Background(), server.Client(), s, "神印王座")
 	if err != nil || len(got.Books) != 1 || got.Books[0].MatchType != "related" {
 		t.Fatalf("%+v %v", got, err)

@@ -6,7 +6,24 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"net/http"
 )
+
+// CoverFormat 根据文件内容确定封面的 EPUB 文件名和媒体类型。文件名为空表示格式不受支持。
+func CoverFormat(cover []byte) (filename, mediaType string) {
+	mediaType = http.DetectContentType(cover)
+	switch mediaType {
+	case "image/jpeg":
+		filename = "cover.jpg"
+	case "image/png":
+		filename = "cover.png"
+	case "image/gif":
+		filename = "cover.gif"
+	case "image/webp":
+		filename = "cover.webp"
+	}
+	return filename, mediaType
+}
 
 // DefaultCover creates a placeholder PNG for books without a source cover.
 func DefaultCover() ([]byte, error) {

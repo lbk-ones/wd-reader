@@ -1037,6 +1037,11 @@
     gap: 6px;
     min-width: 0;
 }
+.original-library-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
 .original-library-item {
     display: flex;
     align-items: center;

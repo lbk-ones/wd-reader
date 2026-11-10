@@ -24,7 +24,7 @@ export class DownloadTask {
     constructor($$source = {}) {
         if (!("file" in $$source)) {
             /**
-             * 原始下载描述，供失败重试时恢复 Referer、ZIP 格式等参数。
+             * 原始下载描述，供失败重试时恢复书源标识、Referer 和 ZIP 格式等参数。
              * @member
              * @type {resourcecatalog$0.File}
              */
@@ -48,7 +48,7 @@ export class DownloadTask {
         }
         if (!("url" in $$source)) {
             /**
-             * 下载地址，用于识别同一资源的活动任务。
+             * 成品文件或书籍详情地址，与抓取书源标识一起用于识别重复任务。
              * @member
              * @type {string}
              */
@@ -64,7 +64,7 @@ export class DownloadTask {
         }
         if (!("received" in $$source)) {
             /**
-             * 已接收的网络数据字节数；ZIP 解压进度不计入此值。
+             * 已接收的字节数，章节书源则为已完成的章节数。
              * @member
              * @type {number}
              */
@@ -72,7 +72,7 @@ export class DownloadTask {
         }
         if (!("total" in $$source)) {
             /**
-             * 响应声明的总字节数；为 0 或负数时表示未知。
+             * 总字节数或总章节数。为 0 或负数时表示未知。
              * @member
              * @type {number}
              */

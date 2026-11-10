@@ -31,7 +31,7 @@ func TestHTMLPOSTSearchEncodesForm(t *testing.T) {
 		fmt.Fprint(w, `<a href="/book.txt">TXT</a>`)
 	}))
 	defer server.Close()
-	s := Source{ID: "post", Name: "POST test source", Kind: "html", SearchURL: server.URL + "/search", SearchMethod: "POST", SearchForm: map[string]string{"keyboard": "{query}", "tbname": "download"}, BookLinkPattern: `^/txt/[0-9]+[.]html$`, DownloadLinkPattern: `/book[.]txt$`}
+	s := Source{ID: "post", Name: "POST test source", Kind: HTMLKind, SearchURL: server.URL + "/search", SearchMethod: "POST", SearchForm: map[string]string{"keyboard": "{query}", "tbname": "download"}, BookLinkPattern: `^/txt/[0-9]+[.]html$`, DownloadLinkPattern: `/book[.]txt$`}
 	// The full user input is safely posted; no result is a legitimate filtered response for a mismatched author query.
 	if _, err := Search(context.Background(), server.Client(), s, "诡秘之主 & 作者"); err != nil {
 		t.Fatal(err)
@@ -56,7 +56,7 @@ func TestFileIndexFiltersAndCachesNames(t *testing.T) {
 		fmt.Fprint(w, `[{"path":"凡人修仙传.txt","size":100,"type":"file"},{"path":"书库/仙工开物.txt","size":200,"type":"file"},{"path":"凡人修仙传续篇.txt","size":100,"type":"file"},{"path":"../凡人修仙传.txt","size":100,"type":"file"},{"path":"凡人修仙传.exe","size":100,"type":"file"},{"path":"folder","size":0,"type":"directory"}]`)
 	}))
 	defer server.Close()
-	source := Source{ID: "index", Kind: "file-index", IndexURL: server.URL, BookURL: "https://example.org/blob/{file}", DownloadURL: "https://example.org/download/{file}", AuthorHints: map[string]string{"凡人修仙传": "忘语"}}
+	source := Source{ID: "index", Kind: FileIndexKind, IndexURL: server.URL, BookURL: "https://example.org/blob/{file}", DownloadURL: "https://example.org/download/{file}", AuthorHints: map[string]string{"凡人修仙传": "忘语"}}
 	got, err := Search(context.Background(), server.Client(), source, "凡人修仙传")
 	if err != nil || len(got.Books) != 2 || got.Books[0].MatchType != "exact" || got.Books[0].Author != "忘语" {
 		t.Fatalf("%+v %v", got, err)
@@ -141,7 +141,7 @@ func TestLiveNewSourceBookList(t *testing.T) {
 					check.Files = len(book.Files)
 					t.Logf("%s: matched author and %d file(s)", sample.Title, check.Files)
 					chosen := "诡秘之主"
-					if s.Kind == "file-index" {
+					if s.Kind == FileIndexKind {
 						chosen = "仙工开物"
 					}
 					if sample.Title == chosen {

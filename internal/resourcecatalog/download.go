@@ -16,18 +16,25 @@ import (
 // MaxDownloadBytes 限制单次网络下载及解压后电子书的大小，单位字节。
 const MaxDownloadBytes int64 = 100 * 1024 * 1024
 
-// DownloadStatusError reports an unsuccessful download response and its retry hint.
+// DownloadStatusError 保留成品文件下载失败时的 HTTP 状态和服务器提供的重试提示。
 type DownloadStatusError struct {
+	// StatusCode 是服务器响应的 HTTP 状态码。
 	StatusCode int
+	// RetryAfter 是 Retry-After 响应头的原文，可能为空。
 	RetryAfter string
 }
 
+// Error 生成包含 HTTP 状态码的下载错误提示。
 func (e *DownloadStatusError) Error() string {
 	return fmt.Sprintf("下载失败 (HTTP %d)", e.StatusCode)
 }
 
-// ValidateDownload 校验下载地址、文件扩展名和可选 Referer；ZIP 必须声明内部电子书格式。
+// ValidateDownload 校验成品文件的下载地址、扩展名和可选 Referer。ZIP 还须声明内部电子书格式。
+// 章节抓取任务需携带匹配的书源配置，由 ValidateCrawlerDownload 校验。
 func ValidateDownload(file File) error {
+	if file.NovelSourceID != "" {
+		return fmt.Errorf("章节下载需要已配置的书源")
+	}
 	ext := strings.ToLower(filepath.Ext(file.Name))
 	if !IsWebURL(file.URL) || (!supportedExtension(ext) && !(ext == ".zip" && supportedExtension("."+file.ArchiveFormat))) {
 		return fmt.Errorf("仅支持 HTTP(S) 的电子书文件，ZIP 需指定内部电子书格式")
@@ -39,7 +46,7 @@ func ValidateDownload(file File) error {
 }
 
 // Download 将完整资源写入调用方专用临时目录；检查大小和文件头，失败删除半成品，ZIP 返回解压后的文件路径。
-// progress 可为空，参数依次为已接收字节数、响应总字节数；总长度未知时可能为负数。
+// progress 可为空，依次报告已接收字节数和总字节数。
 // ctx 控制网络请求及写入循环；返回路径仅在文件下载完成后可用于书架导入。
 func Download(ctx context.Context, client *http.Client, file File, dir string, progress func(int64, int64)) (string, error) {
 	ext := strings.ToLower(filepath.Ext(file.Name))
@@ -50,7 +57,7 @@ func Download(ctx context.Context, client *http.Client, file File, dir string, p
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0")
+	req.Header.Set("User-Agent", catalogUserAgent)
 	if file.Referer != "" {
 		req.Header.Set("Referer", file.Referer)
 	}

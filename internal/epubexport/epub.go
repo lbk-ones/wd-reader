@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,16 +23,19 @@ var epubTemplates = template.Must(template.New("epub").Funcs(template.FuncMap{
 		return out.String()
 	},
 	"chapterID": func(i int) string { return fmt.Sprintf("chapter-%04d", i+1) },
+	"page": func(title, language string) map[string]string {
+		return map[string]string{"Title": title, "Language": language}
+	},
 }).Parse(`
 {{define "package.opf"}}<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
   <dc:identifier id="book-id">{{xml .Source}}</dc:identifier>
   <dc:title>{{xml .Title}}</dc:title>
-  <dc:creator>{{xml .Author}}</dc:creator>
-  <dc:language>zh-CN</dc:language>
-  <dc:subject>{{xml .Category}}</dc:subject>
-  <dc:description>{{xml .Description}}</dc:description>
+  {{if .Author}}<dc:creator>{{xml .Author}}</dc:creator>{{end}}
+  <dc:language>{{xml .Language}}</dc:language>
+  {{if .Category}}<dc:subject>{{xml .Category}}</dc:subject>{{end}}
+  {{if .Description}}<dc:description>{{xml .Description}}</dc:description>{{end}}
   <dc:source>{{xml .Source}}</dc:source>
   <meta property="dcterms:modified">{{.Modified}}</meta>
   <meta name="cover" content="cover"/>
@@ -54,25 +56,25 @@ var epubTemplates = template.Must(template.New("epub").Funcs(template.FuncMap{
 </package>{{end}}
 {{define "start"}}<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="zh-CN" lang="zh-CN">
-<head><title>{{xml .}}</title></head><body>{{end}}
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="{{xml .Language}}" lang="{{xml .Language}}">
+<head><title>{{xml .Title}}</title></head><body>{{end}}
 {{define "end"}}</body></html>{{end}}
-{{define "intro.xhtml"}}{{template "start" .Title}}
+{{define "intro.xhtml"}}{{template "start" .}}
   <h1>{{xml .Title}}</h1>
   <p><img src="{{.Cover}}" alt="{{xml .Title}}封面" style="max-width: 100%; max-height: 70vh;"/></p>
-  <p>作者：{{xml .Author}}</p>
-  <p>分类：{{xml .Category}}</p>
-  <h2>简介</h2>
+  {{if .Author}}<p>作者：{{xml .Author}}</p>{{end}}
+  {{if .Category}}<p>分类：{{xml .Category}}</p>{{end}}
+  {{if .Intro}}<h2>简介</h2>{{end}}
   {{range .Intro}}<p>{{xml .}}</p>
   {{end}}
 {{template "end"}}{{end}}
-{{define "nav.xhtml"}}{{template "start" "目录"}}
+{{define "nav.xhtml"}}{{template "start" (page "目录" .Language)}}
   <nav epub:type="toc" id="toc"><h1>目录</h1><ol>
   <li><a href="intro.xhtml">封面与简介</a></li>
   {{range $i, $ch := .Chapters}}<li><a href="{{chapterID $i}}.xhtml">{{xml $ch}}</a></li>
   {{end}}</ol></nav>
 {{template "end"}}{{end}}
-{{define "chapter"}}{{template "start" .Title}}
+{{define "chapter"}}{{template "start" .}}
   <h1>{{xml .Title}}</h1>
   {{range .Paragraphs}}<p>{{xml .}}</p>
   {{end}}
@@ -87,31 +89,33 @@ const containerXML = `<?xml version="1.0" encoding="UTF-8"?>
 type Book struct {
 	Title, Author, Category, Source string
 	Description                     []string
+	// Language 保存 EPUB 语言标记。留空时使用 zh-CN。
+	Language string
 }
 
 func Write(target string, b Book, titles []string, cover []byte, body func(int) ([]string, error)) error {
-	coverType := http.DetectContentType(cover)
-	var coverFile string
-	switch coverType {
-	case "image/jpeg":
-		coverFile = "cover.jpg"
-	case "image/png":
-		coverFile = "cover.png"
-	case "image/gif":
-		coverFile = "cover.gif"
-	case "image/webp":
-		coverFile = "cover.webp"
-	default:
+	coverFile, coverType := CoverFormat(cover)
+	if coverFile == "" {
 		return fmt.Errorf("无法识别封面图片: %s", coverType)
 	}
+	if b.Language == "" {
+		b.Language = "zh-CN"
+	}
 	info := struct {
-		Title, Author, Category, Source, Modified, Description, Cover, CoverType string
-		Intro, Chapters                                                          []string
+		Title, Author, Category, Source, Modified, Description, Cover, CoverType, Language string
+		Intro, Chapters                                                                    []string
 	}{
-		Title: b.Title, Author: b.Author, Category: b.Category,
-		Source: b.Source, Modified: time.Now().UTC().Format(time.RFC3339),
-		Description: strings.Join(b.Description, "\n"), Intro: b.Description,
-		Cover: coverFile, CoverType: coverType, Chapters: titles,
+		Title:       b.Title,
+		Author:      b.Author,
+		Category:    b.Category,
+		Source:      b.Source,
+		Modified:    time.Now().UTC().Format(time.RFC3339),
+		Description: strings.Join(b.Description, "\n"),
+		Intro:       b.Description,
+		Cover:       coverFile,
+		CoverType:   coverType,
+		Chapters:    titles,
+		Language:    b.Language,
 	}
 
 	f, err := os.CreateTemp(filepath.Dir(target), ".epub-*.tmp")
@@ -153,9 +157,9 @@ func Write(target string, b Book, titles []string, cover []byte, body func(int) 
 			return fmt.Errorf("第 %d/%d 章《%s》: %w", i+1, len(titles), title, err)
 		}
 		content := struct {
-			Title      string
-			Paragraphs []string
-		}{Title: title, Paragraphs: paragraphs}
+			Title, Language string
+			Paragraphs      []string
+		}{Title: title, Language: b.Language, Paragraphs: paragraphs}
 		if err := writeDocument(archive, fmt.Sprintf("chapter-%04d.xhtml", i+1), "chapter", content); err != nil {
 			return err
 		}

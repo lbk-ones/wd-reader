@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    defaultSourceGroup,
     formatResourceSize,
     isDownloadActive,
     mergeResourceResults,
+    normalizeSourceGroup,
     resourceDownloadProgress,
+    sourceGroupName,
 } from '../src/components/resourceDownloads.js';
 
 test('download progress handles unknown sizes and reserves completion for actual import', () => {
@@ -30,6 +33,26 @@ test('exact titles rank before related titles without presenting sequels as orig
     const book = { sourceId: 's', id: '1', files: [{ url: 'https://example.org/1' }], matchType: 'related' };
     const exact = { ...book, id: '2', matchType: 'exact' };
     assert.equal(mergeResourceResults([book, exact])[0].id, '2');
+});
+
+test('download sources rank first, with title relevance used within each priority', () => {
+    const files = [{ url: 'https://example.org/book.txt', format: 'TXT' }];
+    const books = [
+        { sourceId: 'crawler', id: 'crawler-exact', matchType: 'exact', files },
+        { sourceId: 'archive', id: 'download-related', matchType: 'related', files },
+        { sourceId: 'archive', id: 'download-exact', matchType: 'exact', files },
+    ];
+    assert.deepEqual(
+        mergeResourceResults(books, 'txt', new Set(['archive'])).map((book) => book.id),
+        ['download-exact', 'download-related', 'crawler-exact'],
+    );
+});
+
+test('legacy download group names resolve to the download key and label', () => {
+    assert.equal(defaultSourceGroup, 'download');
+    assert.equal(normalizeSourceGroup(' 完本下载 '), defaultSourceGroup);
+    assert.equal(sourceGroupName(defaultSourceGroup), '完本下载');
+    assert.equal(sourceGroupName('自定义书源'), '自定义书源');
 });
 
 test('resource types filter individual formats and restore all files without mutating results', () => {
